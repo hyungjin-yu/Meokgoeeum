@@ -82,8 +82,8 @@
 - [x] Unity 6.3 LTS URP 기술 스펙 확정
 - [x] Unity 프로젝트 생성
 - [x] 필수 패키지 설치 (Cinemachine, Input System, VFX Graph, Addressables, AI Navigation, Unity Behavior, UniTask, DOTween)
-- [x] PlayerController — WASD 이동 (New Input System) + 중력
-- [ ] Cinemachine 카메라 연결
+- [x] PlayerController — 카메라 기준 이동(camera-relative) + 이동 방향 회전 + 중력으로 재작성, `Look` 입력 액션 추가, Player 태그 수정
+- [ ] Cinemachine 카메라 연결 — **코드/입력 준비 완료, Unity 에디터에서 수동 설정만 남음** (→ [[logic/Cinemachine 3인칭 카메라 설정]] 그대로 따라하면 됨)
 - [ ] v0.1 프로토타입
 
 ## 세션 연속성 — changelog 인덱스
@@ -94,6 +94,7 @@
 
 ### 최근 changelog (최신이 위)
 
+- `2026-08-16_v0.1-이동카메라-착수.md` — PlayerController 카메라기준 이동 재작성, Look 입력액션 추가, Player 태그 수정, Cinemachine 수동설정 가이드 작성 (씬 GameObject 배치는 에디터에서 사용자가 직접 진행 필요)
 - `2026-08-16_Major-4건-해결.md` — QA Major 4건 모두 해결 (구슬슬롯 잠금, 튜토리얼~1층 통합, 보스DPS역산, 왕 개입 복선)
 - `2026-08-16_크리티컬-2건-해결.md` — QA Critical 2건 모두 해결 (층/면 분리 구조, 구슬 획득/보유 이중 카운터)
 - `2026-08-16_QA리뷰-3인-발견사항.md` — 시스템/레벨/내러티브 3관점 QA, 🔴Critical 2건 + 🟠Major 4건 + 🟡Minor 4건 발견
@@ -101,8 +102,8 @@
 
 ### 지금 당장 다음에 할 일
 
-- [[32 QA 리뷰 - 기획자 3인]] Critical 2건 + Major 4건 전부 해결 완료. 남은 건 🟡 Minor 4건뿐 (급하지 않음)
-- **다음 큰 작업: v0.1 프로토타입 실제 코드 착수** (붓 공격 3타 콤보, 먹괴음 - 평 1종, 색 복원 파동 셰이더)
+- **[[logic/Cinemachine 3인칭 카메라 설정]] 가이드대로 Unity 에디터에서 카메라 GameObject 설정** — 이건 Claude가 대신 할 수 없는, 사용자가 직접 클릭해야 하는 유일한 남은 작업
+- 그다음: 붓 기본 공격(3타 콤보), 먹괴음 - 평 1종, 색 복원 파동 셰이더 순으로 v0.1 계속 진행
 - v0.1 완성 즉시 [[14 밸런스 수치 시트]] "보스 DPS 역산 검증"의 **"실효 교전 비율 40%" 가정을 실측으로 재검증할 것** — 잊지 말 것
 - UI 착수 시 [[25 색맹 접근성 설계]] "패턴 강조 모드"부터 반영 (나중에 끼워넣지 말 것)
 - v0.1 프로토타입 실제 코드 착수 (붓 공격 3타 콤보, 먹괴음 - 평 1종, 색 복원 파동 셰이더)
