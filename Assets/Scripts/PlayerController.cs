@@ -52,6 +52,14 @@ public class PlayerController : MonoBehaviour
         inputActions.Enable();
     }
 
+    private void OnDestroy()
+    {
+        // Enable()과 반드시 짝을 맞춰 Disable()을 호출해야 합니다.
+        // 안 그러면 콘솔에 "leak and performance issues" 경고가 뜨고,
+        // 내부적으로 할당된 네이티브 리소스가 정리되지 않습니다.
+        inputActions?.Disable();
+    }
+
     private void Update()
     {
         Move();
