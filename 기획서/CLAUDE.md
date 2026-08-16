@@ -85,7 +85,8 @@
 - [x] PlayerController — 카메라 기준 이동(camera-relative) + 이동 방향 회전 + 중력으로 재작성, `Look` 입력 액션 추가, Player 태그 수정
 - [x] **Cinemachine 3인칭 카메라 연결 완료** — 실제 작동 확인됨 (Gain=20), [[logic/Cinemachine 3인칭 카메라 설정]]에 트러블슈팅까지 기록
 - [x] 마우스 감도 설정 시스템 — `MouseSensitivitySetting.cs`, 나중에 설정 UI 슬라이더만 연결하면 됨 (→ [[logic/마우스 감도 설정]])
-- [ ] v0.1 프로토타입 (다음: ② 붓 기본 공격 — 3타 콤보)
+- [x] **붓 기본 공격 3타 콤보 코드 완료** — `BrushWeapon.cs` + `IDamageable.cs`, [[27 전투 프레임 데이터]] 프레임 수치 그대로 구현. **Unity에서 `Player`에 컴포넌트 붙이는 것만 남음** (아직 테스트 안 됨 — 맞을 대상(먹괴음)이 없어서 판정 자체는 ③에서 검증 가능)
+- [ ] v0.1 프로토타입 (다음: ③ 먹괴음 - 평 1종 — NavMeshAgent + AI)
 
 ## 세션 연속성 — changelog 인덱스
 
@@ -95,15 +96,16 @@
 
 ### 최근 changelog (최신이 위)
 
+- `2026-08-16_붓공격-3타콤보.md` — BrushWeapon.cs + IDamageable.cs 신규, 27 프레임데이터 그대로 타이머 구현, 최적화 원칙 적용(폴링 없음, GC 없음, Active 1회 판정)
 - `2026-08-16_Cinemachine-완료-마우스감도설정.md` — Cinemachine 3인칭 카메라 실제 작동 확인(Gain=20), 트러블슈팅 5건 기록, 마우스 감도 설정 시스템(ScaleVector2 프로세서 + PlayerPrefs) 추가
 - `2026-08-16_v0.1-이동카메라-착수.md` — PlayerController 카메라기준 이동 재작성, Look 입력액션 추가, Player 태그 수정
 - `2026-08-16_Major-4건-해결.md` — QA Major 4건 모두 해결 (구슬슬롯 잠금, 튜토리얼~1층 통합, 보스DPS역산, 왕 개입 복선)
 - `2026-08-16_크리티컬-2건-해결.md` — QA Critical 2건 모두 해결 (층/면 분리 구조, 구슬 획득/보유 이중 카운터)
-- `2026-08-16_QA리뷰-3인-발견사항.md` — 시스템/레벨/내러티브 3관점 QA, 🔴Critical 2건 + 🟠Major 4건 + 🟡Minor 4건 발견
 
 ### 지금 당장 다음에 할 일
 
-- **v0.1 목표 ① (이동+카메라) 완료.** 다음: **② 붓 기본 공격 — 3타 콤보 (Animator)**
+- **Unity에서 `BrushWeapon.cs`를 `Player`에 컴포넌트로 추가할 것** (아직 안 붙어있음, 새 스크립트라 미리 씬에 못 심어둠)
+- v0.1 목표 ①② 완료. 다음: **③ 먹괴음 - 평 1종 — NavMeshAgent + AI, `IDamageable` 구현** (→ 이게 되면 방금 만든 붓 공격을 실제로 테스트할 수 있음)
 - 씬에 `MouseSensitivitySetting.cs`가 아직 GameObject에 안 붙어있으면 붙일 것 (→ [[logic/마우스 감도 설정]])
 - 설정 UI를 실제로 만들 때 `MouseSensitivitySetting.SetSensitivity()`를 슬라이더에 연결
 - v0.1 완성 즉시 [[14 밸런스 수치 시트]] "보스 DPS 역산 검증"의 **"실효 교전 비율 40%" 가정을 실측으로 재검증할 것** — 잊지 말 것
