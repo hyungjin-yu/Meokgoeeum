@@ -86,8 +86,9 @@
 - [x] **Cinemachine 3인칭 카메라 연결 완료** — 실제 작동 확인됨 (Gain=20), [[logic/Cinemachine 3인칭 카메라 설정]]에 트러블슈팅까지 기록
 - [x] 마우스 감도 설정 시스템 — `MouseSensitivitySetting.cs`, 나중에 설정 UI 슬라이더만 연결하면 됨 (→ [[logic/마우스 감도 설정]])
 - [x] 붓 기본 공격 3타 콤보 — `BrushWeapon.cs`, `Player`에 부착 확인 완료
-- [x] **먹괴음 - 평 1종 코드 완료** — `EnemyPyeong.cs`(추격+근접공격 상태머신) + `EnemyHealth.cs` + `PlayerHealth.cs`. [[13 먹괴음 AI 설계]] BT_Enemy_Pyeong을 상태머신으로, [[27 전투 프레임 데이터]] 텔레그래프 그대로 구현. **Unity 쪽 설정(NavMesh 베이크, 오브젝트 생성) 필요** → [[logic/먹괴음 - 평 씬 설정]]
-- [ ] v0.1 프로토타입 (다음: ④ 색 구슬 드랍 & 획득)
+- [x] 먹괴음 - 평 1종 — `EnemyPyeong.cs` + `EnemyHealth.cs` + `PlayerHealth.cs`, 실제 작동 확인됨 (Player 3클릭 처치)
+- [x] **색 구슬 드랍 & 획득 코드 완료** — `OrbColor.cs`, `ColorSystemManager.cs`(보유/누적 이중 카운터), `ColorOrbPool.cs`(오브젝트 풀), `ColorOrbPickup.cs`. `EnemyHealth.Die()`에서 자동 드랍하도록 연결 완료. **Unity 쪽 설정(GameSystems 오브젝트에 매니저 2개 부착) 필요** → [[logic/색 구슬 시스템 씬 설정]]
+- [ ] v0.1 프로토타입 (다음: ⑤ 색 복원 파동 — URP Shader Graph + VFX Graph)
 
 ## 세션 연속성 — changelog 인덱스
 
@@ -97,16 +98,16 @@
 
 ### 최근 changelog (최신이 위)
 
+- `2026-08-16_색구슬-드랍획득.md` — OrbColor/ColorSystemManager/ColorOrbPool/ColorOrbPickup 신규, EnemyHealth.Die()에서 자동 드랍 연결, 오브젝트 풀링 적용
 - `2026-08-16_적피격로그-원칙화.md` — EnemyHealth에도 피격 로그 추가, "피격/상태 변화 로깅 원칙" CLAUDE.md에 신설 (앞으로 모든 IDamageable 구현체에 적용)
 - `2026-08-16_먹괴음평-HP조정-QA용.md` — 평 HP 30→20, 붓 3타 콤보로 정확히 3클릭째 처치되도록 조정. **씬에 이미 배치된 오브젝트는 Inspector에서 수동으로 Max HP=20 바꿔야 함**
 - `2026-08-16_NavMesh-Unity6-워크플로우-정정.md` — NavMesh 베이크 가이드를 예전 Unity 방식(Object/Bake 탭)에서 Unity 6 방식(`NavMeshSurface` 컴포넌트)으로 정정
 - `2026-08-16_먹괴음-평-1종.md` — EnemyPyeong.cs(추격+근접공격 상태머신) + EnemyHealth.cs + PlayerHealth.cs 신규, NavMeshAgent 기반, 13/27 문서 그대로 구현
-- `2026-08-16_붓공격-3타콤보.md` — BrushWeapon.cs + IDamageable.cs 신규, 27 프레임데이터 그대로 타이머 구현, 최적화 원칙 적용(폴링 없음, GC 없음, Active 1회 판정)
 
 ### 지금 당장 다음에 할 일
 
-- NavMesh 베이크 완료(`NavMeshSurface` 컴포넌트 방식). Unity에서 [[logic/먹괴음 - 평 씬 설정]] 가이드대로 **EnemyPyeong 오브젝트 생성 + PlayerHealth 부착 + 실제 테스트**는 아직 남음
-- **다음: ④ 색 구슬 드랍 & 획득** — `EnemyHealth.OnDeath` 이벤트에 걸면 됨 (이미 이벤트 훅 마련해둠)
+- Unity에서 [[logic/색 구슬 시스템 씬 설정]] 가이드대로 **`GameSystems` 오브젝트에 `ColorSystemManager`+`ColorOrbPool` 부착 + 실제 테스트** 필요 (아직 미검증)
+- **다음: ⑤ 색 복원 파동 — URP Shader Graph + VFX Graph** (→ [[11 셰이더 설계 - 색 복원 파동]] 참고, v0.1 목표 마지막 단계)
 - 설정 UI를 실제로 만들 때 `MouseSensitivitySetting.SetSensitivity()`를 슬라이더에 연결
 - v0.1 완성 즉시 [[14 밸런스 수치 시트]] "보스 DPS 역산 검증"의 **"실효 교전 비율 40%" 가정을 실측으로 재검증할 것** — 잊지 말 것
 - UI 착수 시 [[25 색맹 접근성 설계]] "패턴 강조 모드"부터 반영 (나중에 끼워넣지 말 것)

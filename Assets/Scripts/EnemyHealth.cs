@@ -39,8 +39,27 @@ public class EnemyHealth : MonoBehaviour, IDamageable
         isDead = true;
         OnDeath?.Invoke(this);
 
-        // TODO(④ 색 구슬 시스템): 여기서 색 구슬 드랍 처리 (현재는 그냥 제거만 함)
+        DropColorOrb();
+
         Debug.Log($"{name} 정화 완료!");
         Destroy(gameObject);
+    }
+
+    /// <summary>
+    /// [[03 먹괴음 - 적 설계]] "처치 시 색 구슬 1개 드랍 (랜덤 색)" — 모든 먹괴음 타입 공통이라
+    /// 여기(EnemyHealth)에 둡니다. 층별 드랍 가중치([[14 밸런스 수치 시트]])는 층/큐브
+    /// 시스템이 아직 없어서, 지금은 6색 균등 확률로 임시 구현 — 나중에 층 시스템이 생기면
+    /// 가중치 테이블을 넣을 자리.
+    /// </summary>
+    private void DropColorOrb()
+    {
+        if (ColorOrbPool.Instance == null)
+        {
+            Debug.LogWarning("[EnemyHealth] ColorOrbPool이 씬에 없어서 구슬을 드랍하지 못했습니다.");
+            return;
+        }
+
+        OrbColor randomColor = (OrbColor)Random.Range(0, 6);
+        ColorOrbPool.Instance.Get(transform.position, randomColor);
     }
 }
