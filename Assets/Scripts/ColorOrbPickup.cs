@@ -46,6 +46,7 @@ public class ColorOrbPickup : MonoBehaviour
         if (!other.CompareTag("Player")) return;
 
         ColorSystemManager.Instance?.AddOrb(Color);
+        ColorWaveEffect.Instance?.PlayWave(transform.position);
         pool.Release(this);
     }
 }

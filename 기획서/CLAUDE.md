@@ -88,7 +88,8 @@
 - [x] 붓 기본 공격 3타 콤보 — `BrushWeapon.cs`, `Player`에 부착 확인 완료
 - [x] 먹괴음 - 평 1종 — `EnemyPyeong.cs` + `EnemyHealth.cs` + `PlayerHealth.cs`, 실제 작동 확인됨 (Player 3클릭 처치)
 - [x] 색 구슬 드랍 & 획득 — `OrbColor.cs`, `ColorSystemManager.cs`, `ColorOrbPool.cs`, `ColorOrbPickup.cs`, 실제 작동 확인됨 (드랍 → 획득 → 보유/누적 카운트까지 로그로 검증)
-- [ ] **⑤ 색 복원 파동 — URP Shader Graph + VFX Graph** (v0.1 마지막 단계, 아직 시작 안 함)
+- [x] **색 복원 파동 코드 완료** — `PaintableObject.cs` + `ColorWaveEffect.cs`, C# 코루틴 기반 대체 구현(Shader Graph 원안은 [[refactor/색 복원 파동 - Shader Graph 업그레이드]]로 미룸). `ColorOrbPickup`에서 자동 발동하도록 연결 완료. **Unity 쪽 설정(GameSystems에 컴포넌트 추가 + 테스트용 Cube 배치) 필요** → [[logic/색 복원 파동 씬 설정]]
+- [ ] **v0.1 목표 ①~⑤ 코드 전부 완료.** 남은 건 ⑤ Unity 설정 + 실제 테스트뿐 → **끝나면 v0.1 프로토타입 완성**
 
 ## 세션 연속성 — changelog 인덱스
 
@@ -98,15 +99,15 @@
 
 ### 최근 changelog (최신이 위)
 
+- `2026-08-16_색복원파동.md` — PaintableObject.cs + ColorWaveEffect.cs 신규. Shader Graph 원안 대신 C# 코루틴으로 대체 구현 (이유/업그레이드 경로는 refactor 노트에 별도 기록)
 - `2026-08-16_색구슬-드랍획득.md` — OrbColor/ColorSystemManager/ColorOrbPool/ColorOrbPickup 신규, EnemyHealth.Die()에서 자동 드랍 연결, 오브젝트 풀링 적용
 - `2026-08-16_적피격로그-원칙화.md` — EnemyHealth에도 피격 로그 추가, "피격/상태 변화 로깅 원칙" CLAUDE.md에 신설 (앞으로 모든 IDamageable 구현체에 적용)
 - `2026-08-16_먹괴음평-HP조정-QA용.md` — 평 HP 30→20, 붓 3타 콤보로 정확히 3클릭째 처치되도록 조정. **씬에 이미 배치된 오브젝트는 Inspector에서 수동으로 Max HP=20 바꿔야 함**
 - `2026-08-16_NavMesh-Unity6-워크플로우-정정.md` — NavMesh 베이크 가이드를 예전 Unity 방식(Object/Bake 탭)에서 Unity 6 방식(`NavMeshSurface` 컴포넌트)으로 정정
-- `2026-08-16_먹괴음-평-1종.md` — EnemyPyeong.cs(추격+근접공격 상태머신) + EnemyHealth.cs + PlayerHealth.cs 신규, NavMeshAgent 기반, 13/27 문서 그대로 구현
 
 ### 지금 당장 다음에 할 일
 
-- **다음: ⑤ 색 복원 파동 — URP Shader Graph + VFX Graph** (→ [[11 셰이더 설계 - 색 복원 파동]] 참고, v0.1 목표의 마지막 단계, 아직 착수 전). Shader Graph 노드 작업은 텍스트로 대신하기 어려운 부분이 많아서 다른 단계보다 에디터 수작업 비중이 클 것으로 예상
+- Unity에서 [[logic/색 복원 파동 씬 설정]] 가이드대로 **`GameSystems`에 `ColorWaveEffect` 추가 + 테스트용 Cube 몇 개 배치 + `Paintable Object` 부착** 필요 (아직 미검증). **이거 끝나면 v0.1 프로토타입 전체 완성**
 - 실전 테스트에서 먹괴음-평이 짧은 교전에 플레이어 HP를 100→65까지 깎음 — 다음 밸런스 조정 후보 (attackPower 8 또는 attackRange/공격 빈도)
 - 설정 UI를 실제로 만들 때 `MouseSensitivitySetting.SetSensitivity()`를 슬라이더에 연결
 - v0.1 완성 즉시 [[14 밸런스 수치 시트]] "보스 DPS 역산 검증"의 **"실효 교전 비율 40%" 가정을 실측으로 재검증할 것** — 잊지 말 것
