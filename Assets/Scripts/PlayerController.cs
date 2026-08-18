@@ -26,6 +26,7 @@ public class PlayerController : MonoBehaviour
     private CharacterController cc;
     private PlayerInputActions inputActions;
     private Vector2 moveInput;
+    private PlayerDodge dodge; // 구르기 중엔 일반 이동을 넘긴다 (PlayerDodge가 대신 이동시킴)
 
     private float verticalVelocity;
     private const float Gravity = -20f;
@@ -34,6 +35,7 @@ public class PlayerController : MonoBehaviour
     private void Start()
     {
         cc = GetComponent<CharacterController>();
+        dodge = GetComponent<PlayerDodge>(); // 없어도(구르기 미부착) 동작은 그대로 — null 체크로 방어
 
         // 카메라가 연결 안 되어 있으면 메인 카메라를 자동으로 찾습니다.
         if (cameraTransform == null && Camera.main != null)
@@ -73,6 +75,8 @@ public class PlayerController : MonoBehaviour
     /// </summary>
     private void Move()
     {
+        if (dodge != null && dodge.IsDodging) return; // 구르기 중엔 PlayerDodge가 이동을 전담
+
         Vector3 inputDir = new Vector3(moveInput.x, 0, moveInput.y);
         if (inputDir.sqrMagnitude < 0.0001f) return; // 입력이 없으면 회전도, 이동도 하지 않음
 

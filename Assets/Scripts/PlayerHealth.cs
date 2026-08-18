@@ -14,6 +14,7 @@ public class PlayerHealth : MonoBehaviour, IDamageable
     public float maxHP = 100f;
 
     private float currentHP;
+    private bool isInvulnerable; // [[PlayerDodge]]의 구르기 무적 프레임(i-frame) 동안 true
 
     public float CurrentHP => currentHP;
 
@@ -22,8 +23,24 @@ public class PlayerHealth : MonoBehaviour, IDamageable
         currentHP = maxHP;
     }
 
+    /// <summary>
+    /// 무적 여부를 켜고 끕니다. [[PlayerDodge]]가 구르기 i-frame 구간에서 호출합니다.
+    /// </summary>
+    public void SetInvulnerable(bool value)
+    {
+        if (isInvulnerable == value) return;
+        isInvulnerable = value;
+        Debug.Log(isInvulnerable ? "플레이어 무적 시작! (구르기 i-frame)" : "플레이어 무적 종료.");
+    }
+
     public void TakeDamage(float amount)
     {
+        if (isInvulnerable)
+        {
+            Debug.Log("플레이어 무적 중이라 피격 무시됨!");
+            return;
+        }
+
         currentHP = Mathf.Max(0f, currentHP - amount);
         Debug.Log($"플레이어 피격! 남은 HP: {currentHP}/{maxHP}");
 
