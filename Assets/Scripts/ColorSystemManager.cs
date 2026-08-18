@@ -11,8 +11,7 @@ using UnityEngine;
 ///   색부터 자동으로 빠집니다(FIFO) — [[02 플레이어 시스템]] "5슬롯 vs 6색" 절 참고.
 /// - 누적 색 기록(Lifetime): 절대 감소하지 않음. 보스 등장 조건/색 도감용.
 ///
-/// 색 스킬로 구슬을 "소모"하는 기능은 아직 없습니다 (스킬 시스템 자체가 없어서) —
-/// 나중에 스킬을 만들 때 이 매니저에 소모 API를 추가하면 됩니다.
+/// 색 스킬로 구슬을 "소모"하는 기능은 [[ColorSkillController]]가 `TryConsumeOrb()`로 씁니다.
 /// </summary>
 public class ColorSystemManager : MonoBehaviour
 {
@@ -65,6 +64,45 @@ public class ColorSystemManager : MonoBehaviour
         acquisitionOrder.Enqueue(color);
 
         Debug.Log($"색 구슬 획득: {color} | 보유 현황: {DescribeHeld()} | {color} 누적 획득: {lifetimeCollected[(int)color]}회");
+    }
+
+    /// <summary>
+    /// 색 스킬 사용 시 구슬 1개를 소모합니다. 보유량이 없으면 아무 일도 안 하고 false를 반환합니다.
+    /// (호출하는 쪽인 [[ColorSkillController]]가 이 반환값으로 "구슬 부족이라 스킬 실패" 처리를 합니다)
+    /// </summary>
+    public bool TryConsumeOrb(OrbColor color)
+    {
+        if (heldOrbs[(int)color] <= 0) return false;
+
+        heldOrbs[(int)color]--;
+        RemoveOneFromAcquisitionOrder(color);
+
+        Debug.Log($"색 구슬 소모: {color} | 보유 현황: {DescribeHeld()}");
+        return true;
+    }
+
+    /// <summary>
+    /// acquisitionOrder 큐에서 해당 색 1개를 제거합니다(가장 오래된 것부터).
+    /// Queue&lt;T&gt;는 임의 위치 삭제를 지원하지 않아서 전부 꺼냈다가 다시 쌓는 방식으로 처리합니다 —
+    /// 보유 구슬이 최대 5개뿐이라(maxHeldOrbs) 비용은 신경 쓸 수준이 아닙니다.
+    /// 이걸 안 하면 heldOrbs와 acquisitionOrder.Count가 어긋나서, 나중에 AddOrb()의 FIFO 교체가
+    /// 이미 스킬로 소모된 "유령 항목"을 또 지우려다 음수가 나는 버그로 이어집니다.
+    /// </summary>
+    private void RemoveOneFromAcquisitionOrder(OrbColor color)
+    {
+        int count = acquisitionOrder.Count;
+        bool removed = false;
+
+        for (int i = 0; i < count; i++)
+        {
+            OrbColor item = acquisitionOrder.Dequeue();
+            if (!removed && item == color)
+            {
+                removed = true; // 이번 한 번만 건너뛰고, 나머지는 그대로 다시 큐에 넣음
+                continue;
+            }
+            acquisitionOrder.Enqueue(item);
+        }
     }
 
     private string DescribeHeld()

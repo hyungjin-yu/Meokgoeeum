@@ -12,7 +12,7 @@ using UnityEngine.AI;
 /// </summary>
 [RequireComponent(typeof(NavMeshAgent))]
 [RequireComponent(typeof(EnemyHealth))]
-public class EnemyPyeong : MonoBehaviour
+public class EnemyPyeong : MonoBehaviour, IKnockbackable
 {
     [Header("스탯 (14 밸런스 수치 시트)")]
     public float attackPower = 8f;
@@ -43,11 +43,13 @@ public class EnemyPyeong : MonoBehaviour
     private NavMeshAgent agent;
     private Transform player;
     private float distanceToPlayer = float.MaxValue;
+    private bool isKnockedBack; // [[번쩍(노랑) 스킬]] 등 IKnockbackable 호출로 넉백당하는 동안 true
 
     // 27 전투 프레임 데이터 - 먹괴음 평 (60fps 기준 초 단위 환산)
     private const float WindupSeconds = 15f / 60f;
     private const float ActiveSeconds = 4f / 60f;
     private const float RecoverySeconds = 14f / 60f;
+    private const float KnockbackDuration = 0.25f; // 넉백 자체는 프레임 데이터 문서에 없어서 임의값 (v0.2 초안)
 
     private void Awake()
     {
@@ -57,6 +59,8 @@ public class EnemyPyeong : MonoBehaviour
 
     private void Update()
     {
+        if (isKnockedBack) return; // 넉백 중엔 AI 로직을 통째로 쉰다 (agent를 꺼둔 상태라 이동 관련 호출이 위험함)
+
         UpdatePerception();
 
         switch (state)
@@ -180,6 +184,48 @@ public class EnemyPyeong : MonoBehaviour
             var damageable = hit.GetComponent<IDamageable>();
             damageable?.TakeDamage(attackPower);
         }
+    }
+
+    /// <summary>
+    /// IKnockbackable 구현. [[02 플레이어 시스템]] "번쩍(노랑)" 스킬 등에서 호출합니다.
+    /// </summary>
+    public void ApplyKnockback(Vector3 direction, float force)
+    {
+        if (isKnockedBack) return; // 이미 넉백 중이면 중첩 무시
+        StartCoroutine(KnockbackRoutine(direction.normalized, force));
+    }
+
+    private System.Collections.IEnumerator KnockbackRoutine(Vector3 direction, float force)
+    {
+        Debug.Log($"[EnemyPyeong] {name} 넉백당함! 방향: {direction}, 힘: {force}");
+
+        isKnockedBack = true;
+        bool wasAgentEnabled = agent.enabled;
+        if (wasAgentEnabled) agent.enabled = false; // 켜진 채로는 매 프레임 경로 이동이 넉백 이동을 덮어씀
+
+        float elapsed = 0f;
+        while (elapsed < KnockbackDuration)
+        {
+            float dt = Time.deltaTime;
+            elapsed += dt;
+            float speed = force * (1f - elapsed / KnockbackDuration); // 선형 감쇠
+            transform.position += direction * speed * dt;
+            yield return null;
+        }
+
+        if (wasAgentEnabled)
+        {
+            agent.enabled = true;
+            agent.Warp(transform.position); // 넉백으로 밀려난 위치를 NavMesh 위로 재동기화
+            agent.isStopped = false;
+        }
+
+        // 공격 중이었더라도 넉백당하면 리셋 — 맞고도 태연히 공격을 이어가면 안 맞은 것처럼 느껴짐
+        state = player != null ? State.Chase : State.Idle;
+        stateTimer = 0f;
+        isKnockedBack = false;
+
+        Debug.Log($"[EnemyPyeong] {name} 넉백 종료.");
     }
 
     // 에디터에서 감지/공격 범위를 눈으로 확인하기 위한 기즈모입니다.
