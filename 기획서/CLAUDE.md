@@ -87,8 +87,8 @@
 - [x] 마우스 감도 설정 시스템 — `MouseSensitivitySetting.cs`, 나중에 설정 UI 슬라이더만 연결하면 됨 (→ [[logic/마우스 감도 설정]])
 - [x] 붓 기본 공격 3타 콤보 — `BrushWeapon.cs`, `Player`에 부착 확인 완료
 - [x] 먹괴음 - 평 1종 — `EnemyPyeong.cs` + `EnemyHealth.cs` + `PlayerHealth.cs`, 실제 작동 확인됨 (Player 3클릭 처치)
-- [x] **색 구슬 드랍 & 획득 코드 완료** — `OrbColor.cs`, `ColorSystemManager.cs`(보유/누적 이중 카운터), `ColorOrbPool.cs`(오브젝트 풀), `ColorOrbPickup.cs`. `EnemyHealth.Die()`에서 자동 드랍하도록 연결 완료. **Unity 쪽 설정(GameSystems 오브젝트에 매니저 2개 부착) 필요** → [[logic/색 구슬 시스템 씬 설정]]
-- [ ] v0.1 프로토타입 (다음: ⑤ 색 복원 파동 — URP Shader Graph + VFX Graph)
+- [x] 색 구슬 드랍 & 획득 — `OrbColor.cs`, `ColorSystemManager.cs`, `ColorOrbPool.cs`, `ColorOrbPickup.cs`, 실제 작동 확인됨 (드랍 → 획득 → 보유/누적 카운트까지 로그로 검증)
+- [ ] **⑤ 색 복원 파동 — URP Shader Graph + VFX Graph** (v0.1 마지막 단계, 아직 시작 안 함)
 
 ## 세션 연속성 — changelog 인덱스
 
@@ -106,8 +106,8 @@
 
 ### 지금 당장 다음에 할 일
 
-- Unity에서 [[logic/색 구슬 시스템 씬 설정]] 가이드대로 **`GameSystems` 오브젝트에 `ColorSystemManager`+`ColorOrbPool` 부착 + 실제 테스트** 필요 (아직 미검증)
-- **다음: ⑤ 색 복원 파동 — URP Shader Graph + VFX Graph** (→ [[11 셰이더 설계 - 색 복원 파동]] 참고, v0.1 목표 마지막 단계)
+- **다음: ⑤ 색 복원 파동 — URP Shader Graph + VFX Graph** (→ [[11 셰이더 설계 - 색 복원 파동]] 참고, v0.1 목표의 마지막 단계, 아직 착수 전). Shader Graph 노드 작업은 텍스트로 대신하기 어려운 부분이 많아서 다른 단계보다 에디터 수작업 비중이 클 것으로 예상
+- 실전 테스트에서 먹괴음-평이 짧은 교전에 플레이어 HP를 100→65까지 깎음 — 다음 밸런스 조정 후보 (attackPower 8 또는 attackRange/공격 빈도)
 - 설정 UI를 실제로 만들 때 `MouseSensitivitySetting.SetSensitivity()`를 슬라이더에 연결
 - v0.1 완성 즉시 [[14 밸런스 수치 시트]] "보스 DPS 역산 검증"의 **"실효 교전 비율 40%" 가정을 실측으로 재검증할 것** — 잊지 말 것
 - UI 착수 시 [[25 색맹 접근성 설계]] "패턴 강조 모드"부터 반영 (나중에 끼워넣지 말 것)
