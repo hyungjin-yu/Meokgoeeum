@@ -97,6 +97,7 @@
 
 ### 최근 changelog (최신이 위)
 
+- `2026-08-16_NavMesh-Unity6-워크플로우-정정.md` — NavMesh 베이크 가이드를 예전 Unity 방식(Object/Bake 탭)에서 Unity 6 방식(`NavMeshSurface` 컴포넌트)으로 정정
 - `2026-08-16_먹괴음-평-1종.md` — EnemyPyeong.cs(추격+근접공격 상태머신) + EnemyHealth.cs + PlayerHealth.cs 신규, NavMeshAgent 기반, 13/27 문서 그대로 구현
 - `2026-08-16_붓공격-3타콤보.md` — BrushWeapon.cs + IDamageable.cs 신규, 27 프레임데이터 그대로 타이머 구현, 최적화 원칙 적용(폴링 없음, GC 없음, Active 1회 판정)
 - `2026-08-16_Cinemachine-완료-마우스감도설정.md` — Cinemachine 3인칭 카메라 실제 작동 확인(Gain=20), 트러블슈팅 5건 기록, 마우스 감도 설정 시스템(ScaleVector2 프로세서 + PlayerPrefs) 추가
@@ -105,7 +106,7 @@
 
 ### 지금 당장 다음에 할 일
 
-- Unity에서 [[logic/먹괴음 - 평 씬 설정]] 가이드대로 **NavMesh 베이크 + EnemyPyeong 오브젝트 생성 + PlayerHealth 부착** 필요 (아직 테스트 안 됨)
+- NavMesh 베이크 완료(`NavMeshSurface` 컴포넌트 방식). Unity에서 [[logic/먹괴음 - 평 씬 설정]] 가이드대로 **EnemyPyeong 오브젝트 생성 + PlayerHealth 부착 + 실제 테스트**는 아직 남음
 - **다음: ④ 색 구슬 드랍 & 획득** — `EnemyHealth.OnDeath` 이벤트에 걸면 됨 (이미 이벤트 훅 마련해둠)
 - 설정 UI를 실제로 만들 때 `MouseSensitivitySetting.SetSensitivity()`를 슬라이더에 연결
 - v0.1 완성 즉시 [[14 밸런스 수치 시트]] "보스 DPS 역산 검증"의 **"실효 교전 비율 40%" 가정을 실측으로 재검증할 것** — 잊지 말 것
