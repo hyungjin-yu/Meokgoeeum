@@ -91,7 +91,7 @@
 - [x] **색 복원 파동 코드 완료 + 타이밍 조정 + 검증 완료** — `PaintableObject.cs` + `ColorWaveEffect.cs`, C# 코루틴 기반 대체 구현(Shader Graph 원안은 [[refactor/색 복원 파동 - Shader Graph 업그레이드]]로 미룸). "동시에 칠해짐" 리포트 조사 결과 버그 아님(트리거는 거리순 정확) → `fadeDuration` 0.5→0.2초로 조정, Inspector 반영 후 순서대로 퍼지는 것 확인됨
 - [x] **v0.1 목표 ①~⑤ 코드 + 실제 테스트 전부 완료.** 🎉 v0.1 프로토타입(이동/카메라, 붓 콤보, 적 AI, 색 구슬, 색 복원 파동) 전체 검증 끝
 - [x] 구르기(회피) — `PlayerDodge.cs`, 평 밸런스 이슈 근본 해결, Unity 검증 + 사용자 만족 확인 완료
-- [x] **v0.2 착수** — 색 스킬 3종(강타/흐름/번쩍) 코드 완료 — `ColorSkillController.cs`, `ColorSystemManager.TryConsumeOrb()`, `IKnockbackable.cs` + `EnemyPyeong` 넉백 구현. **Unity 테스트 아직 안 함**
+- [x] **색 스킬 3종(강타/흐름/번쩍) 완료 + 검증 끝** — `ColorSkillController.cs`, `ColorSystemManager.TryConsumeOrb()`, `IKnockbackable.cs` + `EnemyPyeong` 넉백. 실제 적 대상 테스트까지 "제대로 잘 작동됨" 확인. 강타의 강제 전방 이동은 기획서 스펙대로의 의도된 동작
 - [ ] v0.2 나머지: 큐브 좌표계 + Addressables 면 전환, 페이드 트랜지션, 먹괴음 3종 추가(원/흡/분), 층 구조 + 계단 이동
 
 ## 세션 연속성 — changelog 인덱스
@@ -102,17 +102,17 @@
 
 ### 최근 changelog (최신이 위)
 
-- `2026-08-18_색스킬3종-구현.md` — v0.2 착수. `ColorSkillController.cs` 신규(강타/흐름/번쩍, 1/2/3 키), `ColorSystemManager.TryConsumeOrb()` 추가, `IKnockbackable.cs` 신규 + `EnemyPyeong` 넉백 구현. **Unity 테스트 아직 안 함**
+- `2026-08-18_색스킬3종-구현.md` — 색 스킬 3종(강타/흐름/번쩍) 완료 + **실제 적 대상 검증까지 끝남("제대로 잘 작동됨")**. `DebugOrbCheat.cs`(F1/F2/F3 구슬 치트)로 QA 가속. 강타의 강제 전방 이동은 기획서 스펙대로의 의도된 동작으로 확인
 - `2026-08-18_구르기-회피-구현.md` — 구르기 Unity 검증 완료, **사용자 체감 만족 확인("이걸로 마무리")**. "평 밸런스" 이슈 종결 — 근본 원인은 attackPower가 아니라 회피 수단 부재였음, `PlayerDodge.cs`로 해결
 - `2026-08-18_v0.1완성-다음방향결정.md` — 색 복원 파동 타이밍 조정 Unity 검증 완료 확인. **v0.1 목표 ①~⑤ 전체 완성.** "순차 효과 타이밍 안 보임" 진단 원칙을 CLAUDE.md에 재발 방지용으로 신설
 - `2026-08-16_색복원파동-타이밍조정.md` — "4개 큐브가 거리 상관없이 동시에 칠해짐" 리포트 조사 → **버그 아님**, 트리거 시점은 정확히 거리순이었음. `PaintableObject.fadeDuration` 기본값 0.5→0.2초로 조정(트리거 시간차보다 짧아야 순서가 눈에 보임). 진단 로그 제거
-- `2026-08-16_색복원파동.md` — PaintableObject.cs + ColorWaveEffect.cs 신규. Shader Graph 원안 대신 C# 코루틴으로 대체 구현 (이유/업그레이드 경로는 refactor 노트에 별도 기록)
 
 ### 지금 당장 다음에 할 일
 
-- **Unity에서 `Player`에 `ColorSkillController.cs` 부착 필요** (완료), **`GameSystems`(또는 아무 오브젝트)에 `DebugOrbCheat.cs` 부착 필요** (QA용 — F1/F2/F3으로 빨강/파랑/노랑 구슬 즉시 지급)
-- 1차 테스트로 파이프라인(소모/거부/시전)은 검증됨. **남은 건 적이 살아있는 상태에서 강타/흐름/번쩍의 실제 대미지·넉백을 직접 보는 것** — 평 마주친 상태에서 F1/F2/F3으로 구슬 지급 후 1/2/3으로 테스트
-- 검증 끝나면 v0.2 나머지(큐브 좌표계+Addressables 면 전환, 페이드 트랜지션, 먹괴음 3종 추가, 층 구조+계단 이동)로 진행
+- **색 스킬 3종 완전히 종결.** v0.2 나머지 중 뭘 먼저 할지 결정 필요:
+  1. 먹괴음 3종 추가(원/흡/분) — 가볍고 기존 EnemyPyeong/IDamageable 패턴 재사용 가능
+  2. 큐브 좌표계 + Addressables 면 전환 — 이 게임의 핵심 필러, 무겁고 별도 집중 투자 필요
+  3. 페이드 트랜지션 연출 / 층 구조 + 계단 이동
 - 설정 UI를 실제로 만들 때 `MouseSensitivitySetting.SetSensitivity()`를 슬라이더에 연결
 - v0.1 완성했으니 [[14 밸런스 수치 시트]] "보스 DPS 역산 검증"의 **"실효 교전 비율 40%" 가정을 실측으로 재검증할 것** — 잊지 말 것
 - UI 착수 시 [[25 색맹 접근성 설계]] "패턴 강조 모드"부터 반영 (나중에 끼워넣지 말 것)
