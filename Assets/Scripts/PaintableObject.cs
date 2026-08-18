@@ -46,6 +46,8 @@ public class PaintableObject : MonoBehaviour
         if (isPainted || cachedRenderer == null) return;
         isPainted = true;
 
+        RestoredAreaRegistry.Register(transform.position); // [[EnemyHeup]]이 찾아갈 수 있게 등록
+
         if (fadeRoutine != null) StopCoroutine(fadeRoutine);
         fadeRoutine = StartCoroutine(FadeToTrueColor());
     }

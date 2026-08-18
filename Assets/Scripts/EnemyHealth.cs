@@ -34,6 +34,28 @@ public class EnemyHealth : MonoBehaviour, IDamageable
             Die();
     }
 
+    /// <summary>
+    /// 체력을 회복합니다. [[EnemyHeup]]이 색 복원 구역에서 흡수할 때 사용합니다.
+    /// </summary>
+    public void Heal(float amount)
+    {
+        if (isDead) return;
+
+        currentHP = Mathf.Min(maxHP, currentHP + amount);
+        Debug.Log($"{name} 회복! 남은 HP: {currentHP}/{maxHP}");
+    }
+
+    /// <summary>
+    /// 최대 체력을 재설정하고 현재 체력도 그 값으로 맞춥니다.
+    /// [[EnemyBun]]이 분열로 생성한 미니언의 체력을 낮출 때처럼, Awake()에서 이미
+    /// currentHP가 기존 maxHP로 세팅된 뒤에 다시 바꿔야 하는 경우에 씁니다.
+    /// </summary>
+    public void ConfigureMaxHP(float newMax)
+    {
+        maxHP = newMax;
+        currentHP = newMax;
+    }
+
     private void Die()
     {
         isDead = true;
