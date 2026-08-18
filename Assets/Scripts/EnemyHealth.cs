@@ -28,6 +28,8 @@ public class EnemyHealth : MonoBehaviour, IDamageable
         if (isDead) return;
 
         currentHP -= amount;
+        Debug.Log($"{name} 피격! 남은 HP: {Mathf.Max(0f, currentHP)}/{maxHP}");
+
         if (currentHP <= 0f)
             Die();
     }
