@@ -104,14 +104,19 @@
 
 ### 지금 당장 다음에 할 일
 
-- **Unity에서 `BrushWeapon.cs`를 `Player`에 컴포넌트로 추가할 것** (아직 안 붙어있음, 새 스크립트라 미리 씬에 못 심어둠)
-- v0.1 목표 ①② 완료. 다음: **③ 먹괴음 - 평 1종 — NavMeshAgent + AI, `IDamageable` 구현** (→ 이게 되면 방금 만든 붓 공격을 실제로 테스트할 수 있음)
-- 씬에 `MouseSensitivitySetting.cs`가 아직 GameObject에 안 붙어있으면 붙일 것 (→ [[logic/마우스 감도 설정]])
+- v0.1 목표 ①② 완료 — `PlayerController`, `BrushWeapon`, `MouseSensitivitySetting` 전부 `Player`에 정상 부착 확인됨 (2026-08-16)
+- **다음: ③ 먹괴음 - 평 1종 — NavMeshAgent + AI, `IDamageable` 구현** (→ 이게 되면 붓 공격을 실제로 테스트할 수 있음)
 - 설정 UI를 실제로 만들 때 `MouseSensitivitySetting.SetSensitivity()`를 슬라이더에 연결
 - v0.1 완성 즉시 [[14 밸런스 수치 시트]] "보스 DPS 역산 검증"의 **"실효 교전 비율 40%" 가정을 실측으로 재검증할 것** — 잊지 말 것
 - UI 착수 시 [[25 색맹 접근성 설계]] "패턴 강조 모드"부터 반영 (나중에 끼워넣지 말 것)
-- v0.1 프로토타입 실제 코드 착수 (붓 공격 3타 콤보, 먹괴음 - 평 1종, 색 복원 파동 셰이더)
-- UI 착수 시 [[25 색맹 접근성 설계]] "패턴 강조 모드"부터 반영 (나중에 끼워넣지 말 것)
+
+### ⚠️ 로컬 프로젝트 폴더 사고 (2026-08-16, 다음 세션 필독)
+
+사용자의 Unity 로컬 프로젝트가 **git과 연결 안 된 별도 폴더(`C:\Users\user\Meokgoeeum`)**였다는 게 뒤늦게 발견됨 — GitHub 저장소는 `C:\Users\user\Documents\GitHub\Meokgoeeum`에 별도로 클론되어 있었고, 둘이 완전히 다른 폴더라 그동안 Claude가 push한 코드가 로컬 Unity에 전혀 반영되지 않고 있었음.
+
+**해결:** 사용자가 Unity Hub에서 프로젝트를 `Documents\GitHub\Meokgoeeum`로 전환. 이 과정에서 이전 폴더에 했던 Cinemachine 씬 설정(카메라 GameObject, 컴포넌트 부착)이 전부 날아가서 **다시 설정함** (같은 실수들 — Brain이 자식 오브젝트로 들어가는 문제 — 또 겪었지만 가이드 문서 덕에 빠르게 해결). 재설정 후 `BrushWeapon`, `MouseSensitivitySetting`도 재부착 확인 완료.
+
+**앞으로 이 프로젝트의 로컬 작업 폴더는 `C:\Users\user\Documents\GitHub\Meokgoeeum` 하나로 고정.** `C:\Users\user\Meokgoeeum`는 더 이상 사용 안 함 (사용자가 나중에 직접 삭제할 예정, Claude가 먼저 언급할 필요는 없음).
 
 ## v0.1 목표 (다음 작업)
 
