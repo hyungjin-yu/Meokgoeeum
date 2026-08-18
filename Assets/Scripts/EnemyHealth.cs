@@ -8,7 +8,7 @@ using UnityEngine;
 public class EnemyHealth : MonoBehaviour, IDamageable
 {
     [Header("체력 (14 밸런스 수치 시트)")]
-    public float maxHP = 30f;
+    public float maxHP = 20f; // 2026-08-16: 30 -> 20. 붓 3타 콤보(6+7+10=23)로 정확히 3클릭째 처치되도록 QA용 조정
 
     private float currentHP;
     private bool isDead;
