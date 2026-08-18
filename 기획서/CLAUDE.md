@@ -85,8 +85,9 @@
 - [x] PlayerController — 카메라 기준 이동(camera-relative) + 이동 방향 회전 + 중력으로 재작성, `Look` 입력 액션 추가, Player 태그 수정
 - [x] **Cinemachine 3인칭 카메라 연결 완료** — 실제 작동 확인됨 (Gain=20), [[logic/Cinemachine 3인칭 카메라 설정]]에 트러블슈팅까지 기록
 - [x] 마우스 감도 설정 시스템 — `MouseSensitivitySetting.cs`, 나중에 설정 UI 슬라이더만 연결하면 됨 (→ [[logic/마우스 감도 설정]])
-- [x] **붓 기본 공격 3타 콤보 코드 완료** — `BrushWeapon.cs` + `IDamageable.cs`, [[27 전투 프레임 데이터]] 프레임 수치 그대로 구현. **Unity에서 `Player`에 컴포넌트 붙이는 것만 남음** (아직 테스트 안 됨 — 맞을 대상(먹괴음)이 없어서 판정 자체는 ③에서 검증 가능)
-- [ ] v0.1 프로토타입 (다음: ③ 먹괴음 - 평 1종 — NavMeshAgent + AI)
+- [x] 붓 기본 공격 3타 콤보 — `BrushWeapon.cs`, `Player`에 부착 확인 완료
+- [x] **먹괴음 - 평 1종 코드 완료** — `EnemyPyeong.cs`(추격+근접공격 상태머신) + `EnemyHealth.cs` + `PlayerHealth.cs`. [[13 먹괴음 AI 설계]] BT_Enemy_Pyeong을 상태머신으로, [[27 전투 프레임 데이터]] 텔레그래프 그대로 구현. **Unity 쪽 설정(NavMesh 베이크, 오브젝트 생성) 필요** → [[logic/먹괴음 - 평 씬 설정]]
+- [ ] v0.1 프로토타입 (다음: ④ 색 구슬 드랍 & 획득)
 
 ## 세션 연속성 — changelog 인덱스
 
@@ -96,16 +97,16 @@
 
 ### 최근 changelog (최신이 위)
 
+- `2026-08-16_먹괴음-평-1종.md` — EnemyPyeong.cs(추격+근접공격 상태머신) + EnemyHealth.cs + PlayerHealth.cs 신규, NavMeshAgent 기반, 13/27 문서 그대로 구현
 - `2026-08-16_붓공격-3타콤보.md` — BrushWeapon.cs + IDamageable.cs 신규, 27 프레임데이터 그대로 타이머 구현, 최적화 원칙 적용(폴링 없음, GC 없음, Active 1회 판정)
 - `2026-08-16_Cinemachine-완료-마우스감도설정.md` — Cinemachine 3인칭 카메라 실제 작동 확인(Gain=20), 트러블슈팅 5건 기록, 마우스 감도 설정 시스템(ScaleVector2 프로세서 + PlayerPrefs) 추가
 - `2026-08-16_v0.1-이동카메라-착수.md` — PlayerController 카메라기준 이동 재작성, Look 입력액션 추가, Player 태그 수정
 - `2026-08-16_Major-4건-해결.md` — QA Major 4건 모두 해결 (구슬슬롯 잠금, 튜토리얼~1층 통합, 보스DPS역산, 왕 개입 복선)
-- `2026-08-16_크리티컬-2건-해결.md` — QA Critical 2건 모두 해결 (층/면 분리 구조, 구슬 획득/보유 이중 카운터)
 
 ### 지금 당장 다음에 할 일
 
-- v0.1 목표 ①② 완료 — `PlayerController`, `BrushWeapon`, `MouseSensitivitySetting` 전부 `Player`에 정상 부착 확인됨 (2026-08-16)
-- **다음: ③ 먹괴음 - 평 1종 — NavMeshAgent + AI, `IDamageable` 구현** (→ 이게 되면 붓 공격을 실제로 테스트할 수 있음)
+- Unity에서 [[logic/먹괴음 - 평 씬 설정]] 가이드대로 **NavMesh 베이크 + EnemyPyeong 오브젝트 생성 + PlayerHealth 부착** 필요 (아직 테스트 안 됨)
+- **다음: ④ 색 구슬 드랍 & 획득** — `EnemyHealth.OnDeath` 이벤트에 걸면 됨 (이미 이벤트 훅 마련해둠)
 - 설정 UI를 실제로 만들 때 `MouseSensitivitySetting.SetSensitivity()`를 슬라이더에 연결
 - v0.1 완성 즉시 [[14 밸런스 수치 시트]] "보스 DPS 역산 검증"의 **"실효 교전 비율 40%" 가정을 실측으로 재검증할 것** — 잊지 말 것
 - UI 착수 시 [[25 색맹 접근성 설계]] "패턴 강조 모드"부터 반영 (나중에 끼워넣지 말 것)
