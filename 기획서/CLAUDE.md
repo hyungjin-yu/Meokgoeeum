@@ -88,8 +88,8 @@
 - [x] 붓 기본 공격 3타 콤보 — `BrushWeapon.cs`, `Player`에 부착 확인 완료
 - [x] 먹괴음 - 평 1종 — `EnemyPyeong.cs` + `EnemyHealth.cs` + `PlayerHealth.cs`, 실제 작동 확인됨 (Player 3클릭 처치)
 - [x] 색 구슬 드랍 & 획득 — `OrbColor.cs`, `ColorSystemManager.cs`, `ColorOrbPool.cs`, `ColorOrbPickup.cs`, 실제 작동 확인됨 (드랍 → 획득 → 보유/누적 카운트까지 로그로 검증)
-- [x] **색 복원 파동 코드 완료** — `PaintableObject.cs` + `ColorWaveEffect.cs`, C# 코루틴 기반 대체 구현(Shader Graph 원안은 [[refactor/색 복원 파동 - Shader Graph 업그레이드]]로 미룸). `ColorOrbPickup`에서 자동 발동하도록 연결 완료. **Unity 쪽 설정(GameSystems에 컴포넌트 추가 + 테스트용 Cube 배치) 필요** → [[logic/색 복원 파동 씬 설정]]
-- [ ] **v0.1 목표 ①~⑤ 코드 전부 완료.** 남은 건 ⑤ Unity 설정 + 실제 테스트뿐 → **끝나면 v0.1 프로토타입 완성**
+- [x] **색 복원 파동 코드 완료 + 타이밍 조정** — `PaintableObject.cs` + `ColorWaveEffect.cs`, C# 코루틴 기반 대체 구현(Shader Graph 원안은 [[refactor/색 복원 파동 - Shader Graph 업그레이드]]로 미룸). "동시에 칠해짐" 리포트 조사 결과 버그 아님(트리거는 거리순 정확) → `fadeDuration` 0.5→0.2초로 조정. **씬에 이미 배치된 테스트 Cube 4개는 Inspector에서 수동으로 Fade Duration=0.2 반영 필요**
+- [ ] **v0.1 목표 ①~⑤ 코드 전부 완료.** 남은 건 위 수동 반영 + 재확인뿐 → **끝나면 v0.1 프로토타입 완성**
 
 ## 세션 연속성 — changelog 인덱스
 
@@ -99,15 +99,16 @@
 
 ### 최근 changelog (최신이 위)
 
+- `2026-08-16_색복원파동-타이밍조정.md` — "4개 큐브가 거리 상관없이 동시에 칠해짐" 리포트 조사 → **버그 아님**, 트리거 시점은 정확히 거리순이었음. `PaintableObject.fadeDuration` 기본값 0.5→0.2초로 조정(트리거 시간차보다 짧아야 순서가 눈에 보임). 진단 로그 제거
 - `2026-08-16_색복원파동.md` — PaintableObject.cs + ColorWaveEffect.cs 신규. Shader Graph 원안 대신 C# 코루틴으로 대체 구현 (이유/업그레이드 경로는 refactor 노트에 별도 기록)
 - `2026-08-16_색구슬-드랍획득.md` — OrbColor/ColorSystemManager/ColorOrbPool/ColorOrbPickup 신규, EnemyHealth.Die()에서 자동 드랍 연결, 오브젝트 풀링 적용
 - `2026-08-16_적피격로그-원칙화.md` — EnemyHealth에도 피격 로그 추가, "피격/상태 변화 로깅 원칙" CLAUDE.md에 신설 (앞으로 모든 IDamageable 구현체에 적용)
 - `2026-08-16_먹괴음평-HP조정-QA용.md` — 평 HP 30→20, 붓 3타 콤보로 정확히 3클릭째 처치되도록 조정. **씬에 이미 배치된 오브젝트는 Inspector에서 수동으로 Max HP=20 바꿔야 함**
-- `2026-08-16_NavMesh-Unity6-워크플로우-정정.md` — NavMesh 베이크 가이드를 예전 Unity 방식(Object/Bake 탭)에서 Unity 6 방식(`NavMeshSurface` 컴포넌트)으로 정정
 
 ### 지금 당장 다음에 할 일
 
-- Unity에서 [[logic/색 복원 파동 씬 설정]] 가이드대로 **`GameSystems`에 `ColorWaveEffect` 추가 + 테스트용 Cube 몇 개 배치 + `Paintable Object` 부착** 필요 (아직 미검증). **이거 끝나면 v0.1 프로토타입 전체 완성**
+- **씬에 이미 배치된 테스트 Cube 4개의 `Paintable Object` → `Fade Duration`을 0.2로 수동 변경 필요** (스크립트 기본값 변경은 이미 배치된 컴포넌트에 자동 반영 안 됨). 변경 후 파동이 순서대로 퍼지는 게 눈에 보이는지 재확인
+- 위 확인되면 **v0.1 목표 ①~⑤ 전부 완성** → 다음 방향(v0.2 마일스톤 vs 밸런스 튜닝) 사용자 확인 필요
 - 실전 테스트에서 먹괴음-평이 짧은 교전에 플레이어 HP를 100→65까지 깎음 — 다음 밸런스 조정 후보 (attackPower 8 또는 attackRange/공격 빈도)
 - 설정 UI를 실제로 만들 때 `MouseSensitivitySetting.SetSensitivity()`를 슬라이더에 연결
 - v0.1 완성 즉시 [[14 밸런스 수치 시트]] "보스 DPS 역산 검증"의 **"실효 교전 비율 40%" 가정을 실측으로 재검증할 것** — 잊지 말 것
@@ -150,6 +151,11 @@
 ### 설계 방식
 - 단순한 버전 먼저, 필요하면 더 구조적인 버전 선택지 제시
 - 더 나은 패턴이 있으면 제안해도 되지만 혼자 감당 가능한 수준으로
+
+### 스크립트 기본값 변경 시 유의사항 (2026-08-16 추가)
+
+- **`public` 필드의 기본값(`= 20f` 등)을 코드에서 바꿔도, 씬에 이미 배치된 오브젝트의 값은 자동으로 안 바뀐다.** Unity는 컴포넌트가 처음 추가될 때의 값을 그대로 직렬화해서 씬 파일에 저장하기 때문. (EnemyHealth maxHP, PaintableObject fadeDuration에서 반복된 패턴)
+- 그래서 밸런스/타이밍 값을 코드에서 바꿀 때마다: **"이미 씬에 배치된 오브젝트도 Inspector에서 수동으로 값을 바꿔야 한다"는 걸 매번 명시적으로 안내할 것.** 빼먹으면 사용자가 "왜 안 바뀌지"하고 헷갈림
 
 ### 피격/상태 변화 로깅 원칙 (2026-08-16 추가)
 

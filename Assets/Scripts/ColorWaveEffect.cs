@@ -58,12 +58,6 @@ public class ColorWaveEffect : MonoBehaviour
 
         targets.Sort((a, b) => a.dist.CompareTo(b.dist));
 
-        // 진단 로그 (2026-08-16 추가): 실제로 어떤 거리로 정렬됐는지 확인용.
-        // 문제 원인이 확인되면 이 블록은 지울 것.
-        var debugList = new System.Text.StringBuilder("[ColorWaveEffect] 타겟 거리 목록: ");
-        foreach (var t in targets) debugList.Append($"{t.obj.name}={t.dist:F2} ");
-        Debug.Log(debugList.ToString());
-
         float elapsed = 0f;
         int nextIndex = 0;
 
@@ -74,7 +68,6 @@ public class ColorWaveEffect : MonoBehaviour
 
             while (nextIndex < targets.Count && targets[nextIndex].dist <= currentRadius)
             {
-                Debug.Log($"[ColorWaveEffect] {targets[nextIndex].obj.name} 칠해짐 (elapsed={elapsed:F2}s, radius={currentRadius:F2})");
                 targets[nextIndex].obj.Paint();
                 nextIndex++;
             }
@@ -85,7 +78,6 @@ public class ColorWaveEffect : MonoBehaviour
         // 파동 지속시간이 끝났는데 아직 안 칠해진 먼 오브젝트가 남았으면 마무리로 다 칠함
         while (nextIndex < targets.Count)
         {
-            Debug.Log($"[ColorWaveEffect] {targets[nextIndex].obj.name} 마무리 보정으로 칠해짐 (elapsed={elapsed:F2}s)");
             targets[nextIndex].obj.Paint();
             nextIndex++;
         }

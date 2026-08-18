@@ -17,7 +17,7 @@ public class PaintableObject : MonoBehaviour
     public Color trueColor = Color.white;
 
     [Tooltip("회색에서 원래 색으로 돌아오는 데 걸리는 시간입니다.")]
-    public float fadeDuration = 0.5f;
+    public float fadeDuration = 0.2f; // 2026-08-16: 0.5 -> 0.2. 파동의 오브젝트 간 트리거 시간차(보통 0.2~0.5초)보다 짧아야 "순서대로 칠해지는" 게 눈에 보임
 
     [Tooltip("시작할 때 자동으로 회색조로 만들지 여부입니다.")]
     public bool startGray = true;
