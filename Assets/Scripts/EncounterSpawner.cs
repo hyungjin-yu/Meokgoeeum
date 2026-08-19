@@ -59,6 +59,13 @@ public class EncounterSpawner : MonoBehaviour
         StartCoroutine(RunWaves());
     }
 
+    private static string DescribePrefabRef(GameObject p)
+    {
+        if (p == null) return "null";
+        string kind = p.scene.IsValid() ? $"⚠씬 오브젝트({p.scene.name})" : "프리팹 에셋(정상)";
+        return $"{p.name}[{kind}]";
+    }
+
     private IEnumerator RunWaves()
     {
         // 씬 중복(SC_Face_0 / SC_Face_1) 의심 상황 진단용 — 이 스포너가 실제로 어느 씬의
@@ -69,7 +76,9 @@ public class EncounterSpawner : MonoBehaviour
             for (int w = 0; w < waves.Length; w++)
             {
                 int prefabCount = waves[w].enemyPrefabs == null ? 0 : waves[w].enemyPrefabs.Length;
-                string prefabNames = prefabCount == 0 ? "(없음)" : string.Join(", ", System.Array.ConvertAll(waves[w].enemyPrefabs, p => p == null ? "null" : p.name));
+                // 씬 오브젝트(Hierarchy에서 잘못 끌어온 것)인지 진짜 프리팹 에셋(Project)인지 구분 —
+                // 씬 오브젝트면 그게 파괴될 때 이 참조도 같이 null이 되는 버그의 원인이 됨
+                string prefabNames = prefabCount == 0 ? "(없음)" : string.Join(", ", System.Array.ConvertAll(waves[w].enemyPrefabs, DescribePrefabRef));
                 Debug.Log($"[EncounterSpawner]   웨이브[{w}] \"{waves[w].waveName}\" — enemyPrefabs({prefabCount}): {prefabNames}, hpMultiplier={waves[w].hpMultiplier}");
             }
         }
