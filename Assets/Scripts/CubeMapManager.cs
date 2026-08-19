@@ -103,6 +103,13 @@ public class CubeMapManager : MonoBehaviour
         IsRotating = true;
 
         int axis = SelectWeightedAxis();
+        if (axis < 0)
+        {
+            Debug.LogWarning("[CubeMapManager] 회전할 수 있는 면이 없습니다 — 인접한 면 중 CubeFaceData가 설정된 곳이 하나도 없습니다. GameState의 Face Data 배열을 확인하세요.");
+            IsRotating = false;
+            yield break;
+        }
+
         int nextFaceIndex = RotationTableCW[axis][currentFaceIndex];
         Debug.Log($"[CubeMapManager] 회전 시작! 축={axis}, {currentFaceIndex}면 → {nextFaceIndex}면");
 
@@ -188,19 +195,31 @@ public class CubeMapManager : MonoBehaviour
     /// <summary>
     /// 6개 면을 전부 최소 1번 방문하기 전까지는, 아직 안 가본 면으로만 이어지는 축을 우선 선택합니다.
     /// 다 가봤으면(7번째 회전부터) 완전 무작위 — 그때부터 재방문이 나올 수 있습니다.
+    ///
+    /// 개발 중(v0.2) 안전장치: CubeFaceData가 아예 설정 안 된 면(개발 중이라 아직 다 안 만든
+    /// 면)은 후보에서 완전히 제외합니다 — 안 그러면 미설정 면으로 회전을 시도했다가 이전 면은
+    /// 이미 내렸는데 다음 면을 못 불러와서 허공에 남는 상태가 될 수 있습니다. 유효한 면이
+    /// 하나도 없으면 -1을 반환합니다(회전 불가).
     /// </summary>
     private int SelectWeightedAxis()
     {
         var unvisitedAxes = new List<int>();
+        var validAxes = new List<int>();
+
         for (int axis = 0; axis < 3; axis++)
         {
             int candidate = RotationTableCW[axis][currentFaceIndex];
             var data = GameState.Instance.GetFaceData(candidate);
-            if (data != null && !data.isVisited)
+            if (data == null) continue; // 아직 CubeFaceData가 없는 면은 후보에서 제외
+
+            validAxes.Add(axis);
+            if (!data.isVisited)
                 unvisitedAxes.Add(axis);
         }
 
-        var pool = unvisitedAxes.Count > 0 ? unvisitedAxes : new List<int> { 0, 1, 2 };
-        return pool[Random.Range(0, pool.Count)];
+        if (unvisitedAxes.Count > 0) return unvisitedAxes[Random.Range(0, unvisitedAxes.Count)];
+        if (validAxes.Count > 0) return validAxes[Random.Range(0, validAxes.Count)];
+
+        return -1; // 인접한 면 중 설정된 게 하나도 없음
     }
 }
