@@ -81,6 +81,7 @@ public class CubeMapManager : MonoBehaviour
 
         yield return LoadFace(faceData);
         MarkVisited(currentFaceIndex);
+        TeleportPlayerToSpawnPoint(); // 게임 시작 시에도 SpawnPoint로 옮겨야 함 — 씬 분리 전 원래 위치에 그대로 있으면 새 면의 Ground와 어긋나서 허공에 떨어질 수 있음
     }
 
     /// <summary>
