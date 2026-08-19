@@ -42,7 +42,7 @@ public class PlayerHealth : MonoBehaviour, IDamageable
         }
 
         currentHP = Mathf.Max(0f, currentHP - amount);
-        Debug.Log($"플레이어 피격! 남은 HP: {currentHP}/{maxHP}");
+        // 2026-08-19: 피격마다 찍히는 로그가 다른 디버깅(EncounterSpawner 등) 콘솔을 뒤덮어서 제거.
 
         // TODO(17 게임오버 & 리트라이): currentHP <= 0일 때 게임오버 처리
     }

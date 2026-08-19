@@ -28,7 +28,8 @@ public class EnemyHealth : MonoBehaviour, IDamageable
         if (isDead) return;
 
         currentHP -= amount;
-        Debug.Log($"{name} 피격! 남은 HP: {Mathf.Max(0f, currentHP)}/{maxHP}");
+        // 2026-08-19: 피격마다 찍히는 로그가 다른 디버깅(EncounterSpawner 등) 콘솔을 뒤덮어서 제거.
+        // 죽었을 때(Die())와 회복 때는 상태 변화가 드물어서 그대로 남겨둠.
 
         if (currentHP <= 0f)
             Die();
