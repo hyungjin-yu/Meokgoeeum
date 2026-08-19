@@ -43,7 +43,7 @@ public class EncounterSpawner : MonoBehaviour
     private void Start()
     {
         // 씬 중복으로 EncounterSpawner가 두 개 이상 동시에 로드돼 있는지 진단
-        var allSpawners = FindObjectsOfType<EncounterSpawner>();
+        var allSpawners = FindObjectsByType<EncounterSpawner>(FindObjectsSortMode.None);
         if (allSpawners.Length > 1)
         {
             Debug.LogWarning($"[EncounterSpawner] 현재 씬에 EncounterSpawner가 {allSpawners.Length}개 동시에 존재합니다! (SC_Face_0/SC_Face_1이 동시에 로드돼 있거나, Spawner가 중복 배치된 경우일 수 있음)");
