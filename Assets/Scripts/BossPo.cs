@@ -88,7 +88,29 @@ public class BossPo : MonoBehaviour
         {
             phase = Phase.Phase2;
             Debug.Log("[BossPo] \"숨바꼭질 하자~ 내가 술래할게~\" — 2페이즈 돌입!");
+            StartCoroutine(EnterPhase2Routine());
         };
+    }
+
+    /// <summary>
+    /// 2페이즈 진입 연출: 곧바로 "위치 교란"을 강제로 시전하고, 그동안(자리를 옮기는 중)은
+    /// 무적입니다. [[27 전투 프레임 데이터]] "페이즈 전환 무적"을 고정 시간 대신 실제 위치
+    /// 교란 연출 길이에 맞춰 구현했습니다 — 사용자 요청으로 고정 1초 대신 이 방식 채택.
+    /// </summary>
+    private IEnumerator EnterPhase2Routine()
+    {
+        while (isAttacking) yield return null; // 진행 중인 공격이 있으면 끝날 때까지 대기
+
+        isAttacking = true;
+        agent.isStopped = true;
+        health.SetInvulnerable(true);
+
+        yield return CastDisplace();
+
+        health.SetInvulnerable(false);
+        attackCooldownTimer = attackCooldown;
+        agent.isStopped = false;
+        isAttacking = false;
     }
 
     private void Update()

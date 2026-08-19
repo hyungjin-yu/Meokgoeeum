@@ -18,6 +18,7 @@ public class BossHealth : MonoBehaviour, IDamageable
     private float currentHP;
     private bool isDead;
     private bool phase2Triggered;
+    private bool isInvulnerable;
 
     public float CurrentHP => currentHP;
     public float HpRatio => currentHP / maxHP;
@@ -37,6 +38,12 @@ public class BossHealth : MonoBehaviour, IDamageable
     {
         if (isDead) return;
 
+        if (isInvulnerable)
+        {
+            Debug.Log($"[BossHealth] {name} 무적 중이라 피격 무시됨!");
+            return;
+        }
+
         currentHP -= amount;
         Debug.Log($"[BossHealth] {name} 피격! 남은 HP: {Mathf.Max(0f, currentHP)}/{maxHP} ({HpRatio:P0})");
 
@@ -49,6 +56,19 @@ public class BossHealth : MonoBehaviour, IDamageable
 
         if (currentHP <= 0f)
             Die();
+    }
+
+    /// <summary>
+    /// 무적 여부를 켜고 끕니다. [[BossPo]]가 2페이즈 진입 시 "위치 교란"이 끝날 때까지
+    /// (숨바꼭질 하듯 자리를 옮기는 동안은 못 맞음) 켜두는 용도로 씁니다.
+    /// [[27 전투 프레임 데이터]] "페이즈 전환 무적" 스펙을 고정 시간 대신 실제 연출
+    /// 길이에 맞춰 구현한 버전입니다.
+    /// </summary>
+    public void SetInvulnerable(bool value)
+    {
+        if (isInvulnerable == value) return;
+        isInvulnerable = value;
+        Debug.Log(isInvulnerable ? $"[BossHealth] {name} 무적 시작!" : $"[BossHealth] {name} 무적 종료.");
     }
 
     public void Heal(float amount)
