@@ -93,7 +93,7 @@
 - [x] 구르기(회피) — `PlayerDodge.cs`, 평 밸런스 이슈 근본 해결, Unity 검증 + 사용자 만족 확인 완료
 - [x] **색 스킬 3종(강타/흐름/번쩍) 완료 + 검증 끝** — `ColorSkillController.cs`, `ColorSystemManager.TryConsumeOrb()`, `IKnockbackable.cs` + `EnemyPyeong` 넉백. 실제 적 대상 테스트까지 "제대로 잘 작동됨" 확인. 강타의 강제 전방 이동은 기획서 스펙대로의 의도된 동작
 - [x] **먹괴음 3종 추가 완료 + 검증 끝** — `EnemyWon.cs`(원거리, 먹물 투척 `InkProjectile.cs`), `EnemyBun.cs`(분열, 처치 시 미니언 2마리 자기 복제), `EnemyHeup.cs`(흡수, 비공격 + `RestoredAreaRegistry.cs`로 색 복원 구역 찾아가 회복). Unity에서 "제대로 나오네"로 확인
-- [x] **큐브 좌표계 + 페이드 트랜지션 코드 완료** — `CubeMapManager.cs`(회전 로직), `GameState.cs`, `CubeFaceData.cs`, `FadeManager.cs`. **Unity 씬 분리(SC_Game/SC_Face_0~5) + Addressables 설정 아직 전혀 안 됨** → [[logic/큐브 좌표계 씬 설정]] 필독
+- [x] **큐브 좌표계 + 페이드 트랜지션 완료 + Unity 검증 끝** — `CubeMapManager.cs`, `GameState.cs`, `CubeFaceData.cs`, `FadeManager.cs`. `SC_Game`/`SC_Face_0`/`SC_Face_1` 씬 분리 + Addressables 등록까지 실제로 마치고 F4로 `0면→4면` 회전 성공 확인(페이드+씬 전환+텔레포트 전부 정상). 실전 테스트로 버그 2개 발견 즉시 수정(초기 로드 텔레포트 누락, 미설정 면 회전 시도). **아직 SC_Face_2~5는 안 만듦 — 콘텐츠 채우는 건 나중 작업**
 - [ ] v0.2 나머지: 층 구조 + 계단 이동 (큐브 좌표계 검증 후 진행)
 
 ## 세션 연속성 — changelog 인덱스
@@ -104,15 +104,16 @@
 
 ### 최근 changelog (최신이 위)
 
-- `2026-08-19_큐브좌표계-구현.md` — 큐브 좌표계 + 페이드 트랜지션 **코드 완료, Unity 설정 아직 전혀 안 함**. `CubeMapManager`/`GameState`/`CubeFaceData`/`FadeManager` 신규. GameState는 ScriptableObject 원안 대신 MonoBehaviour 싱글톤, 회전은 UniTask 대신 코루틴으로 단순화. 색 구슬 획득 자동 연결은 전투 흐름 훼손 우려로 보류(F4 수동 테스트만 가능)
+- `2026-08-19_큐브좌표계-구현.md` — 큐브 좌표계 + 페이드 트랜지션 **완료 + Unity 검증까지 끝남**. `SC_Game`/`SC_Face_0`/`SC_Face_1` 씬 분리 + Addressables 등록 실제 진행, F4로 `0면→4면` 회전 성공. 실전 테스트로 버그 2개 발견 즉시 수정(초기 로드 텔레포트 누락, 미설정 면 회전 시도). 반대편 면(0↔1)은 한 번에 회전 못 간다는 것도 확인
 - `2026-08-18_먹괴음3종-추가.md` — 원(원거리)/분(분열)/흡(흡수) 완료 + **Unity 검증까지 끝남("제대로 나오네")**. `EnemyWon`+`InkProjectile`, `EnemyBun`(자기 복제 분열), `EnemyHeup`+`RestoredAreaRegistry`(비공격, 색 복원 구역 회복)
 - `2026-08-18_색스킬3종-구현.md` — 색 스킬 3종(강타/흐름/번쩍) 완료 + **실제 적 대상 검증까지 끝남("제대로 잘 작동됨")**. `DebugOrbCheat.cs`(F1/F2/F3 구슬 치트)로 QA 가속. 강타의 강제 전방 이동은 기획서 스펙대로의 의도된 동작으로 확인
 - `2026-08-18_구르기-회피-구현.md` — 구르기 Unity 검증 완료, **사용자 체감 만족 확인("이걸로 마무리")**. "평 밸런스" 이슈 종결 — 근본 원인은 attackPower가 아니라 회피 수단 부재였음, `PlayerDodge.cs`로 해결
 
 ### 지금 당장 다음에 할 일
 
-- **Unity 씬 분리 + Addressables 설정 필요** — [[logic/큐브 좌표계 씬 설정]]에 8단계로 정리해둠 (Addressables 최초 설정 → SC_Game/SC_Face_0~5 씬 분리 → Addressable 등록 → CubeFaceData 연결 → F4로 회전 테스트). 이 프로젝트에서 가장 큰 규모의 에디터 작업이라 막히면 그 문서의 "자주 나올 수 있는 문제" 표부터 확인
-- 검증되면: 색 구슬 획득 시 자동으로 회전시킬지(적 처치마다 화면 전환되는 게 너무 잦을 수 있음) 사용자와 논의 필요
+- **큐브 좌표계 핵심 메커니즘 검증 완료.** 남은 건 `SC_Face_2`~`SC_Face_5` 콘텐츠 채우기(레벨 디자인 작업, 급하지 않음)
+- 색 구슬 획득 시 자동으로 회전시킬지(적 처치마다 화면 전환되는 게 너무 잦을 수 있음) 사용자와 논의 필요
+- v0.2 나머지: 층 구조 + 계단 이동
 - 설정 UI를 실제로 만들 때 `MouseSensitivitySetting.SetSensitivity()`를 슬라이더에 연결
 - v0.1 완성했으니 [[14 밸런스 수치 시트]] "보스 DPS 역산 검증"의 **"실효 교전 비율 40%" 가정을 실측으로 재검증할 것** — 잊지 말 것
 - UI 착수 시 [[25 색맹 접근성 설계]] "패턴 강조 모드"부터 반영 (나중에 끼워넣지 말 것)
