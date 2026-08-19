@@ -96,7 +96,7 @@
 - [x] **큐브 좌표계 + 페이드 트랜지션 완료 + Unity 검증 끝** — `CubeMapManager.cs`, `GameState.cs`, `CubeFaceData.cs`, `FadeManager.cs`. `SC_Game`/`SC_Face_0`/`SC_Face_1` 씬 분리 + Addressables 등록까지 실제로 마치고 F4로 `0면→4면` 회전 성공 확인(페이드+씬 전환+텔레포트 전부 정상). 실전 테스트로 버그 2개 발견 즉시 수정(초기 로드 텔레포트 누락, 미설정 면 회전 시도). **아직 SC_Face_2~5는 안 만듦 — 콘텐츠 채우는 건 나중 작업**
 - [x] **계단 & 층 구조 완료 + Unity 검증 끝** — `Stairs.cs`(밟으면 회전 발동), `RoomClearGate.cs`(범위 내 적 전멸 시 계단 활성화, EnemyBun 미니언 포함해서 정확히 판정 확인). 방 클리어 → 계단 활성화 → 밟기 → 회전 → 새 면에서도 다시 정상 동작까지 실전 확인. **어제 보류했던 "구슬 획득 시 자동 회전?" 질문 해결** — 진짜 트리거는 계단이었음
 - 🎉 **v0.2 마일스톤 전체 완료 (코드 + Unity 검증 다 끝남).**
-- [x] **v0.3 착수 — 반복 층 나레이션 코드 완료** — `NarrationManager.cs`(글리치 텍스트, Hint/Confirmed 2단계), `CubeMapManager.MarkVisited()`에 실제 연결. BGM 피치 왜곡은 오디오 에셋 없어서 보류. **Unity 테스트 아직 안 함**
+- [x] **v0.3 착수 — 반복 층 나레이션 완료 + Unity 검증 끝** — `NarrationManager.cs`(글리치 텍스트, Hint/Confirmed 2단계), `CubeMapManager.MarkVisited()`에 실제 연결. Confirmed 문구 3종 랜덤 노출 확인. BGM 피치 왜곡은 오디오 에셋 없어서 보류
 
 ## 세션 연속성 — changelog 인덱스
 
@@ -113,8 +113,7 @@
 
 ### 지금 당장 다음에 할 일
 
-- **Unity에서 나레이션 테스트 필요**: `SC_Game`의 `GameSystems`에 `NarrationManager.cs` 부착 → F4나 계단으로 3번 이상 회전(면 2개만 구성돼 있으면 3번째부터 필연적으로 재방문) → 화면 상단에 글리치 텍스트가 뜨는지 확인
-- v0.3 나머지: 큐브 구조 노출 연출(Timeline+Cinemachine), 보스 구현(가장 무거움), APV 조명. BGM 피치 왜곡은 오디오 에셋 도입 후 별도 진행
+- **반복 층 나레이션 완료.** v0.3 나머지: 큐브 구조 노출 연출(Timeline+Cinemachine), 보스 구현(가장 무거움), APV 조명. BGM 피치 왜곡은 오디오 에셋 도입 후 별도 진행
 - 설정 UI를 실제로 만들 때 `MouseSensitivitySetting.SetSensitivity()`를 슬라이더에 연결
 - v0.1 완성했으니 [[14 밸런스 수치 시트]] "보스 DPS 역산 검증"의 **"실효 교전 비율 40%" 가정을 실측으로 재검증할 것** — 잊지 말 것
 - UI 착수 시 [[25 색맹 접근성 설계]] "패턴 강조 모드"부터 반영 (나중에 끼워넣지 말 것)
