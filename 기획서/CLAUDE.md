@@ -98,8 +98,8 @@
 - 🎉 **v0.2 마일스톤 전체 완료 (코드 + Unity 검증 다 끝남).**
 - [x] **v0.3 착수 — 반복 층 나레이션 완료 + Unity 검증 끝** — `NarrationManager.cs`(글리치 텍스트, Hint/Confirmed 2단계), `CubeMapManager.MarkVisited()`에 실제 연결. Confirmed 문구 3종 랜덤 노출 확인. BGM 피치 왜곡은 오디오 에셋 없어서 보류
 - [x] **보스 '포(鯆)' 1~2페이즈 완료 + Unity 검증 끝** — `BossPo.cs`(6색 공격 순환 + 2페이즈 위치 교란), `BossHealth.cs`(2페이즈 진입 시 강제 위치 교란 + 그동안 무적 — 27 전투 프레임 데이터 "페이즈 전환 무적" 스펙을 고정 시간 대신 실제 연출 길이로 구현), `DamageZone.cs`(장판), `PlayerController.ApplySlow()`(왜곡 디버프). "위치 교란"은 큐브 회전이 아니라 보스룸 내 순간이동으로 해석(6면 순환과 별개 씬이라). 7가지 공격 골고루 시전 확인. 3페이즈/부위 퍼즐/먹물 약점/처치 연출은 명시적으로 v0.3 범위 밖
-- [x] **큐브 구조 노출 훅 + APV 최소 틀** — `CubeMapManager.OnCubeRevealTriggered`(12층 도달 시 발동) + `CubeRevealSequence.cs`(자리표시자 연출: 나레이션+페이드). 실제 Timeline/조명 작업은 아트 에셋 필요해서 보류, [[logic/APV 조명 설정]]에 나중 절차 정리. **Unity 테스트 아직 안 함**
-- 🎉 **v0.3의 시스템 코드성 작업 사실상 마무리.** 다음은 실제 레벨 콘텐츠/아트 에셋 도입에 달려있음
+- [x] **큐브 구조 노출 훅 + APV 최소 틀 완료 + Unity 검증 끝** — `CubeMapManager.OnCubeRevealTriggered`(N층 도달 시 발동) + `CubeRevealSequence.cs`(자리표시자 연출: 나레이션+페이드). 훅 발동 → 연출 시작/종료 로그 정확히 확인. 실제 Timeline/조명 작업은 아트 에셋 필요해서 보류, [[logic/APV 조명 설정]]에 나중 절차 정리
+- 🎉 **v0.3의 시스템 코드성 작업 마무리 (코드 + Unity 검증 다 끝남).** 다음은 실제 레벨 콘텐츠/아트 에셋 도입에 달려있음
 
 ## 세션 연속성 — changelog 인덱스
 
@@ -109,15 +109,15 @@
 
 ### 최근 changelog (최신이 위)
 
-- `2026-08-19_큐브노출-APV-최소틀.md` — `CubeMapManager.OnCubeRevealTriggered`(12층 훅) + `CubeRevealSequence.cs`(자리표시자 연출). APV는 [[logic/APV 조명 설정]]에 절차만 정리, 실제 착수는 레벨 콘텐츠 갖춰진 뒤로. **Unity 테스트 아직 안 함**
+- `2026-08-19_큐브노출-APV-최소틀.md` — `CubeMapManager.OnCubeRevealTriggered`(12층 훅) + `CubeRevealSequence.cs`(자리표시자 연출) **완료 + Unity 검증까지 끝남**. APV는 [[logic/APV 조명 설정]]에 절차만 정리, 실제 착수는 레벨 콘텐츠 갖춰진 뒤로
 - `2026-08-19_보스1-2페이즈-구현.md` — `BossPo.cs`(6색 공격+2페이즈), `BossHealth.cs`, `DamageZone.cs` **완료 + Unity 검증까지 끝남**("골고루 나오네" — 7가지 공격 랜덤 확인). "위치 교란"은 큐브 회전 대신 보스룸 내 순간이동으로 해석(설계 이유 기록). 3페이즈/부위 퍼즐/먹물 약점은 명시적으로 범위 밖
 - `2026-08-19_반복층-나레이션-구현.md` — v0.3 착수. `NarrationManager.cs` 신규(글리치 텍스트, Hint/Confirmed), `CubeMapManager.MarkVisited()`에 실제 연결. BGM 피치 왜곡은 오디오 에셋 없어서 보류
 - `2026-08-19_계단-층구조-구현.md` — `Stairs.cs`+`RoomClearGate.cs` 완료 + **Unity 검증까지 끝남**. 방 클리어(EnemyBun 미니언 포함) → 계단 활성화 → 밟기 → 회전 → 새 면에서도 재검증, 전부 실전 확인. **어제 보류했던 "구슬 획득 시 자동 회전?" 질문 해결** — 진짜 트리거는 계단이었음
 
 ### 지금 당장 다음에 할 일
 
-- **Unity에서 큐브 노출 훅 테스트 필요**: `SC_Game`의 `GameSystems`에 `CubeRevealSequence.cs` 부착 → `CubeMapManager`의 `Cube Reveal Floor Number`를 잠깐 3 정도로 낮춰서 회전 몇 번으로 훅이 발동하는지 확인 → 테스트 후 12로 복구 (→ [[changelog/2026-08-19_큐브노출-APV-최소틀]])
-- 🎉 **v0.3의 시스템 코드성 작업 사실상 마무리.** 다음은 실제 레벨 콘텐츠/아트 에셋 도입으로 전환할 시점 — 사용자와 논의 필요
+- ⚠️ **`CubeMapManager`의 `Cube Reveal Floor Number`를 테스트용으로 3으로 낮춰뒀다면 12로 복구했는지 확인할 것**
+- 🎉 **v0.3의 시스템 코드성 작업 마무리 (코드 + Unity 검증 다 끝남).** 다음은 실제 레벨 콘텐츠/아트 에셋 도입으로 전환할 시점 — 사용자와 논의 필요
 - 설정 UI를 실제로 만들 때 `MouseSensitivitySetting.SetSensitivity()`를 슬라이더에 연결
 - v0.1 완성했으니 [[14 밸런스 수치 시트]] "보스 DPS 역산 검증"의 **"실효 교전 비율 40%" 가정을 실측으로 재검증할 것** — 잊지 말 것
 - UI 착수 시 [[25 색맹 접근성 설계]] "패턴 강조 모드"부터 반영 (나중에 끼워넣지 말 것)
