@@ -59,30 +59,8 @@ public class EncounterSpawner : MonoBehaviour
         StartCoroutine(RunWaves());
     }
 
-    private static string DescribePrefabRef(GameObject p)
-    {
-        if (p == null) return "null";
-        string kind = p.scene.IsValid() ? $"⚠씬 오브젝트({p.scene.name})" : "프리팹 에셋(정상)";
-        return $"{p.name}[{kind}]";
-    }
-
     private IEnumerator RunWaves()
     {
-        // 씬 중복(SC_Face_0 / SC_Face_1) 의심 상황 진단용 — 이 스포너가 실제로 어느 씬의
-        // 어떤 인스턴스인지, 그리고 Inspector에 저장된 실제 웨이브 데이터가 뭔지 콘솔에서 바로 확인 가능하게 함.
-        Debug.Log($"[EncounterSpawner] {name} (InstanceID={GetInstanceID()}) 시작 — 소속 씬: \"{gameObject.scene.name}\", 웨이브 개수: {(waves == null ? 0 : waves.Length)}");
-        if (waves != null)
-        {
-            for (int w = 0; w < waves.Length; w++)
-            {
-                int prefabCount = waves[w].enemyPrefabs == null ? 0 : waves[w].enemyPrefabs.Length;
-                // 씬 오브젝트(Hierarchy에서 잘못 끌어온 것)인지 진짜 프리팹 에셋(Project)인지 구분 —
-                // 씬 오브젝트면 그게 파괴될 때 이 참조도 같이 null이 되는 버그의 원인이 됨
-                string prefabNames = prefabCount == 0 ? "(없음)" : string.Join(", ", System.Array.ConvertAll(waves[w].enemyPrefabs, DescribePrefabRef));
-                Debug.Log($"[EncounterSpawner]   웨이브[{w}] \"{waves[w].waveName}\" — enemyPrefabs({prefabCount}): {prefabNames}, hpMultiplier={waves[w].hpMultiplier}");
-            }
-        }
-
         for (int i = 0; i < waves.Length; i++)
         {
             SpawnWave(waves[i]);
@@ -100,12 +78,7 @@ public class EncounterSpawner : MonoBehaviour
     private void SpawnWave(Wave wave)
     {
         aliveInCurrentWave.Clear();
-        // 이 웨이브가 실제로 스폰되는 "바로 그 순간"의 참조 상태 — RunWaves() 시작 시점 덤프와
-        // 여기 이 시점을 비교하면, 대기 중에 뭔가가 참조를 깨뜨렸는지 바로 알 수 있음
-        string liveState = (wave.enemyPrefabs == null || wave.enemyPrefabs.Length == 0)
-            ? "(없음)"
-            : string.Join(", ", System.Array.ConvertAll(wave.enemyPrefabs, DescribePrefabRef));
-        Debug.Log($"[EncounterSpawner] {name}: \"{wave.waveName}\" 시작! (스폰 시점 실제 참조: {liveState})");
+        Debug.Log($"[EncounterSpawner] {name}: \"{wave.waveName}\" 시작!");
 
         if (wave.enemyPrefabs == null || wave.enemyPrefabs.Length == 0)
             Debug.LogWarning($"[EncounterSpawner] {name}: \"{wave.waveName}\"에 Enemy Prefabs가 비어있습니다 — 이 웨이브는 아무것도 안 나오고 바로 클리어 처리됩니다. Inspector에서 확인하세요.");
