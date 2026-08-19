@@ -27,6 +27,15 @@ public class CubeMapManager : MonoBehaviour
     [Tooltip("게임 시작 시 로드할 첫 면입니다.")]
     public int startingFaceIndex = 0;
 
+    [Header("12층 - 큐브 구조 노출 (v0.3 최소 틀)")]
+    [Tooltip("이 층수에 도달하면 6면 순환과 별개로 큐브 구조 노출 연출 훅이 발동합니다. (05 맵 시스템 - 큐브 구조, 12 큐브 좌표계 설계 기준)")]
+    public int cubeRevealFloorNumber = 12;
+
+    /// <summary>[[CubeRevealSequence]] 등이 구독해서 실제 연출을 재생하면 됩니다.</summary>
+    public event System.Action OnCubeRevealTriggered;
+
+    private bool cubeRevealTriggered;
+
     public bool IsRotating { get; private set; }
 
     private int currentFaceIndex;
@@ -133,6 +142,13 @@ public class CubeMapManager : MonoBehaviour
             yield return FadeManager.Instance.FadeIn();
 
         IsRotating = false;
+
+        if (!cubeRevealTriggered && GameState.Instance.floorNumber >= cubeRevealFloorNumber)
+        {
+            cubeRevealTriggered = true;
+            Debug.Log($"[CubeMapManager] {cubeRevealFloorNumber}층 도달! 큐브 구조 노출 훅 발동.");
+            OnCubeRevealTriggered?.Invoke();
+        }
     }
 
     private IEnumerator LoadFace(CubeFaceData faceData)

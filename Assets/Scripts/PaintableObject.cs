@@ -48,6 +48,10 @@ public class PaintableObject : MonoBehaviour
 
         RestoredAreaRegistry.Register(transform.position); // [[EnemyHeup]]이 찾아갈 수 있게 등록
 
+        // 조명 변화 연출 훅 자리 (v0.3 최소 틀) — [[10 씬 구조 & 기술 스펙]] "색 복원 후 Light
+        // Probe 갱신"은 프로젝트에 APV(Adaptive Probe Volumes) 라이팅 설정 자체가 아직 없어서
+        // (에디터 작업 필요) 여기는 자리만 표시해둡니다. → [[logic/APV 조명 설정]] 참고
+
         if (fadeRoutine != null) StopCoroutine(fadeRoutine);
         fadeRoutine = StartCoroutine(FadeToTrueColor());
     }
