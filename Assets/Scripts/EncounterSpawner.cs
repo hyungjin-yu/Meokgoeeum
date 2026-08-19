@@ -71,9 +71,16 @@ public class EncounterSpawner : MonoBehaviour
         aliveInCurrentWave.Clear();
         Debug.Log($"[EncounterSpawner] {name}: \"{wave.waveName}\" 시작!");
 
+        if (wave.enemyPrefabs == null || wave.enemyPrefabs.Length == 0)
+            Debug.LogWarning($"[EncounterSpawner] {name}: \"{wave.waveName}\"에 Enemy Prefabs가 비어있습니다 — 이 웨이브는 아무것도 안 나오고 바로 클리어 처리됩니다. Inspector에서 확인하세요.");
+
         for (int i = 0; i < wave.enemyPrefabs.Length; i++)
         {
-            if (wave.enemyPrefabs[i] == null) continue;
+            if (wave.enemyPrefabs[i] == null)
+            {
+                Debug.LogWarning($"[EncounterSpawner] {name}: \"{wave.waveName}\"의 Enemy Prefabs[{i}]가 비어있어 건너뜁니다.");
+                continue;
+            }
 
             Transform spawnPoint = (wave.spawnPoints != null && i < wave.spawnPoints.Length && wave.spawnPoints[i] != null)
                 ? wave.spawnPoints[i]
@@ -82,12 +89,19 @@ public class EncounterSpawner : MonoBehaviour
             GameObject instance = Instantiate(wave.enemyPrefabs[i], spawnPoint.position, spawnPoint.rotation);
 
             var health = instance.GetComponent<EnemyHealth>();
-            if (health == null) continue;
+            if (health == null)
+            {
+                Debug.LogWarning($"[EncounterSpawner] {name}: \"{wave.waveName}\"에서 생성한 {instance.name}에 EnemyHealth가 없어 웨이브 클리어 판정에서 제외됩니다.");
+                continue;
+            }
 
             if (!Mathf.Approximately(wave.hpMultiplier, 1f))
                 health.ConfigureMaxHP(health.maxHP * wave.hpMultiplier);
 
             aliveInCurrentWave.Add(health);
         }
+
+        if (aliveInCurrentWave.Count == 0)
+            Debug.LogWarning($"[EncounterSpawner] {name}: \"{wave.waveName}\"에서 실제로 생성된 적이 0마리라, 이 웨이브는 즉시 클리어 처리됩니다.");
     }
 }
