@@ -42,6 +42,15 @@ public class EncounterSpawner : MonoBehaviour
 
     private void Start()
     {
+        // 씬 중복으로 EncounterSpawner가 두 개 이상 동시에 로드돼 있는지 진단
+        var allSpawners = FindObjectsOfType<EncounterSpawner>();
+        if (allSpawners.Length > 1)
+        {
+            Debug.LogWarning($"[EncounterSpawner] 현재 씬에 EncounterSpawner가 {allSpawners.Length}개 동시에 존재합니다! (SC_Face_0/SC_Face_1이 동시에 로드돼 있거나, Spawner가 중복 배치된 경우일 수 있음)");
+            foreach (var s in allSpawners)
+                Debug.LogWarning($"[EncounterSpawner]   - {s.name} (InstanceID={s.GetInstanceID()}), 소속 씬: \"{s.gameObject.scene.name}\"");
+        }
+
         if (autoStart) StartEncounter();
     }
 
@@ -52,6 +61,19 @@ public class EncounterSpawner : MonoBehaviour
 
     private IEnumerator RunWaves()
     {
+        // 씬 중복(SC_Face_0 / SC_Face_1) 의심 상황 진단용 — 이 스포너가 실제로 어느 씬의
+        // 어떤 인스턴스인지, 그리고 Inspector에 저장된 실제 웨이브 데이터가 뭔지 콘솔에서 바로 확인 가능하게 함.
+        Debug.Log($"[EncounterSpawner] {name} (InstanceID={GetInstanceID()}) 시작 — 소속 씬: \"{gameObject.scene.name}\", 웨이브 개수: {(waves == null ? 0 : waves.Length)}");
+        if (waves != null)
+        {
+            for (int w = 0; w < waves.Length; w++)
+            {
+                int prefabCount = waves[w].enemyPrefabs == null ? 0 : waves[w].enemyPrefabs.Length;
+                string prefabNames = prefabCount == 0 ? "(없음)" : string.Join(", ", System.Array.ConvertAll(waves[w].enemyPrefabs, p => p == null ? "null" : p.name));
+                Debug.Log($"[EncounterSpawner]   웨이브[{w}] \"{waves[w].waveName}\" — enemyPrefabs({prefabCount}): {prefabNames}, hpMultiplier={waves[w].hpMultiplier}");
+            }
+        }
+
         for (int i = 0; i < waves.Length; i++)
         {
             SpawnWave(waves[i]);
