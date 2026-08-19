@@ -1,3 +1,4 @@
+using System.Collections;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -32,6 +33,9 @@ public class PlayerController : MonoBehaviour
     private float verticalVelocity;
     private const float Gravity = -20f;
     private const float GroundedStickVelocity = -2f; // 땅에 붙어있게 하는 최소 하강 속도 (완전히 0이면 살짝 뜨는 느낌이 남음)
+
+    private float speedMultiplier = 1f; // [[BossPo]] 왜곡 공격 등 슬로우 디버프용
+    private Coroutine slowRoutine;
 
     private void Start()
     {
@@ -92,11 +96,33 @@ public class PlayerController : MonoBehaviour
 
         Vector3 moveDir = (camForward * inputDir.z + camRight * inputDir.x).normalized;
 
-        cc.Move(moveDir * moveSpeed * Time.deltaTime);
+        cc.Move(moveDir * moveSpeed * speedMultiplier * Time.deltaTime);
 
         // 이동 방향을 부드럽게 바라보도록 캐릭터를 회전시킵니다.
         Quaternion targetRotation = Quaternion.LookRotation(moveDir);
         transform.rotation = Quaternion.RotateTowards(transform.rotation, targetRotation, rotationSpeed * Time.deltaTime);
+    }
+
+    /// <summary>
+    /// 일정 시간 동안 이동 속도를 배율만큼 낮춥니다. [[BossPo]]의 "왜곡" 공격 등에서 씁니다.
+    /// 이미 슬로우가 걸려있는 중에 또 걸리면 새 지속시간으로 갱신합니다(중첩 대신 갱신).
+    /// </summary>
+    public void ApplySlow(float multiplier, float duration)
+    {
+        if (slowRoutine != null) StopCoroutine(slowRoutine);
+        slowRoutine = StartCoroutine(SlowRoutine(multiplier, duration));
+    }
+
+    private IEnumerator SlowRoutine(float multiplier, float duration)
+    {
+        speedMultiplier = multiplier;
+        Debug.Log($"[PlayerController] 슬로우 적용! 배율 {multiplier}, {duration}초간");
+
+        yield return new WaitForSeconds(duration);
+
+        speedMultiplier = 1f;
+        slowRoutine = null;
+        Debug.Log("[PlayerController] 슬로우 해제.");
     }
 
     /// <summary>
