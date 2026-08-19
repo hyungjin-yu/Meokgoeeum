@@ -158,12 +158,17 @@ public class CubeMapManager : MonoBehaviour
         faceData.visitCount++;
         faceData.isVisited = true;
 
-        // 2번째 방문 = 첫 재방문(약한 데자뷰), 3번째 이상 = 확신 단계 — 나레이션 시스템은 v0.3 몫이라
-        // 지금은 로그로만 남겨서 나중에 훅 걸 자리를 표시해둡니다.
+        // 2번째 방문 = 첫 재방문(약한 데자뷰), 3번째 이상 = 확신 단계 (12 큐브 좌표계 설계 기준)
         if (faceData.visitCount == 2)
-            Debug.Log($"[CubeMapManager] {faceIndex}면 첫 재방문! (나레이션 훅 자리 — v0.3에서 연결)");
+        {
+            Debug.Log($"[CubeMapManager] {faceIndex}면 첫 재방문! (나레이션: Hint)");
+            NarrationManager.Instance?.TriggerRevisitNarration(NarrationTier.Hint);
+        }
         else if (faceData.visitCount >= 3)
-            Debug.Log($"[CubeMapManager] {faceIndex}면 재방문 {faceData.visitCount}회째! (확신 나레이션 훅 자리 — v0.3에서 연결)");
+        {
+            Debug.Log($"[CubeMapManager] {faceIndex}면 재방문 {faceData.visitCount}회째! (나레이션: Confirmed)");
+            NarrationManager.Instance?.TriggerRevisitNarration(NarrationTier.Confirmed);
+        }
     }
 
     /// <summary>
