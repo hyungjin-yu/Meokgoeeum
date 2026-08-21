@@ -101,6 +101,7 @@
 - [x] **큐브 구조 노출 훅 + APV 최소 틀 완료 + Unity 검증 끝** — `CubeMapManager.OnCubeRevealTriggered`(N층 도달 시 발동) + `CubeRevealSequence.cs`(자리표시자 연출: 나레이션+페이드). 훅 발동 → 연출 시작/종료 로그 정확히 확인. 실제 Timeline/조명 작업은 아트 에셋 필요해서 보류, [[logic/APV 조명 설정]]에 나중 절차 정리
 - 🎉 **v0.3의 시스템 코드성 작업 마무리 (코드 + Unity 검증 다 끝남).** 다음은 실제 레벨 콘텐츠/아트 에셋 도입에 달려있음
 - [x] **1층 "방A 전투" 콘텐츠 완료 + Unity 검증 끝** — `EncounterSpawner.cs`(웨이브 기반 스포너, `RoomClearGate`와 자연스럽게 맞물림). 1웨이브(평 HP 절반)→2웨이브(평 정상 HP)→계단 활성화까지 실전 확인. 도중 "2웨이브 즉시 클리어" 버그 발견·해결(원인: Waves가 Project 프리팹이 아니라 Hierarchy에 남은 씬 오브젝트를 참조 — 자세한 진단 과정은 changelog 참고)
+- [x] **3층 콘텐츠 준비 — 절차 문서화 완료** (새 코드 필요 없음, 기존 `RoomClearGate`/`Stairs`/`EnemyPyeong` 재사용). `SC_Face_2` 새 씬 + `EnemyWon` 프리팹 최초 생성 필요. **Unity 작업 아직 안 함**
 - [x] **2층 콘텐츠 완료 + Unity 검증 끝** — `HiddenOrbSpawner.cs` 신규(`PaintableObject.OnPainted`/`ColorOrbPickup.OnPickedUp` 이벤트 추가). "바닥 타일 색 복원 → 숨겨진 구슬 등장 → 획득 시 계단 자동 활성화" 패턴, `RoomClearGate` 없이도 계단이 열리는 두 번째 방식. 실전 테스트로 버그 2개 즉시 수정(옛 RoomClearGate 잔재 제거, 구슬 스폰 높이 조정용 `spawnHeightOffset` 추가)
 
 ## 세션 연속성 — changelog 인덱스
@@ -111,15 +112,16 @@
 
 ### 최근 changelog (최신이 위)
 
+- `2026-08-20_3층콘텐츠-준비.md` — 코드 변경 없음(기존 `RoomClearGate`/`Stairs`/`EnemyPyeong`/`EnemyWon` 재사용). [[logic/3층 콘텐츠 - 전봇대 거리 씬 설정]] 신규(새 씬 `SC_Face_2` 추가 절차 + `EnemyWon` 프리팹 최초 생성 포함). **Unity 작업 아직 안 함**
 - `2026-08-20_2층콘텐츠-숨겨진구슬.md` — `HiddenOrbSpawner.cs` 신규(+ `PaintableObject.OnPainted`, `ColorOrbPickup.OnPickedUp` 이벤트 추가). 2층 "바닥 타일 복원→숨겨진 구슬→계단" 패턴 **완료 + Unity 검증까지 끝남**
 - `2026-08-19_인카운터스포너-1층콘텐츠.md` — `EncounterSpawner.cs` 신규(웨이브 기반, `RoomClearGate`와 자연스럽게 맞물림). 1층 "방A 전투"(1웨이브 평 HP 절반→2웨이브 평 정상 HP→계단) **완료 + Unity 검증까지 끝남**. "2웨이브 즉시 클리어" 버그 발견·원인 확정·해결 과정 상세 기록(Waves가 프리팹 에셋 대신 씬 오브젝트를 참조하던 문제)
 - `2026-08-19_큐브노출-APV-최소틀.md` — `CubeMapManager.OnCubeRevealTriggered`(12층 훅) + `CubeRevealSequence.cs`(자리표시자 연출) **완료 + Unity 검증까지 끝남**. APV는 [[logic/APV 조명 설정]]에 절차만 정리, 실제 착수는 레벨 콘텐츠 갖춰진 뒤로
 - `2026-08-19_보스1-2페이즈-구현.md` — `BossPo.cs`(6색 공격+2페이즈), `BossHealth.cs`, `DamageZone.cs` **완료 + Unity 검증까지 끝남**("골고루 나오네" — 7가지 공격 랜덤 확인). "위치 교란"은 큐브 회전 대신 보스룸 내 순간이동으로 해석(설계 이유 기록). 3페이즈/부위 퍼즐/먹물 약점은 명시적으로 범위 밖
-- `2026-08-19_반복층-나레이션-구현.md` — v0.3 착수. `NarrationManager.cs` 신규(글리치 텍스트, Hint/Confirmed), `CubeMapManager.MarkVisited()`에 실제 연결. BGM 피치 왜곡은 오디오 에셋 없어서 보류
 
 ### 지금 당장 다음에 할 일
 
-- **2층 완료 — 다음은 3층("전봇대 거리")**: 평×2+원×1, 첫 원거리 적, 계단 조건이 다시 "전투 클리어"라 `RoomClearGate`+`EncounterSpawner` 패턴으로 복귀. 단, `SC_Face_2`는 아직 씬 자체가 없어서 [[logic/큐브 좌표계 씬 설정]] 절차대로 새 면부터 만들어야 함
+- **Unity에서 3층 콘텐츠 구성 필요**: `EnemyWon` 프리팹 최초 생성 → `SC_Face_2` 새 씬 → Addressable 등록 + `CubeFaceData_2` + `GameState.faceData[2]` 연결 → 평×2/원×1 배치 → `RoomClearGate`+`Stairs` (→ [[logic/3층 콘텐츠 - 전봇대 거리 씬 설정]] 0~5단계)
+- 3층 검증되면 **4층("흐린 상점가")** — 흡 첫 등장 + "흡이 색 복원 구역 접근 전에 처치"라는 특수 조건이 있어서 단순 배치로 안 끝날 수 있음, 미리 설계 검토 필요
 - 1층의 "방B(색 구슬 파동 트리거)"·"입장 복도(튜토리얼 유도)"도 아직 별도 콘텐츠 작업 필요
 - **⚠️ Enemy 프리팹을 Waves 배열에 채울 때는 반드시 Project 창에서 드래그할 것** — Hierarchy의 씬 오브젝트를 잘못 참조하면 그 오브젝트가 파괴되는 순간 웨이브가 조용히 깨짐 (오늘 겪은 버그, [[changelog/2026-08-19_인카운터스포너-1층콘텐츠]] 참고)
 - ⚠️ **`CubeMapManager`의 `Cube Reveal Floor Number`를 테스트용으로 3으로 낮춰뒀다면 12로 복구했는지 확인할 것**
