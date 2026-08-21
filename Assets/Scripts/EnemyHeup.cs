@@ -3,20 +3,20 @@ using UnityEngine.AI;
 
 /// <summary>
 /// EnemyHeup (먹괴음 - 흡, 흡수형)
-/// HP가 절반(`lowHpThreshold`) 밑으로 떨어지면 가장 가까운 색 복원 구역을 찾아가 흡수해서
-/// 회복하고, 회복이 다 끝날 때까지는(100%) 전투를 걸지 않습니다. 반대로 **HP가 50% 이상이면
-/// 평범한 근접 공격 유닛처럼 플레이어를 공격**합니다 — 즉 "많이 다치면 도망만 가고, 어느 정도
-/// 버틸 만하면 맞서 싸우는" 하이브리드 행동입니다.
+/// **비공격 유닛입니다** — [[27 전투 프레임 데이터]] "텔레그래프 불필요(비공격 유닛)" 명시대로
+/// 플레이어를 절대 공격하지 않습니다. HP가 절반 밑으로 떨어지면 가장 가까운 색 복원 구역을
+/// 찾아가 흡수해서 회복하고, 그렇지 않을 때는 플레이어 쪽으로 다가만 옵니다(공격 없이).
 ///
-/// [[13 먹괴음 AI 설계]] BT_Enemy_Heup 원안(HP&lt;50% → FindNearestColorRestoredArea + Absorb,
-/// 아니면 MoveToPlayer)에서 두 가지를 사용자 피드백에 맞춰 바꿨습니다:
-/// 1. (2026-08-20) 회복 시작 후 HP가 50%를 살짝 넘자마자 멈추던 문제 → 한 번 시작하면
-///    100%까지 계속 회복하는 히스테리시스(`isHealingCommitted`) 추가
-/// 2. (2026-08-20) [[27 전투 프레임 데이터]]의 "비공격 유닛" 스펙에서 벗어나, 50% 이상일 때는
-///    [[EnemyPyeong]]과 동일한 근접 공격(윈드업/액티브/리커버리)을 하도록 확장
+/// [[13 먹괴음 AI 설계]] BT_Enemy_Heup 그대로: HP&lt;50% → FindNearestColorRestoredArea + Absorb,
+/// 아니면 MoveToPlayer. "구역 찾기"는 [[RestoredAreaRegistry]] 정적 유틸로 구현.
 ///
-/// 단순화: 원안은 색마다 회복 폭이 다르지만(빨강 크게, 보라 작게), 구역별 색 정보까지
-/// 등록소에 저장하는 건 범위를 넘어서서 **모든 구역 동일 회복량**으로 단순화했습니다.
+/// 단순화: 원안은 색마다 회복 폭이 다르지만(빨강 크게, 보라 작게 — 가시광선 스펙트럼 기준),
+/// 구역별 색 정보까지 등록소에 저장하는 건 지금 범위를 넘어서서 **모든 구역 동일 회복량**으로
+/// 단순화했습니다. 나중에 [[RestoredAreaRegistry]]가 색까지 같이 저장하게 확장하면 됩니다.
+///
+/// 2026-08-20: HP 50% 이상일 때 공격도 하도록 확장했다가, 실제로 공격이 들어오는지 체감이
+/// 잘 안 된다는 피드백으로 **다시 원래대로 비공격 유닛으로 되돌림**. 회복 히스테리시스(한 번
+/// 시작하면 100%까지 계속 회복)만 남기고 공격 관련 코드는 제거했습니다.
 /// </summary>
 [RequireComponent(typeof(NavMeshAgent))]
 [RequireComponent(typeof(EnemyHealth))]
@@ -26,7 +26,7 @@ public class EnemyHeup : MonoBehaviour, IKnockbackable
     public float moveSpeed = 2.5f;
 
     [Header("흡수 (13 먹괴음 AI 설계)")]
-    [Tooltip("이 비율 밑으로 HP가 떨어지면 색 복원 구역을 찾아 회복하러 갑니다. 이 비율 이상이면 공격도 가능해집니다.")]
+    [Tooltip("이 비율 밑으로 HP가 떨어지면 색 복원 구역을 찾아 회복하러 갑니다.")]
     [Range(0f, 1f)]
     public float lowHpThreshold = 0.5f;
 
@@ -36,42 +36,29 @@ public class EnemyHeup : MonoBehaviour, IKnockbackable
     [Tooltip("초당 회복량입니다. (구역 안에 있는 동안 계속 적용)")]
     public float healPerSecond = 5f;
 
-    [Header("공격 (2026-08-20 추가 — HP 50% 이상일 때만)")]
-    public float attackPower = 6f;
-    public float attackRange = 1.5f;
-    public float attackHitRadius = 1f;
-
     [Header("감지 (13 AI 설계)")]
     public float sightRadius = 6f;
     public float perceptionInterval = 0.2f;
 
-    /// <summary>회복 구역에 도달해서 흡수를 막 시작한 순간(딱 한 번) 발동합니다. [[WallExplosionHazard]]가 구독.</summary>
+    /// <summary>
+    /// 회복 구역에 도달해서 흡수를 막 시작한 순간(딱 한 번) 발동합니다.
+    /// 2026-08-20: 4층 [[WallExplosionHazard]]가 구독해서 "접근 전에 처치" 페널티를 겁니다.
+    /// </summary>
     public event System.Action OnAbsorbStart;
 
-    // 텔레그래프 연출 훅 — [[EnemyPyeong]]과 동일한 용도.
-    public event System.Action OnAttackWindupStart;
-    public event System.Action OnAttackHit;
-
-    private enum State { Idle, Chase, SeekHealArea, Absorbing, AttackWindup, AttackActive, AttackRecovery }
+    private enum State { Idle, Chase, SeekHealArea, Absorbing }
     private State state = State.Idle;
     private float perceptionTimer;
-    private float stateTimer;
     private bool isKnockedBack;
     private bool isHealingCommitted; // 한 번 회복 시작하면 100% 찰 때까지 true
 
     private NavMeshAgent agent;
     private EnemyHealth health;
     private Transform player;
-    private float distanceToPlayer = float.MaxValue;
     private Vector3 healTargetPos;
     private bool hasHealTarget;
 
     private const float KnockbackDuration = 0.25f;
-
-    // 27 전투 프레임 데이터에 흡 전용 수치가 없어서(원래 비공격 유닛), 평과 동일한 프레임을 재사용.
-    private const float WindupSeconds = 15f / 60f;
-    private const float ActiveSeconds = 4f / 60f;
-    private const float RecoverySeconds = 14f / 60f;
 
     private void Awake()
     {
@@ -84,43 +71,20 @@ public class EnemyHeup : MonoBehaviour, IKnockbackable
     {
         if (isKnockedBack) return;
 
-        // 퍼셉션 갱신 + 의사결정은 매 프레임 안 하고 perceptionInterval마다만 (최적화 원칙).
+        // 퍼셉션 갱신 + 목적지 재계산(SetDestination)은 매 프레임 안 하고 perceptionInterval마다만
+        // 합니다 (최적화 원칙 — EnemyPyeong/EnemyWon과 동일한 이유).
         perceptionTimer += Time.deltaTime;
         if (perceptionTimer >= perceptionInterval)
         {
             perceptionTimer = 0f;
             player = FindPlayerInSight();
-            distanceToPlayer = player != null ? Vector3.Distance(transform.position, player.position) : float.MaxValue;
-
-            if (!IsAttacking()) // 공격 시퀀스 중엔 판단을 바꾸지 않음 (EnemyPyeong과 동일 이유)
-                UpdateDecision();
+            UpdateDecision();
         }
 
         // 회복은 상태가 유지되는 동안 매 프레임 스무스하게 적용합니다.
         if (state == State.Absorbing)
             health.Heal(healPerSecond * Time.deltaTime);
-
-        // 공격 시퀀스는 매 프레임 진행해야 하므로(윈드업→액티브→리커버리) perceptionInterval과 별개로 처리.
-        switch (state)
-        {
-            case State.AttackWindup:
-                stateTimer += Time.deltaTime;
-                if (stateTimer >= WindupSeconds) EnterAttackActive();
-                break;
-
-            case State.AttackActive:
-                stateTimer += Time.deltaTime;
-                if (stateTimer >= ActiveSeconds) EnterAttackRecovery();
-                break;
-
-            case State.AttackRecovery:
-                stateTimer += Time.deltaTime;
-                if (stateTimer >= RecoverySeconds) EnterChaseOrIdle();
-                break;
-        }
     }
-
-    private bool IsAttacking() => state == State.AttackWindup || state == State.AttackActive || state == State.AttackRecovery;
 
     private Transform FindPlayerInSight()
     {
@@ -134,29 +98,30 @@ public class EnemyHeup : MonoBehaviour, IKnockbackable
     }
 
     /// <summary>
-    /// BT_Enemy_Heup 확장판 Selector: HP 50% 미만이면 회복만(공격 없음), 그 이상이면 사거리 안일
-    /// 때 공격, 아니면 추격.
+    /// BT_Enemy_Heup의 Selector: HP 낮으면 회복 구역 탐색/흡수, 아니면 플레이어 쪽으로 이동만.
+    ///
+    /// 2026-08-20: [[13 먹괴음 AI 설계]] 원안은 "HP&lt;50%" 조건을 매 틱 재검사하는 순수
+    /// Selector라서, 회복 중 HP가 50%를 살짝 넘는 순간 곧바로 멈춰버리는 문제가 있었습니다
+    /// (사용자 피드백: "왜 절반까지만 회복해?"). 그래서 히스테리시스를 추가했습니다 —
+    /// 한 번 회복이 시작되면(`isHealingCommitted`) HP가 완전히 꽉 찰 때까지는 멈추지 않습니다.
+    /// 트리거 조건(50% 밑에서 시작)은 기획서 그대로 유지, "언제 멈추는지"만 다르게 해석.
     /// </summary>
     private void UpdateDecision()
     {
         bool isLowHp = health.CurrentHP < health.maxHP * lowHpThreshold;
         if (isLowHp) isHealingCommitted = true;
 
-        if (isHealingCommitted && health.CurrentHP >= health.maxHP)
-            isHealingCommitted = false; // 완전히 다 찼으면 회복 종료
-
-        bool canFight = health.CurrentHP >= health.maxHP * lowHpThreshold; // 50% 이상 = 공격 가능
-
-        if (canFight && player != null && distanceToPlayer <= attackRange)
-        {
-            EnterAttackWindup();
-            return;
-        }
-
         if (isHealingCommitted)
         {
-            UpdateSeekHealArea();
-            return;
+            if (health.CurrentHP >= health.maxHP)
+            {
+                isHealingCommitted = false; // 완전히 다 찼으면 회복 종료, 정상 행동으로 복귀
+            }
+            else
+            {
+                UpdateSeekHealArea();
+                return;
+            }
         }
 
         hasHealTarget = false; // 회복 완전히 끝났으면 다음에 다시 낮아졌을 때 새로 탐색
@@ -197,49 +162,6 @@ public class EnemyHeup : MonoBehaviour, IKnockbackable
         }
     }
 
-    private void EnterAttackWindup()
-    {
-        state = State.AttackWindup;
-        stateTimer = 0f;
-        agent.isStopped = true;
-        OnAttackWindupStart?.Invoke();
-    }
-
-    private void EnterAttackActive()
-    {
-        state = State.AttackActive;
-        stateTimer = 0f;
-        PerformAttack();
-    }
-
-    private void EnterAttackRecovery()
-    {
-        state = State.AttackRecovery;
-        stateTimer = 0f;
-    }
-
-    private void EnterChaseOrIdle()
-    {
-        agent.isStopped = false;
-        state = player != null ? State.Chase : State.Idle;
-        stateTimer = 0f;
-    }
-
-    /// <summary>Active 프레임 진입 시 1회만 판정합니다. ([[EnemyPyeong]]과 동일한 패턴)</summary>
-    private void PerformAttack()
-    {
-        OnAttackHit?.Invoke();
-
-        Collider[] hits = Physics.OverlapSphere(transform.position, attackHitRadius);
-        foreach (var hit in hits)
-        {
-            if (!hit.CompareTag("Player")) continue;
-
-            var damageable = hit.GetComponent<IDamageable>();
-            damageable?.TakeDamage(attackPower);
-        }
-    }
-
     /// <summary>IKnockbackable 구현. [[EnemyPyeong]]과 동일한 방식입니다.</summary>
     public void ApplyKnockback(Vector3 direction, float force)
     {
@@ -272,12 +194,7 @@ public class EnemyHeup : MonoBehaviour, IKnockbackable
             agent.isStopped = false;
         }
 
-        // 공격 중이었더라도 넉백당하면 리셋 — 맞고도 태연히 공격을 이어가면 안 맞은 것처럼 느껴짐
-        // (isHealingCommitted는 그대로 유지 — 회복 목표 자체는 넉백당했다고 취소되지 않음)
-        state = player != null ? State.Chase : State.Idle;
-        stateTimer = 0f;
         isKnockedBack = false;
-
         Debug.Log($"[EnemyHeup] {name} 넉백 종료.");
     }
 
@@ -287,7 +204,5 @@ public class EnemyHeup : MonoBehaviour, IKnockbackable
         Gizmos.DrawWireSphere(transform.position, sightRadius);
         Gizmos.color = Color.green;
         Gizmos.DrawWireSphere(transform.position, absorbRadius);
-        Gizmos.color = Color.red;
-        Gizmos.DrawWireSphere(transform.position, attackRange);
     }
 }
