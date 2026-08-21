@@ -22,6 +22,9 @@ public class PaintableObject : MonoBehaviour
     [Tooltip("시작할 때 자동으로 회색조로 만들지 여부입니다.")]
     public bool startGray = true;
 
+    /// <summary>이 오브젝트가 색 복원됐을 때 발동합니다. (예: [[HiddenOrbSpawner]]가 구독해서 숨겨진 구슬을 등장시킴)</summary>
+    public event System.Action OnPainted;
+
     private Renderer cachedRenderer;
     private bool isPainted;
     private Coroutine fadeRoutine;
@@ -54,6 +57,8 @@ public class PaintableObject : MonoBehaviour
 
         if (fadeRoutine != null) StopCoroutine(fadeRoutine);
         fadeRoutine = StartCoroutine(FadeToTrueColor());
+
+        OnPainted?.Invoke();
     }
 
     private IEnumerator FadeToTrueColor()

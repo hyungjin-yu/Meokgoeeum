@@ -13,6 +13,13 @@ public class ColorOrbPickup : MonoBehaviour
     private ColorOrbPool pool;
     private Renderer cachedRenderer;
 
+    /// <summary>
+    /// 플레이어가 이 구슬을 주웠을 때 발동합니다. (예: [[HiddenOrbSpawner]]가 특정 구슬 하나를
+    /// 획득했을 때만 계단을 열고 싶을 때 구독) 풀링 재사용 때마다 구독자가 남지 않도록
+    /// Init()에서 매번 초기화합니다.
+    /// </summary>
+    public event System.Action OnPickedUp;
+
     // 23 UI 디자인 기획서의 색 구슬 팔레트 HEX를 그대로 사용
     private static readonly Color[] DisplayColors =
     {
@@ -31,6 +38,7 @@ public class ColorOrbPickup : MonoBehaviour
     {
         Color = color;
         pool = ownerPool;
+        OnPickedUp = null; // 풀에서 재사용될 때 이전 구독자(예: 지난번 HiddenOrbSpawner)가 남아있지 않도록 초기화
 
         if (cachedRenderer == null)
             cachedRenderer = GetComponent<Renderer>();
@@ -47,6 +55,7 @@ public class ColorOrbPickup : MonoBehaviour
 
         ColorSystemManager.Instance?.AddOrb(Color);
         ColorWaveEffect.Instance?.PlayWave(transform.position);
+        OnPickedUp?.Invoke();
         pool.Release(this);
     }
 }
