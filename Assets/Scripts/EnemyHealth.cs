@@ -62,6 +62,9 @@ public class EnemyHealth : MonoBehaviour, IDamageable
         isDead = true;
         OnDeath?.Invoke(this);
 
+        if (GameState.Instance != null)
+            GameState.Instance.totalKills++;
+
         DropColorOrb();
 
         Debug.Log($"{name} 정화 완료!");

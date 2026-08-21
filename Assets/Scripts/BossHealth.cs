@@ -83,5 +83,7 @@ public class BossHealth : MonoBehaviour, IDamageable
         isDead = true;
         Debug.Log($"[BossHealth] {name} 처치! (3페이즈/처치 연출/보상은 v0.3 범위 밖 — 다음 마일스톤)");
         OnDeath?.Invoke();
+
+        SaveManager.Instance?.Save(); // [[18 세이브 & 로드 기획]] "보스 처치 후 자동 저장"
     }
 }

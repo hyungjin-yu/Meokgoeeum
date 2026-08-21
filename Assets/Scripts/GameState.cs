@@ -18,6 +18,9 @@ public class GameState : MonoBehaviour
     [Tooltip("화면에 표시되는 진행 카운터입니다. 면(faceIndex)과 별개 — 12 큐브 좌표계 설계 참고.")]
     public int floorNumber;
 
+    [Tooltip("지금까지 처치한 먹괴음 총 수입니다. [[18 세이브 & 로드 기획]] 저장 항목, [[EnemyHealth]]가 증가시킵니다.")]
+    public int totalKills;
+
     private void Awake()
     {
         if (Instance == null)

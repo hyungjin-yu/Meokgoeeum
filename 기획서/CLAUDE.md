@@ -101,6 +101,7 @@
 - [x] **큐브 구조 노출 훅 + APV 최소 틀 완료 + Unity 검증 끝** — `CubeMapManager.OnCubeRevealTriggered`(N층 도달 시 발동) + `CubeRevealSequence.cs`(자리표시자 연출: 나레이션+페이드). 훅 발동 → 연출 시작/종료 로그 정확히 확인. 실제 Timeline/조명 작업은 아트 에셋 필요해서 보류, [[logic/APV 조명 설정]]에 나중 절차 정리
 - 🎉 **v0.3의 시스템 코드성 작업 마무리 (코드 + Unity 검증 다 끝남).** 다음은 실제 레벨 콘텐츠/아트 에셋 도입에 달려있음
 - [x] **1층 "방A 전투" 콘텐츠 완료 + Unity 검증 끝** — `EncounterSpawner.cs`(웨이브 기반 스포너, `RoomClearGate`와 자연스럽게 맞물림). 1웨이브(평 HP 절반)→2웨이브(평 정상 HP)→계단 활성화까지 실전 확인. 도중 "2웨이브 즉시 클리어" 버그 발견·해결(원인: Waves가 Project 프리팹이 아니라 Hierarchy에 남은 씬 오브젝트를 참조 — 자세한 진단 과정은 changelog 참고)
+- [x] **세이브 & 로드 최소 버전 코드 완료** — `SaveData.cs`/`SaveManager.cs` 신규(JSON, `persistentDataPath`, 슬롯 1개). 층 입장 시 + 보스 처치 시 자동 저장(`CubeMapManager`/`BossHealth`에 연결), 게임 시작 시 세이브 있으면 이어서 시작(`ColorSystemManager.RestoreState()`/`PlayerHealth.SetHP()` 추가). `GameSystems`에 `SaveManager` 부착만 하면 끝. **Unity 작업 아직 안 함**
 - [x] **4층 콘텐츠 + 게임 오버 최소 버전 코드 완료** — 사용자 요청으로 "흡이 접근 전에 처치" 조건을 진짜 페널티(벽 폭발→즉사)로 구현. `PlayerHealth.OnDeath`/`ResetHealth()`, `CubeMapManager.ReloadCurrentFace()`(현재 면 재로드), `GameOverManager.cs` 신규(⚠️ 원 기획 "처음부터"와 다르게 "죽은 층에서 다시 시작"으로 구현 — 사유 changelog 참고), `EnemyHeup.OnAbsorbStart` 이벤트, `WallExplosionHazard.cs` 신규(4층 전용, 텔레그래프 유예시간 있음). `SC_Face_3` 새 씬 + `EnemyHeup` 프리팹 최초 생성 필요. **Unity 작업 아직 안 함**
 - [x] **3층 콘텐츠 완료 + Unity 검증 끝** (새 코드 없이 기존 `RoomClearGate`/`Stairs`/`EnemyPyeong` 재사용, `EnemyWon` 프리팹 최초 생성). `SC_Face_2` 신규 + Addressable/CubeFaceData_2/GameState 연결(회전 경로 0→4→2) 전부 확인. 부수 발견: 반복 층 재방문 시 `EncounterSpawner.autoStart`가 다시 발동하는 게 "반복 층" 설계와 정확히 맞아떨어지는 의도된 동작임을 확인(버그 아님)
 - [x] **2층 콘텐츠 완료 + Unity 검증 끝** — `HiddenOrbSpawner.cs` 신규(`PaintableObject.OnPainted`/`ColorOrbPickup.OnPickedUp` 이벤트 추가). "바닥 타일 색 복원 → 숨겨진 구슬 등장 → 획득 시 계단 자동 활성화" 패턴, `RoomClearGate` 없이도 계단이 열리는 두 번째 방식. 실전 테스트로 버그 2개 즉시 수정(옛 RoomClearGate 잔재 제거, 구슬 스폰 높이 조정용 `spawnHeightOffset` 추가)
@@ -113,14 +114,15 @@
 
 ### 최근 changelog (최신이 위)
 
+- `2026-08-20_세이브로드-최소버전.md` — `SaveData.cs`/`SaveManager.cs` 신규(JSON, 슬롯 1개). 층 입장/보스 처치 시 자동 저장, 시작 시 이어서 로드. `GameSystems`에 `Save Manager` 부착만 하면 끝. **Unity 작업 아직 안 함**
 - `2026-08-20_4층콘텐츠-준비.md` — `GameOverManager.cs`/`WallExplosionHazard.cs` 신규 + `PlayerHealth.OnDeath`/`CubeMapManager.ReloadCurrentFace()` 추가. "흡이 접근 전에 처치" = 벽 폭발 즉사 페널티로 구현(사용자 요청). ⚠️ 게임오버는 "처음부터"가 아니라 "죽은 층에서 다시 시작"(임시 결정, 사유 기록). **Unity 작업 아직 안 함**
 - `2026-08-20_3층콘텐츠-준비.md` — 코드 변경 없음(기존 `RoomClearGate`/`Stairs`/`EnemyPyeong`/`EnemyWon` 재사용). `SC_Face_2` 신규 + 평×2/원×1 배치 **완료 + Unity 검증까지 끝남**. 반복 층 재방문 시 EncounterSpawner 재발동 = 의도된 동작 확인(버그 아님)
 - `2026-08-20_2층콘텐츠-숨겨진구슬.md` — `HiddenOrbSpawner.cs` 신규(+ `PaintableObject.OnPainted`, `ColorOrbPickup.OnPickedUp` 이벤트 추가). 2층 "바닥 타일 복원→숨겨진 구슬→계단" 패턴 **완료 + Unity 검증까지 끝남**
 - `2026-08-19_인카운터스포너-1층콘텐츠.md` — `EncounterSpawner.cs` 신규(웨이브 기반, `RoomClearGate`와 자연스럽게 맞물림). 1층 "방A 전투"(1웨이브 평 HP 절반→2웨이브 평 정상 HP→계단) **완료 + Unity 검증까지 끝남**. "2웨이브 즉시 클리어" 버그 발견·원인 확정·해결 과정 상세 기록(Waves가 프리팹 에셋 대신 씬 오브젝트를 참조하던 문제)
-- `2026-08-19_큐브노출-APV-최소틀.md` — `CubeMapManager.OnCubeRevealTriggered`(12층 훅) + `CubeRevealSequence.cs`(자리표시자 연출) **완료 + Unity 검증까지 끝남**. APV는 [[logic/APV 조명 설정]]에 절차만 정리, 실제 착수는 레벨 콘텐츠 갖춰진 뒤로
 
 ### 지금 당장 다음에 할 일
 
+- **Unity에서 세이브 시스템 부착**: `GameSystems`에 `Save Manager` 컴포넌트 하나만 추가하면 끝 (→ [[logic/세이브 로드 설정]])
 - **Unity에서 4층 콘텐츠 구성 필요**: `EnemyHeup` 프리팹 최초 생성 → `GameOverManager` 최초 부착(GameSystems, 게임 전체 공용) → `SC_Face_3` 새 씬 → Addressable+`CubeFaceData_3`+`GameState.faceData` 연결(Element 번호는 회전 로그 확인 후 결정) → 평×2/흡×1 + `ShopSign`(PaintableObject) 배치 → `WallExplosionHazard`(Wall 오브젝트 + Heup 연결) → `RoomClearGate`+`Stairs` (→ [[logic/4층 콘텐츠 - 흐린 상점가 씬 설정]] 0~7단계)
 - ⚠️ **게임 오버가 "죽은 층에서 다시 시작"으로 구현돼있음** (원 기획 "처음부터"와 다름, 임시 결정 — 사유는 [[changelog/2026-08-20_4층콘텐츠-준비]] 참고)
 - 4층 검증되면 **5층("익숙한 골목")** — "반복 층 힌트 시작" 스펙인데, 이미 3층 테스트 중 `MarkVisited`/나레이션이 자동으로 잘 도는 게 확인됐으니 아마 코드 변경 없이 콘텐츠 배치만으로 끝날 가능성이 큼

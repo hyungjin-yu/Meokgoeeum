@@ -105,6 +105,28 @@ public class ColorSystemManager : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// [[SaveManager]]가 로드 시 호출합니다. 보유/누적 배열을 통째로 덮어씁니다.
+    /// acquisitionOrder(FIFO 소모 순서)는 세이브 데이터에 없어서, 색 인덱스 순서대로
+    /// 다시 채워서 근사합니다 — 로드 직후 딱 한 번 스킬을 썼을 때 "어느 색이 먼저 빠지는지"가
+    /// 저장 시점과 정확히 같지 않을 수 있지만, 보유 구슬이 최대 5개뿐이라 체감상 무시할 수준입니다.
+    /// </summary>
+    public void RestoreState(int[] heldCounts, int[] lifetimeCounts)
+    {
+        acquisitionOrder.Clear();
+
+        for (int i = 0; i < heldOrbs.Length; i++)
+        {
+            heldOrbs[i] = i < heldCounts.Length ? heldCounts[i] : 0;
+            lifetimeCollected[i] = i < lifetimeCounts.Length ? lifetimeCounts[i] : 0;
+
+            for (int n = 0; n < heldOrbs[i]; n++)
+                acquisitionOrder.Enqueue((OrbColor)i);
+        }
+
+        Debug.Log($"[ColorSystemManager] 세이브에서 복원됨: {DescribeHeld()}");
+    }
+
     private string DescribeHeld()
     {
         var sb = new StringBuilder();

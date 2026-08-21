@@ -38,6 +38,9 @@ public class CubeMapManager : MonoBehaviour
 
     public bool IsRotating { get; private set; }
 
+    /// <summary>[[SaveManager]]가 저장할 때 씁니다.</summary>
+    public int CurrentFaceIndex => currentFaceIndex;
+
     private int currentFaceIndex;
     private AsyncOperationHandle<SceneInstance> currentSceneHandle;
     private bool hasLoadedScene;
@@ -81,6 +84,15 @@ public class CubeMapManager : MonoBehaviour
             yield break;
         }
 
+        // [[SaveManager]] 세이브 파일이 있으면 그 지점에서 이어서 시작 ([[18 세이브 & 로드 기획]])
+        SaveData save = SaveManager.Instance != null && SaveManager.Instance.HasSaveFile()
+            ? SaveManager.Instance.Load()
+            : null;
+
+        bool isResuming = save != null;
+        if (isResuming)
+            ApplySaveData(save);
+
         var faceData = GameState.Instance.GetFaceData(currentFaceIndex);
         if (faceData == null)
         {
@@ -89,8 +101,48 @@ public class CubeMapManager : MonoBehaviour
         }
 
         yield return LoadFace(faceData);
-        MarkVisited(currentFaceIndex);
+
+        // 세이브 로드로 이어서 시작하는 거면 "새 방문"이 아니므로 MarkVisited(재방문 나레이션 트리거)는 건너뜀 —
+        // isVisited/visitCount는 이미 ApplySaveData()에서 복원해둠
+        if (!isResuming)
+            MarkVisited(currentFaceIndex);
+
         TeleportPlayerToSpawnPoint(); // 게임 시작 시에도 SpawnPoint로 옮겨야 함 — 씬 분리 전 원래 위치에 그대로 있으면 새 면의 Ground와 어긋나서 허공에 떨어질 수 있음
+
+        if (isResuming)
+            ApplySavedPlayerHP(save.playerHP);
+
+        SaveManager.Instance?.Save(); // 시작 지점도 "층 입장"에 해당 — 새 게임이면 1층 최초 저장이 됨
+    }
+
+    /// <summary>
+    /// SaveData의 진행 상태(층수/면 인덱스/처치 수/구슬/방문 기록)를 각 매니저에 반영합니다.
+    /// 플레이어 HP는 아직 Player 오브젝트가 새 면으로 텔레포트되기 전이라 나중에
+    /// (TeleportPlayerToSpawnPoint 이후) `ApplySavedPlayerHP()`로 따로 적용합니다.
+    /// </summary>
+    private void ApplySaveData(SaveData save)
+    {
+        currentFaceIndex = save.currentFaceIndex;
+        GameState.Instance.floorNumber = save.currentFloor;
+        GameState.Instance.totalKills = save.totalKills;
+
+        ColorSystemManager.Instance?.RestoreState(save.orbCounts, save.orbLifetimeCollected);
+
+        for (int i = 0; i < 6 && i < save.faceVisited.Length; i++)
+        {
+            var faceData = GameState.Instance.GetFaceData(i);
+            if (faceData == null) continue;
+
+            faceData.isVisited = save.faceVisited[i];
+            faceData.visitCount = save.faceVisited[i] ? 1 : 0; // 세이브엔 방문 여부만 있어서 정확한 재방문 횟수는 근사치
+        }
+    }
+
+    private void ApplySavedPlayerHP(float hp)
+    {
+        GameObject player = GameObject.FindGameObjectWithTag("Player");
+        var health = player != null ? player.GetComponent<PlayerHealth>() : null;
+        health?.SetHP(hp);
     }
 
     /// <summary>
@@ -142,6 +194,8 @@ public class CubeMapManager : MonoBehaviour
             yield return FadeManager.Instance.FadeIn();
 
         IsRotating = false;
+
+        SaveManager.Instance?.Save(); // [[18 세이브 & 로드 기획]] "층 입장 시 자동 저장"
 
         if (!cubeRevealTriggered && GameState.Instance.floorNumber >= cubeRevealFloorNumber)
         {

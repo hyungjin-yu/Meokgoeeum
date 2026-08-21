@@ -38,6 +38,16 @@ public class PlayerHealth : MonoBehaviour, IDamageable
     }
 
     /// <summary>
+    /// 임의의 값으로 체력을 맞춥니다. [[SaveManager]]가 세이브 파일 로드 직후 복원할 때 씁니다
+    /// (ResetHealth()는 항상 최대치로 채우는 거라 저장된 값을 그대로 복원하려면 이게 필요).
+    /// </summary>
+    public void SetHP(float hp)
+    {
+        currentHP = Mathf.Clamp(hp, 0f, maxHP);
+        isDead = currentHP <= 0f;
+    }
+
+    /// <summary>
     /// 무적 여부를 켜고 끕니다. [[PlayerDodge]]가 구르기 i-frame 구간에서 호출합니다.
     /// </summary>
     public void SetInvulnerable(bool value)
