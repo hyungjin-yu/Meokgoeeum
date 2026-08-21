@@ -101,7 +101,7 @@
 - [x] **큐브 구조 노출 훅 + APV 최소 틀 완료 + Unity 검증 끝** — `CubeMapManager.OnCubeRevealTriggered`(N층 도달 시 발동) + `CubeRevealSequence.cs`(자리표시자 연출: 나레이션+페이드). 훅 발동 → 연출 시작/종료 로그 정확히 확인. 실제 Timeline/조명 작업은 아트 에셋 필요해서 보류, [[logic/APV 조명 설정]]에 나중 절차 정리
 - 🎉 **v0.3의 시스템 코드성 작업 마무리 (코드 + Unity 검증 다 끝남).** 다음은 실제 레벨 콘텐츠/아트 에셋 도입에 달려있음
 - [x] **1층 "방A 전투" 콘텐츠 완료 + Unity 검증 끝** — `EncounterSpawner.cs`(웨이브 기반 스포너, `RoomClearGate`와 자연스럽게 맞물림). 1웨이브(평 HP 절반)→2웨이브(평 정상 HP)→계단 활성화까지 실전 확인. 도중 "2웨이브 즉시 클리어" 버그 발견·해결(원인: Waves가 Project 프리팹이 아니라 Hierarchy에 남은 씬 오브젝트를 참조 — 자세한 진단 과정은 changelog 참고)
-- [x] **흡(EnemyHeup) 회복 히스테리시스** — 회복 시작하면 100%까지 계속 회복(사용자 피드백: "왜 절반까지만 회복해?"). 공격 능력도 추가해봤다가 "체감이 안 된다"는 피드백으로 다시 제거 — 최종적으로 여전히 비공격 유닛. **Unity 테스트 아직 안 함**
+- [x] **흡(EnemyHeup) 회복 히스테리시스 완료 + Unity 검증 끝** — 회복 시작하면 100%까지 계속 회복(사용자 피드백: "왜 절반까지만 회복해?"). 공격 능력도 추가해봤다가 "체감이 안 된다"는 피드백으로 다시 제거 — 최종적으로 여전히 비공격 유닛
 - [x] **세이브 & 로드 완료 + Unity 검증 끝** — `SaveData.cs`/`SaveManager.cs` 신규(JSON, `persistentDataPath`, 슬롯 1개). 층 입장 시 + 보스 처치 시 자동 저장, 게임 재시작 시 저장된 층/면/구슬 보유 그대로 이어서 시작하는 것까지 실전 확인
 - [x] **4층 콘텐츠 + 게임 오버 최소 버전 코드 완료** — 사용자 요청으로 "흡이 접근 전에 처치" 조건을 진짜 페널티(벽 폭발→즉사)로 구현. `PlayerHealth.OnDeath`/`ResetHealth()`, `CubeMapManager.ReloadCurrentFace()`(현재 면 재로드), `GameOverManager.cs` 신규(⚠️ 원 기획 "처음부터"와 다르게 "죽은 층에서 다시 시작"으로 구현 — 사유 changelog 참고), `EnemyHeup.OnAbsorbStart` 이벤트, `WallExplosionHazard.cs` 신규(4층 전용, 텔레그래프 유예시간 있음). `SC_Face_3` 새 씬 + `EnemyHeup` 프리팹 최초 생성 필요. **Unity 작업 아직 안 함**
 - [x] **3층 콘텐츠 완료 + Unity 검증 끝** (새 코드 없이 기존 `RoomClearGate`/`Stairs`/`EnemyPyeong` 재사용, `EnemyWon` 프리팹 최초 생성). `SC_Face_2` 신규 + Addressable/CubeFaceData_2/GameState 연결(회전 경로 0→4→2) 전부 확인. 부수 발견: 반복 층 재방문 시 `EncounterSpawner.autoStart`가 다시 발동하는 게 "반복 층" 설계와 정확히 맞아떨어지는 의도된 동작임을 확인(버그 아님)
@@ -115,7 +115,7 @@
 
 ### 최근 changelog (최신이 위)
 
-- `2026-08-20_흡-회복개선-공격추가.md` — `EnemyHeup` 회복 히스테리시스(100%까지 계속 회복) 최종 반영. 공격 능력도 추가했다가 "체감 안 됨" 피드백으로 되돌림 — 여전히 비공격 유닛. **Unity 테스트 아직 안 함**
+- `2026-08-20_흡-회복개선-공격추가.md` — `EnemyHeup` 회복 히스테리시스(100%까지 계속 회복) **완료 + Unity 검증까지 끝남**. 공격 능력도 추가했다가 "체감 안 됨" 피드백으로 되돌림 — 여전히 비공격 유닛
 - `2026-08-20_세이브로드-최소버전.md` — `SaveData.cs`/`SaveManager.cs` 신규(JSON, 슬롯 1개). 층 입장/보스 처치 시 자동 저장, 시작 시 이어서 로드 **완료 + Unity 검증까지 끝남**
 - `2026-08-20_4층콘텐츠-준비.md` — `GameOverManager.cs`/`WallExplosionHazard.cs` 신규 + `PlayerHealth.OnDeath`/`CubeMapManager.ReloadCurrentFace()` 추가. "흡이 접근 전에 처치" = 벽 폭발 즉사 페널티로 구현(사용자 요청). ⚠️ 게임오버는 "처음부터"가 아니라 "죽은 층에서 다시 시작"(임시 결정, 사유 기록). **Unity 작업 아직 안 함**
 - `2026-08-20_3층콘텐츠-준비.md` — 코드 변경 없음(기존 `RoomClearGate`/`Stairs`/`EnemyPyeong`/`EnemyWon` 재사용). `SC_Face_2` 신규 + 평×2/원×1 배치 **완료 + Unity 검증까지 끝남**. 반복 층 재방문 시 EncounterSpawner 재발동 = 의도된 동작 확인(버그 아님)
