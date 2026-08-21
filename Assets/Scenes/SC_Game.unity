@@ -782,6 +782,7 @@ GameObject:
   - component: {fileID: 1752313408}
   - component: {fileID: 1752313412}
   - component: {fileID: 1752313413}
+  - component: {fileID: 1752313414}
   m_Layer: 0
   m_Name: GameSystems
   m_TagString: Untagged
@@ -899,11 +900,12 @@ MonoBehaviour:
   faceData:
   - {fileID: 11400000, guid: 7dcba0056523fb64eba9d8d04f866753, type: 2}
   - {fileID: 0}
-  - {fileID: 0}
+  - {fileID: 11400000, guid: 8f0a93b40f8c3ff449134711805a37c2, type: 2}
   - {fileID: 0}
   - {fileID: 11400000, guid: 4f656856ef3f5bb4e80499b2b2cf824c, type: 2}
-  - {fileID: 0}
+  - {fileID: 11400000, guid: 8e43441766c83604ea8604dd76a37fab, type: 2}
   floorNumber: 0
+  totalKills: 0
 --- !u!114 &1752313412
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -940,6 +942,18 @@ MonoBehaviour:
   placeholderDuration: 3
   placeholderLine: "...\uC774 \uBAA8\uB4E0 \uAC8C, \uD558\uB098\uC758 \uC0C1\uC790
     \uC548\uC774\uC5C8\uC5B4?"
+--- !u!114 &1752313414
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1752313403}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6d86af08d048d2642a71ada2928c0b1a, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::SaveManager
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0
