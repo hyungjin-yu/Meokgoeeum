@@ -17,6 +17,9 @@ public class HiddenOrbSpawner : MonoBehaviour
     [Tooltip("구슬이 나타날 위치입니다. 비워두면 이 스포너 자신의 위치를 씁니다.")]
     public Transform spawnPoint;
 
+    [Tooltip("위 위치에서 얼마나 띄워서 등장시킬지입니다. 구슬(반지름 약 0.2)이 바닥에 파묻혀 보이지 않도록 기본으로 살짝 띄워둡니다.")]
+    public float spawnHeightOffset = 0.3f;
+
     [Tooltip("등장할 구슬의 색입니다.")]
     public OrbColor orbColor;
 
@@ -41,7 +44,7 @@ public class HiddenOrbSpawner : MonoBehaviour
         if (spawned) return; // 중복 색칠 파동 등으로 두 번 발동돼도 구슬은 한 번만
         spawned = true;
 
-        Vector3 position = spawnPoint != null ? spawnPoint.position : transform.position;
+        Vector3 position = (spawnPoint != null ? spawnPoint.position : transform.position) + Vector3.up * spawnHeightOffset;
 
         if (ColorOrbPool.Instance == null)
         {
