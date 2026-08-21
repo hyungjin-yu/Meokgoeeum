@@ -151,6 +151,44 @@ public class CubeMapManager : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// 지금 있는 면을 그대로 다시 로드합니다 (회전 없음, 방문 횟수/층수 증가 없음).
+    /// [[GameOverManager]]가 "죽은 층에서 다시 시작"에 씁니다 — 씬을 통째로 다시 불러오는
+    /// 거라 그 면에 배치된 적들이 전부 원래 배치/체력으로 리스폰됩니다.
+    /// </summary>
+    public void ReloadCurrentFace()
+    {
+        if (IsRotating)
+        {
+            Debug.LogWarning("[CubeMapManager] 이미 회전/재로드 중입니다.");
+            return;
+        }
+        StartCoroutine(ReloadCurrentFaceRoutine());
+    }
+
+    private IEnumerator ReloadCurrentFaceRoutine()
+    {
+        IsRotating = true;
+        Debug.Log($"[CubeMapManager] {currentFaceIndex}면 재시작 (게임 오버 리트라이).");
+
+        if (FadeManager.Instance != null)
+            yield return FadeManager.Instance.FadeOut();
+
+        if (hasLoadedScene && currentSceneHandle.IsValid())
+            yield return Addressables.UnloadSceneAsync(currentSceneHandle);
+
+        var faceData = GameState.Instance.GetFaceData(currentFaceIndex);
+        yield return LoadFace(faceData);
+
+        TeleportPlayerToSpawnPoint();
+        // MarkVisited/floorNumber 증가는 하지 않음 — 새로운 방문이 아니라 재시작이므로
+
+        if (FadeManager.Instance != null)
+            yield return FadeManager.Instance.FadeIn();
+
+        IsRotating = false;
+    }
+
     private IEnumerator LoadFace(CubeFaceData faceData)
     {
         if (faceData == null || faceData.sceneReference == null || !faceData.sceneReference.RuntimeKeyIsValid())

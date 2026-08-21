@@ -36,6 +36,12 @@ public class EnemyHeup : MonoBehaviour, IKnockbackable
     public float sightRadius = 6f;
     public float perceptionInterval = 0.2f;
 
+    /// <summary>
+    /// 회복 구역에 도달해서 흡수를 막 시작한 순간(딱 한 번) 발동합니다.
+    /// 2026-08-20: 4층 [[WallExplosionHazard]]가 구독해서 "접근 전에 처치" 페널티를 겁니다.
+    /// </summary>
+    public event System.Action OnAbsorbStart;
+
     private enum State { Idle, Chase, SeekHealArea, Absorbing }
     private State state = State.Idle;
     private float perceptionTimer;
@@ -122,8 +128,12 @@ public class EnemyHeup : MonoBehaviour, IKnockbackable
         float distToHealArea = Vector3.Distance(transform.position, healTargetPos);
         if (distToHealArea <= absorbRadius)
         {
-            state = State.Absorbing;
-            agent.isStopped = true;
+            if (state != State.Absorbing) // 상태 전이 시점에만 1회 발동 (매 퍼셉션 틱마다 X)
+            {
+                state = State.Absorbing;
+                agent.isStopped = true;
+                OnAbsorbStart?.Invoke();
+            }
         }
         else
         {
