@@ -47,6 +47,10 @@ public class CubeRevealSequence : MonoBehaviour
 
         NarrationManager.Instance?.ShowNarration(placeholderLine);
 
+        // 2026-08-21: CubeMapManager의 면 전환과 같은 이유 — 화면이 페이드로 가려진 동안에도
+        // 적 AI/공격 판정은 그대로 실행돼서 안 보이는 채로 맞을 수 있음. 연출 구간 동안 무적 처리.
+        SetPlayerInvulnerable(true);
+
         if (FadeManager.Instance != null)
             yield return FadeManager.Instance.FadeOut();
 
@@ -55,6 +59,15 @@ public class CubeRevealSequence : MonoBehaviour
         if (FadeManager.Instance != null)
             yield return FadeManager.Instance.FadeIn();
 
+        SetPlayerInvulnerable(false);
+
         Debug.Log("[CubeRevealSequence] 큐브 구조 노출 연출 종료. (다음 단계: 보스 문 등장 — 아직 미구현)");
+    }
+
+    private void SetPlayerInvulnerable(bool value)
+    {
+        GameObject player = GameObject.FindGameObjectWithTag("Player");
+        var health = player != null ? player.GetComponent<PlayerHealth>() : null;
+        health?.SetInvulnerable(value);
     }
 }

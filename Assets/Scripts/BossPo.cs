@@ -293,6 +293,11 @@ public class BossPo : MonoBehaviour
         Debug.Log("[BossPo] \"숨바꼭질~\" 위치 교란 시전!");
         if (player == null) yield break;
 
+        // 2026-08-21: CubeMapManager/CubeRevealSequence와 같은 이유 — 화면이 페이드로
+        // 가려진 동안에도 다른 공격 판정(장판 등)은 그대로 실행돼서 안 보이는 채로 맞을 수 있음.
+        var playerHealth = player.GetComponent<PlayerHealth>();
+        playerHealth?.SetInvulnerable(true);
+
         if (FadeManager.Instance != null) yield return FadeManager.Instance.FadeOut();
 
         Vector2 randomCircle = Random.insideUnitCircle * displaceRadius;
@@ -304,6 +309,8 @@ public class BossPo : MonoBehaviour
         if (cc != null) cc.enabled = true;
 
         if (FadeManager.Instance != null) yield return FadeManager.Instance.FadeIn();
+
+        playerHealth?.SetInvulnerable(false);
     }
 
     private void DamageAllInRadius(Vector3 center, float radius, float damage)
