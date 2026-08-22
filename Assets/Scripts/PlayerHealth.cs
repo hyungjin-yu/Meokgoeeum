@@ -59,6 +59,11 @@ public class PlayerHealth : MonoBehaviour, IDamageable
 
     public void TakeDamage(float amount)
     {
+        // 2026-08-21 진단용 — BrushWeapon Attack Power를 1000으로 올리자 원인 불명의 즉사가
+        // 발생하는 문제 조사. 이 로그를 클릭하면 콘솔 하단에 호출자(어느 스크립트가 불렀는지)
+        // 스택 트레이스가 같이 보임.
+        Debug.Log($"[PlayerHealth] TakeDamage 호출됨! amount={amount}, 현재HP={currentHP}, isDead={isDead}, isInvulnerable={isInvulnerable}");
+
         if (isDead) return; // 게임 오버 처리 중 추가 피격 무시 (중복 OnDeath 방지)
 
         if (isInvulnerable)
