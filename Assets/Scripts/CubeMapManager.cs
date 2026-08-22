@@ -138,6 +138,22 @@ public class CubeMapManager : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// 2026-08-21: 페이드로 화면이 까맣게 가려진 동안에도 적 AI/공격 판정은 그대로 실행되고
+    /// 있어서, 안 보이는 채로 맞는 불공평한 상황이 생겼습니다(사용자 피드백). `Time.timeScale`을
+    /// 멈추면 페이드 애니메이션 자체도 같이 멈춰버려서, 대신 전환 구간 동안만 플레이어를
+    /// 무적으로 만드는 방식을 택했습니다 — [[PlayerDodge]] 구르기 i-frame과 같은 스위치를 재사용.
+    /// ⚠️ 알려진 한계: 전환 도중 플레이어가 마침 구르기 중이었다면 두 시스템이 같은
+    /// `isInvulnerable` 플래그를 공유해서 살짝 꼬일 수 있습니다(예: 전환이 끝나며 무적을 끄는
+    /// 순간이 구르기 i-frame 중간과 겹치는 경우). 지금은 드문 엣지 케이스라 감수합니다.
+    /// </summary>
+    private void SetPlayerInvulnerable(bool value)
+    {
+        GameObject player = GameObject.FindGameObjectWithTag("Player");
+        var health = player != null ? player.GetComponent<PlayerHealth>() : null;
+        health?.SetInvulnerable(value);
+    }
+
     private void ApplySavedPlayerHP(float hp)
     {
         GameObject player = GameObject.FindGameObjectWithTag("Player");
@@ -189,6 +205,8 @@ public class CubeMapManager : MonoBehaviour
         int nextFaceIndex = RotationTableCW[axis][currentFaceIndex];
         Debug.Log($"[CubeMapManager] 회전 시작! 축={axis}, {currentFaceIndex}면 → {nextFaceIndex}면");
 
+        SetPlayerInvulnerable(true); // 화면 안 보이는 전환 구간 동안 안 보이게 맞는 것 방지
+
         if (FadeManager.Instance != null)
             yield return FadeManager.Instance.FadeOut();
 
@@ -208,6 +226,7 @@ public class CubeMapManager : MonoBehaviour
         if (FadeManager.Instance != null)
             yield return FadeManager.Instance.FadeIn();
 
+        SetPlayerInvulnerable(false);
         IsRotating = false;
 
         SaveManager.Instance?.Save(); // [[18 세이브 & 로드 기획]] "층 입장 시 자동 저장"
@@ -240,6 +259,8 @@ public class CubeMapManager : MonoBehaviour
         IsRotating = true;
         Debug.Log($"[CubeMapManager] {currentFaceIndex}면 재시작 (게임 오버 리트라이).");
 
+        SetPlayerInvulnerable(true); // 화면 안 보이는 전환 구간 동안 안 보이게 맞는 것 방지
+
         if (FadeManager.Instance != null)
             yield return FadeManager.Instance.FadeOut();
 
@@ -255,6 +276,7 @@ public class CubeMapManager : MonoBehaviour
         if (FadeManager.Instance != null)
             yield return FadeManager.Instance.FadeIn();
 
+        SetPlayerInvulnerable(false);
         IsRotating = false;
     }
 
