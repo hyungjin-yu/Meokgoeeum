@@ -142,7 +142,22 @@ public class CubeMapManager : MonoBehaviour
     {
         GameObject player = GameObject.FindGameObjectWithTag("Player");
         var health = player != null ? player.GetComponent<PlayerHealth>() : null;
-        health?.SetHP(hp);
+        if (health == null) return;
+
+        if (hp <= 0f)
+        {
+            // 2026-08-21: 세이브된 HP가 0 이하로 저장된 비정상 케이스(예: 사망 처리 도중 저장됨)를
+            // 그대로 SetHP()에 넘기면 isDead=true로 로드되어, 그 뒤로 TakeDamage()가 영구히
+            // 무시되는 "죽었는데 안 죽는" 상태로 고정됩니다. 죽은 채로 이어서 시작하는 건 어차피
+            // 말이 안 되므로, 이럴 땐 최대 체력으로 대신 시작합니다(세이브 파일을 따로 안 고쳐도
+            // 다음 로드부터 자동 복구됨).
+            Debug.LogWarning($"[CubeMapManager] 세이브된 플레이어 HP가 {hp}(0 이하)라 최대 체력으로 대신 시작합니다.");
+            health.ResetHealth();
+        }
+        else
+        {
+            health.SetHP(hp);
+        }
     }
 
     /// <summary>
