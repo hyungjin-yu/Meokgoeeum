@@ -200,7 +200,7 @@ public class EnemyWon : MonoBehaviour, IKnockbackable
         Vector3 direction = player.position - projectileObj.transform.position;
         projectile.Launch(direction, attackPower);
 
-        Debug.Log("[EnemyWon] 먹물 투척!");
+        // 2026-08-21: 원거리 공격마다 찍히는 로그가 콘솔을 도배해서 제거 (피격/회복 로그와 같은 이유)
     }
 
     /// <summary>IKnockbackable 구현. [[EnemyPyeong]]과 동일한 방식입니다.</summary>
