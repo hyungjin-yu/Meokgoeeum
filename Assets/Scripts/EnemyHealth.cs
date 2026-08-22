@@ -43,7 +43,8 @@ public class EnemyHealth : MonoBehaviour, IDamageable
         if (isDead) return;
 
         currentHP = Mathf.Min(maxHP, currentHP + amount);
-        Debug.Log($"{name} 회복! 남은 HP: {currentHP}/{maxHP}");
+        // 2026-08-21: EnemyHeup이 매 프레임 Heal()을 호출해서 로그가 도배됨 — 피격 로그와
+        // 같은 이유로 제거 (기획서/CLAUDE.md "피격/상태 변화 로깅 원칙" 예외 참고)
     }
 
     /// <summary>
