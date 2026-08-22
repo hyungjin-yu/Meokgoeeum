@@ -103,7 +103,7 @@
 - [x] **1층 "방A 전투" 콘텐츠 완료 + Unity 검증 끝** — `EncounterSpawner.cs`(웨이브 기반 스포너, `RoomClearGate`와 자연스럽게 맞물림). 1웨이브(평 HP 절반)→2웨이브(평 정상 HP)→계단 활성화까지 실전 확인. 도중 "2웨이브 즉시 클리어" 버그 발견·해결(원인: Waves가 Project 프리팹이 아니라 Hierarchy에 남은 씬 오브젝트를 참조 — 자세한 진단 과정은 changelog 참고)
 - [x] **흡(EnemyHeup) 회복 히스테리시스 완료 + Unity 검증 끝** — 회복 시작하면 100%까지 계속 회복(사용자 피드백: "왜 절반까지만 회복해?"). 공격 능력도 추가해봤다가 "체감이 안 된다"는 피드백으로 다시 제거 — 최종적으로 여전히 비공격 유닛
 - [x] **세이브 & 로드 완료 + Unity 검증 끝** — `SaveData.cs`/`SaveManager.cs` 신규(JSON, `persistentDataPath`, 슬롯 1개). 층 입장 시 + 보스 처치 시 자동 저장, 게임 재시작 시 저장된 층/면/구슬 보유 그대로 이어서 시작하는 것까지 실전 확인
-- [x] **4층 벽 폭발 페널티 + 게임 오버 시스템 완료 + Unity 검증 끝** — 사용자 요청으로 "흡이 접근 전에 처치" 조건을 진짜 페널티(벽 폭발→즉사)로 구현. `PlayerHealth.OnDeath`/`ResetHealth()`, `CubeMapManager.ReloadCurrentFace()`(현재 면 재로드), `GameOverManager.cs`(⚠️ 원 기획 "처음부터"와 다르게 "죽은 층에서 다시 시작"으로 구현 — 사유 changelog 참고), `EnemyHeup.OnAbsorbStart`, `WallExplosionHazard.cs`(ShopSign이 회복 구역+폭발 벽 겸용). 실전 테스트로 "세이브된 HP 0으로 로드되면 영구히 안 죽는" 버그 발견·수정. 벽 폭발→사망→게임오버→재시작까지 전체 흐름 확인. **남은 것: 정상 클리어(전멸→계단) 시나리오 확인**
+- [x] **4층 완전히 완료 + Unity 검증 끝** (벽 폭발 페널티 + 정상 클리어 두 시나리오 다) — 사용자 요청으로 "흡이 접근 전에 처치" 조건을 진짜 페널티(벽 폭발→즉사)로 구현. `PlayerHealth.OnDeath`/`ResetHealth()`, `CubeMapManager.ReloadCurrentFace()`(현재 면 재로드), `GameOverManager.cs`(⚠️ 원 기획 "처음부터"와 다르게 "죽은 층에서 다시 시작"으로 구현 — 사유 changelog 참고), `EnemyHeup.OnAbsorbStart`, `WallExplosionHazard.cs`(ShopSign이 회복 구역+폭발 벽 겸용). 실전 테스트로 "세이브된 HP 0으로 로드되면 영구히 안 죽는" 버그 발견·수정. 평×2+흡×1 전멸→`RoomClearGate`→계단→5층 회전까지 정상 확인
 - [x] **3층 콘텐츠 완료 + Unity 검증 끝** (새 코드 없이 기존 `RoomClearGate`/`Stairs`/`EnemyPyeong` 재사용, `EnemyWon` 프리팹 최초 생성). `SC_Face_2` 신규 + Addressable/CubeFaceData_2/GameState 연결(회전 경로 0→4→2) 전부 확인. 부수 발견: 반복 층 재방문 시 `EncounterSpawner.autoStart`가 다시 발동하는 게 "반복 층" 설계와 정확히 맞아떨어지는 의도된 동작임을 확인(버그 아님)
 - [x] **2층 콘텐츠 완료 + Unity 검증 끝** — `HiddenOrbSpawner.cs` 신규(`PaintableObject.OnPainted`/`ColorOrbPickup.OnPickedUp` 이벤트 추가). "바닥 타일 색 복원 → 숨겨진 구슬 등장 → 획득 시 계단 자동 활성화" 패턴, `RoomClearGate` 없이도 계단이 열리는 두 번째 방식. 실전 테스트로 버그 2개 즉시 수정(옛 RoomClearGate 잔재 제거, 구슬 스폰 높이 조정용 `spawnHeightOffset` 추가)
 
@@ -123,9 +123,8 @@
 
 ### 지금 당장 다음에 할 일
 
-- ⚠️ **`BrushWeapon` 자해 버그 수정됨(2026-08-21) — 이걸 반영한 뒤 4층 "정상 클리어" 재테스트 필요**: 평×2+흡×1 전부 처치 → `RoomClearGate` 클리어 → 계단 → 5층 회전까지 확인만 하면 4층 완전히 끝남 (이 버그 때문에 이전 시도들이 이상하게 죽었을 가능성 큼)
+- **4층 완전히 끝남 — 다음은 5층("익숙한 골목")**: "반복 층 힌트 시작" 스펙인데, 이미 3층 테스트 중 `MarkVisited`/나레이션이 자동으로 잘 도는 게 확인됐으니 아마 코드 변경 없이 콘텐츠 배치만으로 끝날 가능성이 큼. 새 면 씬 추가 절차부터 필요
 - ⚠️ **게임 오버가 "죽은 층에서 다시 시작"으로 구현돼있음** (원 기획 "처음부터"와 다름, 임시 결정 — 사유는 [[changelog/2026-08-20_4층콘텐츠-준비]] 참고)
-- 4층 검증되면 **5층("익숙한 골목")** — "반복 층 힌트 시작" 스펙인데, 이미 3층 테스트 중 `MarkVisited`/나레이션이 자동으로 잘 도는 게 확인됐으니 아마 코드 변경 없이 콘텐츠 배치만으로 끝날 가능성이 큼
 - 1층의 "방B(색 구슬 파동 트리거)"·"입장 복도(튜토리얼 유도)"도 아직 별도 콘텐츠 작업 필요
 - **⚠️ Enemy 프리팹을 Waves 배열에 채울 때는 반드시 Project 창에서 드래그할 것** — Hierarchy의 씬 오브젝트를 잘못 참조하면 그 오브젝트가 파괴되는 순간 웨이브가 조용히 깨짐 (오늘 겪은 버그, [[changelog/2026-08-19_인카운터스포너-1층콘텐츠]] 참고)
 - ⚠️ **`CubeMapManager`의 `Cube Reveal Floor Number`를 테스트용으로 3으로 낮춰뒀다면 12로 복구했는지 확인할 것**
