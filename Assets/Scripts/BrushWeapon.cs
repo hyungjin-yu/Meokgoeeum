@@ -173,8 +173,14 @@ public class BrushWeapon : MonoBehaviour
 
         foreach (var hit in hits)
         {
+            // 2026-08-21: 자기 자신 무시 판정이 Rigidbody 기준이었는데, 플레이어는 Rigidbody가
+            // 아니라 CharacterController를 씀 — 그래서 이 체크가 한 번도 안 걸려서 매 타격마다
+            // 자기 자신도 같이 맞고 있었음(공격력을 1000으로 올렸을 때 즉사로 드러남). gameObject
+            // 직접 비교를 추가해서 CharacterController 케이스도 확실히 걸러지게 함.
+            if (hit.gameObject == gameObject)
+                continue;
             if (hit.attachedRigidbody != null && hit.attachedRigidbody.gameObject == gameObject)
-                continue; // 자기 자신은 무시
+                continue; // 자기 자신은 무시 (Rigidbody 기반 콜라이더가 자식 오브젝트에 있는 경우 대비)
 
             var damageable = hit.GetComponent<IDamageable>();
             if (damageable == null) continue;
