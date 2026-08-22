@@ -62,6 +62,10 @@ public class WallExplosionHazard : MonoBehaviour
 
         GameObject player = GameObject.FindGameObjectWithTag("Player");
         var health = player != null ? player.GetComponent<PlayerHealth>() : null;
+
+        // 진단용 — TakeDamage가 실제로 플레이어에게 안 먹히는 문제 조사 (2026-08-21)
+        Debug.Log($"[WallExplosionHazard] 진단: player={(player == null ? "못 찾음" : player.name)}, health={(health == null ? "PlayerHealth 없음" : $"CurrentHP={health.CurrentHP}/{health.maxHP}")}");
+
         if (health != null)
             health.TakeDamage(health.maxHP); // 즉사 처리 — 무적(구르기 i-frame) 중이면 무시됨(의도된 완화)
     }
