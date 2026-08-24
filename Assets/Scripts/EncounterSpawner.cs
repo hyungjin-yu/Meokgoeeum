@@ -95,7 +95,13 @@ public class EncounterSpawner : MonoBehaviour
                 ? wave.spawnPoints[i]
                 : transform;
 
-            GameObject instance = Instantiate(wave.enemyPrefabs[i], spawnPoint.position, spawnPoint.rotation);
+            // ⚠️ 2026-08-24 버그 수정: parent를 안 주면 "지금 활성 씬"에 생성되는데, Addressables로
+            // Additive 로드된 면 씬은 자동으로 활성 씬이 되지 않습니다(CubeMapManager가 명시적으로
+            // SetActiveScene을 해도 이 스크립트의 Start()가 그보다 먼저 실행되는 타이밍 문제가 있음).
+            // 그래서 스포너 자신(transform)을 부모로 명시해서, 활성 씬이 뭐든 상관없이 항상
+            // 이 스포너와 같은 씬(=지금 방문 중인 면)에 생성되도록 고정합니다. 안 그러면 면을
+            // 나가도 이 적들이 안 없어지고 계속 쌓입니다([[RandomEncounterSpawner]] 테스트 중 발견).
+            GameObject instance = Instantiate(wave.enemyPrefabs[i], spawnPoint.position, spawnPoint.rotation, transform);
 
             var health = instance.GetComponent<EnemyHealth>();
             if (health == null)

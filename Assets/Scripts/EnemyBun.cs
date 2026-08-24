@@ -199,7 +199,10 @@ public class EnemyBun : MonoBehaviour, IKnockbackable
             offset.y = 0f;
             Vector3 spawnPos = transform.position + offset;
 
-            GameObject clone = Instantiate(gameObject, spawnPos, transform.rotation);
+            // ⚠️ 2026-08-24 버그 수정: parent를 자기 자신과 같은 부모(transform.parent)로 명시 —
+            // 안 그러면 "지금 활성 씬"에 생성되는데, 그게 지금 방문 중인 면 씬이 아닐 수 있어서
+            // (자세한 이유는 EncounterSpawner.cs 주석 참고) 면을 나가도 미니언이 안 없어질 수 있음.
+            GameObject clone = Instantiate(gameObject, spawnPos, transform.rotation, transform.parent);
             clone.transform.localScale = transform.localScale * minorScaleMultiplier;
 
             var cloneBun = clone.GetComponent<EnemyBun>();

@@ -106,7 +106,8 @@
 - [x] **4층 완전히 완료 + Unity 검증 끝** (벽 폭발 페널티 + 정상 클리어 두 시나리오 다) — 사용자 요청으로 "흡이 접근 전에 처치" 조건을 진짜 페널티(벽 폭발→즉사)로 구현. `PlayerHealth.OnDeath`/`ResetHealth()`, `CubeMapManager.ReloadCurrentFace()`(현재 면 재로드), `GameOverManager.cs`(⚠️ 원 기획 "처음부터"와 다르게 "죽은 층에서 다시 시작"으로 구현 — 사유 changelog 참고), `EnemyHeup.OnAbsorbStart`, `WallExplosionHazard.cs`(ShopSign이 회복 구역+폭발 벽 겸용). 실전 테스트로 "세이브된 HP 0으로 로드되면 영구히 안 죽는" 버그 발견·수정. 평×2+흡×1 전멸→`RoomClearGate`→계단→5층 회전까지 정상 확인
 - [x] **3층 콘텐츠 완료 + Unity 검증 끝** (새 코드 없이 기존 `RoomClearGate`/`Stairs`/`EnemyPyeong` 재사용, `EnemyWon` 프리팹 최초 생성). `SC_Face_2` 신규 + Addressable/CubeFaceData_2/GameState 연결(회전 경로 0→4→2) 전부 확인. 부수 발견: 반복 층 재방문 시 `EncounterSpawner.autoStart`가 다시 발동하는 게 "반복 층" 설계와 정확히 맞아떨어지는 의도된 동작임을 확인(버그 아님)
 - [x] **2층 콘텐츠 완료 + Unity 검증 끝** — `HiddenOrbSpawner.cs` 신규(`PaintableObject.OnPainted`/`ColorOrbPickup.OnPickedUp` 이벤트 추가). "바닥 타일 색 복원 → 숨겨진 구슬 등장 → 획득 시 계단 자동 활성화" 패턴, `RoomClearGate` 없이도 계단이 열리는 두 번째 방식. 실전 테스트로 버그 2개 즉시 수정(옛 RoomClearGate 잔재 제거, 구슬 스폰 높이 조정용 `spawnHeightOffset` 추가)
-- [x] **먹괴음 - 광(5종 마지막) 완료 + Unity 검증 끝** — `EnemyGwang.cs` 신규(`EnemyPyeong` 구조 재사용, BT는 사거리 대신 쿨다운만으로 AOE 트리거, 바닥 경고 인디케이터 `DamageZone` 패턴 재사용). HP 60/공격력 15/이동속도 1.5f/s(14 밸런스 수치 시트 기준). `SC_Face_4`에서 단독 테스트: 추격→경고 원→회피 시 무피해/범위 내 피격 둘 다 확인, 처치까지 붓 3콤보 여러 번 필요(HP 반영 확인), 처치 시 기존 `RoomClearGate`/`Stairs` 훅에 코드 추가 없이 자동 연결됨까지 확인. **7층 실제 배치(어느 면에 넣을지)는 아직 — 프리팹만 완성**
+- [x] **먹괴음 - 광(5종 마지막) 완료 + Unity 검증 끝** — `EnemyGwang.cs` 신규(`EnemyPyeong` 구조 재사용, BT는 사거리 대신 쿨다운만으로 AOE 트리거, 바닥 경고 인디케이터 `DamageZone` 패턴 재사용). HP 60/공격력 15/이동속도 1.5f/s(14 밸런스 수치 시트 기준). `SC_Face_4`에서 단독 테스트: 추격→경고 원→회피 시 무피해/범위 내 피격 둘 다 확인, 처치까지 붓 3콤보 여러 번 필요(HP 반영 확인), 처치 시 기존 `RoomClearGate`/`Stairs` 훅에 코드 추가 없이 자동 연결됨까지 확인
+- [x] **재방문 랜덤 인카운터 완료 + Unity 검증 끝** — `RandomEncounterSpawner.cs` 신규(6면 전부에 `RandomEncounterBatchTool`로 일괄 배치), 재방문마다 무작위 N마리(종류당 중복 최대 2) 스폰, `minVisitCount`로 1~6층 첫 방문은 보호. **덤으로 심각한 기존 버그 발견·수정**: 스폰된 오브젝트가 면 씬이 아니라 영구 씬(`SC_Game`)에 계속 쌓이던 버그(`SetActiveScene` 미호출 + `Instantiate()` 부모 미지정) — `CubeMapManager`/`EncounterSpawner`/`EnemyBun`까지 같이 고침. 이걸로 "7층에 어느 면을 배정할지" 문제 자체가 해소됨(층 번호 대신 재방문 여부로 판단)
 
 ## 세션 연속성 — changelog 인덱스
 
@@ -116,16 +117,17 @@
 
 ### 최근 changelog (최신이 위)
 
-- `2026-08-24_7층-광구현.md` — `03`/`19` 문서 층별 등장 표 불일치 정정(분 6층/광 7층 첫 등장으로). `EnemyGwang.cs` 신규(쿨다운 기반 AOE, 바닥 경고 인디케이터). ⚠️ **아직 Unity 검증 전** — 코드만 작성됨, 프리팹화/씬 배치는 다음 세션
+- `2026-08-24_재방문-랜덤인카운터.md` — `RandomEncounterSpawner.cs` 신규(재방문마다 무작위 N마리, 종류당 중복 최대 2, `minVisitCount`로 1~6층 첫 방문은 스킵). ⚠️ **씬 소속 심각한 기존 버그 발견·수정**: `CubeMapManager`가 `SetActiveScene()`을 한 번도 안 불러서 스폰된 적들이 전부 영구 씬(`SC_Game`)에 쌓이고 있었음 — `SetActiveScene` 추가 + `Instantiate()` 부모 명시(`EncounterSpawner`/`EnemyBun`/`RandomEncounterSpawner`) + `currentFaceIndex` 갱신 순서 수정으로 해결, Unity 검증 완료
+- `2026-08-24_7층-광구현.md` — `03`/`19` 문서 층별 등장 표 불일치 정정(분 6층/광 7층 첫 등장으로 — 단, 이후 재방문-랜덤 방식으로 전환되면서 이 서술 자체가 재검토 필요). `EnemyGwang.cs` 신규, 프리팹화 + Unity 검증 완료
 - `2026-08-24_입력시스템-리팩토링.md` — graphify 그래프 분석으로 발견한 `PlayerInputActions` 4중 생성 정리(4개 스크립트 → `PlayerController` 소유 1개 공유). Unity 검증 완료. `FaceBootstrapWindow` 컴파일 에러도 같이 수정 + 실사용 테스트 완료(더미 씬으로 검증 후 정리)
 - `2026-08-21_새면-자동화도구.md` — `FaceBootstrapWindow.cs` 신규(에디터 전용, `MG > 새 면 만들기` 메뉴). 씬 생성+Addressable+CubeFaceData+GameState 연결까지 버튼 한 번에 자동화
 - `2026-08-21_7층-광검토.md` — 7층 검토만 완료. AI/프레임데이터는 기획서에 있음 확인
-- `2026-08-21_6층콘텐츠-준비.md` — 코드 변경 없음. 면3(`SC_Face_5`) **완료 + Unity 검증까지 끝남**. 🎉 **큐브 6면 첫 완성.** 테스트 중 "분 처치 전에 계단이 열림" 증상은 `RoomClearGate` 문제가 아니라 `Stairs`의 `Start Active`가 켜져 있던 게 원인(씬 설정 실수, 코드 버그 아님)
 
 ### 지금 당장 다음에 할 일
 
-- ⚠️ **`SC_Face_4`에 테스트로 넣어둔 `EnemyGwang` 정리 필요** — `EnemyGwang` 프리팹 자체는 완성(`EnemyPyeong` 프리팹 복제 + 스크립트 교체, Unity 검증 완료: 추격/경고 인디케이터/AOE 피격/HP 60/처치→`RoomClearGate`→`Stairs` 연쇄까지 전부 확인됨). 근데 검증하느라 5층 씬(`SC_Face_4`)에 임시로 넣어놨던 인스턴스를 빼고, 꺼뒀던 기존 평×3/원×1도 다시 켜야 함 — 5층 콘텐츠는 원래대로 복구 필요
-- 큐브 6면은 이미 다 찼으므로, 7층 콘텐츠를 어느 면(재방문)에 넣을지 결정 필요 — 결정되면 `FaceBootstrapWindow`(실사용 검증됨)로 씬 만들고 `EnemyGwang` 프리팹 배치. 자세한 내용은 [[changelog/2026-08-24_7층-광구현]] 참고
+- **새 게임으로 1층 첫 방문 테스트** — `RandomEncounterSpawner`의 `minVisitCount` 게이팅(1~6층 첫 방문엔 스폰 안 함)이 로직상으로는 맞는데, 지금 세이브가 이미 90층까지 가있어서 실측을 못 함. 새 게임 시작해서 1층에 랜덤 몹이 진짜 안 나오는지 확인 필요
+- `03`/`19` 기획서의 "7층=광 첫 등장" 서술을, 실제 구현(재방문 시 무작위 스폰, 광도 그 안에 포함)에 맞게 정정할지 검토 — [[changelog/2026-08-24_재방문-랜덤인카운터]] 참고
+- `DamageZone`/`EnemyGwang` 경고 인디케이터/`EnemyWon` 투사체도 씬 소속 버그(부모 미지정) 정리 필요 — 낮은 우선순위(자체 타이머로 소멸돼서 심각하진 않음)
 - ⚠️ **게임 오버가 "죽은 층에서 다시 시작"으로 구현돼있음** (원 기획 "처음부터"와 다름, 임시 결정 — 사유는 [[changelog/2026-08-20_4층콘텐츠-준비]] 참고)
 - 1층의 "방B(색 구슬 파동 트리거)"·"입장 복도(튜토리얼 유도)"도 아직 별도 콘텐츠 작업 필요
 - **⚠️ Enemy 프리팹을 Waves 배열에 채울 때는 반드시 Project 창에서 드래그할 것** — Hierarchy의 씬 오브젝트를 잘못 참조하면 그 오브젝트가 파괴되는 순간 웨이브가 조용히 깨짐 (오늘 겪은 버그, [[changelog/2026-08-19_인카운터스포너-1층콘텐츠]] 참고)

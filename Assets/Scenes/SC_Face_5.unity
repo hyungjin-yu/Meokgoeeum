@@ -119,6 +119,60 @@ NavMeshSettings:
     debug:
       m_Flags: 0
   m_NavMeshData: {fileID: 0}
+--- !u!1 &105943990
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 105943992}
+  - component: {fileID: 105943991}
+  m_Layer: 0
+  m_Name: RandomEncounterSpawner
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &105943991
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 105943990}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 053c3f2e908e6744c9ccec8c383fb6a1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::RandomEncounterSpawner
+  enemyPool:
+  - {fileID: 2035348967774861881, guid: f259674311affc4488989801187c33e8, type: 3}
+  - {fileID: 4328177191374932052, guid: 363b703c96fcd794fa8348965afff845, type: 3}
+  - {fileID: 9161517108320201939, guid: ac3ab422f1e135146acd8e456479365c, type: 3}
+  - {fileID: 4998171028398206162, guid: 8445dd301591f43438851e4df3d845fa, type: 3}
+  - {fileID: 2035348967774861881, guid: febec035a0d14dc41abfe9acce4f4a2c, type: 3}
+  spawnCount: 3
+  maxDuplicatesPerType: 2
+  scatterRadius: 3
+  autoStart: 1
+--- !u!4 &105943992
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 105943990}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 3.57, y: 0.3, z: 0.47}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1001 &201119370
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -779,3 +833,4 @@ SceneRoots:
   - {fileID: 1905262618}
   - {fileID: 256457007}
   - {fileID: 1221815357}
+  - {fileID: 105943992}

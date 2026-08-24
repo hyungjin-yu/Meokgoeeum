@@ -4,6 +4,7 @@ using UnityEngine;
 using UnityEngine.AddressableAssets;
 using UnityEngine.ResourceManagement.AsyncOperations;
 using UnityEngine.ResourceManagement.ResourceProviders;
+using UnityEngine.SceneManagement;
 
 /// <summary>
 /// CubeMapManager (큐브 좌표계 매니저)
@@ -214,9 +215,14 @@ public class CubeMapManager : MonoBehaviour
             yield return Addressables.UnloadSceneAsync(currentSceneHandle);
 
         var nextFaceData = GameState.Instance.GetFaceData(nextFaceIndex);
+
+        // ⚠️ 2026-08-24 버그 수정: 예전엔 LoadFace() 끝난 뒤에 currentFaceIndex를 갱신했는데,
+        // 그러면 새로 로드된 씬의 Start()(RandomEncounterSpawner 등)가 도는 시점엔 아직 "이전 면"
+        // 값을 보게 됩니다 — visitCount를 이 면 기준으로 조회하는 코드가 틀린 면을 조회하게 되는
+        // 문제가 있어서, LoadFace()보다 먼저 갱신하도록 순서를 바꿨습니다.
+        currentFaceIndex = nextFaceIndex;
         yield return LoadFace(nextFaceData);
 
-        currentFaceIndex = nextFaceIndex;
         MarkVisited(currentFaceIndex);
         TeleportPlayerToSpawnPoint();
 
@@ -293,6 +299,15 @@ public class CubeMapManager : MonoBehaviour
 
         currentSceneHandle = loadHandle;
         hasLoadedScene = true;
+
+        // ⚠️ 2026-08-24 버그 수정: 이걸 안 해주면 Additive 로드된 면 씬이 "활성 씬"이 되지
+        // 않아서, Instantiate()로 생성되는 모든 오브젝트(적, 투사체 등)가 계속 처음 로드된
+        // SC_Game(영구 씬) 밑에 쌓입니다 — 면을 나가서 이 씬을 언로드해도 거기 딸린 적들은
+        // SC_Game 소속이라 같이 안 없어지고 그대로 살아남아서, 재방문할 때마다 이전 방문의
+        // 잔존 적이 새로 스폰된 적과 겹쳐 쌓이는 문제가 있었습니다([[RandomEncounterSpawner]]
+        // 테스트 중 발견 — 자세한 내용은 [[changelog/2026-08-24_7층-광배치]] 참고).
+        if (loadHandle.Result.Scene.IsValid())
+            SceneManager.SetActiveScene(loadHandle.Result.Scene);
     }
 
     private void MarkVisited(int faceIndex)
