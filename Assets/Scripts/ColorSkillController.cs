@@ -16,6 +16,7 @@ using UnityEngine.InputSystem;
 /// 구현 안 함 — v0.2 후속으로 미룸 (지금은 BrushWeapon 상태와 무관하게 독립적으로 동작).
 /// </summary>
 [RequireComponent(typeof(CharacterController))]
+[RequireComponent(typeof(PlayerController))] // Start()에서 PlayerController.InputActions를 공유해서 씀
 public class ColorSkillController : MonoBehaviour
 {
     [Header("빨강 — 강타 (전방 대시 + 강타, 14 밸런스 수치 시트: ×2.0 / 8초)")]
@@ -44,7 +45,7 @@ public class ColorSkillController : MonoBehaviour
 
     private CharacterController cc;
     private BrushWeapon brushWeapon; // 스킬 대미지의 기준이 되는 "붓 공격력"을 여기서 읽어옴 (단일 출처 유지)
-    private PlayerInputActions inputActions;
+    private PlayerInputActions inputActions; // PlayerController가 소유 — 여기선 구독만 함
 
     private float strikeCooldownTimer;
     private float flowCooldownTimer;
@@ -58,16 +59,11 @@ public class ColorSkillController : MonoBehaviour
 
     private void Start()
     {
-        inputActions = new PlayerInputActions();
+        // PlayerController가 Awake()에서 만들어 Enable()까지 해둔 인스턴스를 공유해서 씁니다.
+        inputActions = GetComponent<PlayerController>().InputActions;
         inputActions.Player.Skill1.performed += _ => TryCast(OrbColor.Red);
         inputActions.Player.Skill2.performed += _ => TryCast(OrbColor.Blue);
         inputActions.Player.Skill3.performed += _ => TryCast(OrbColor.Yellow);
-        inputActions.Enable();
-    }
-
-    private void OnDestroy()
-    {
-        inputActions?.Disable();
     }
 
     private void Update()

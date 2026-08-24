@@ -1,0 +1,926 @@
+{
+  "Assets/Input/PlayerInputActions.cs": {
+    "mtime": 1787021537.7038827,
+    "seen": 1787459822.9146426,
+    "ast_hash": "0de8ad2dc842eeda2217b87dbafdfed5",
+    "semantic_hash": "0de8ad2dc842eeda2217b87dbafdfed5"
+  },
+  "Assets/Plugins/Demigiant/DOTweenPro/DOTweenAnimation.cs": {
+    "mtime": 1786877216.8649766,
+    "seen": 1787459822.9146426,
+    "ast_hash": "9367872a15facc6018f5b0b09c062494",
+    "semantic_hash": "9367872a15facc6018f5b0b09c062494"
+  },
+  "Assets/Plugins/Demigiant/DOTweenPro/DOTweenDeAudio.cs": {
+    "mtime": 1786877216.86598,
+    "seen": 1787459822.9146426,
+    "ast_hash": "aa213b03fa3977e4362ce87d3805c5bd",
+    "semantic_hash": "aa213b03fa3977e4362ce87d3805c5bd"
+  },
+  "Assets/Plugins/Demigiant/DOTweenPro/DOTweenDeUnityExtended.cs": {
+    "mtime": 1786877216.8664854,
+    "seen": 1787459822.9146426,
+    "ast_hash": "e7605ff6457434fdf198b69e83b7d916",
+    "semantic_hash": "e7605ff6457434fdf198b69e83b7d916"
+  },
+  "Assets/Plugins/Demigiant/DOTweenPro/DOTweenProShortcuts.cs": {
+    "mtime": 1786877216.8674877,
+    "seen": 1787459822.9146426,
+    "ast_hash": "b837b2267d29f937754a6d0ebb08f0bb",
+    "semantic_hash": "b837b2267d29f937754a6d0ebb08f0bb"
+  },
+  "Assets/Plugins/Demigiant/DOTweenPro/DOTweenTextMeshPro.cs": {
+    "mtime": 1786877216.8679926,
+    "seen": 1787459822.9146426,
+    "ast_hash": "900614d24515cb0a6e46da33e9c920b9",
+    "semantic_hash": "900614d24515cb0a6e46da33e9c920b9"
+  },
+  "Assets/Plugins/Demigiant/DOTweenPro/DOTweenTk2d.cs": {
+    "mtime": 1786877216.8685048,
+    "seen": 1787459822.9146426,
+    "ast_hash": "5c8093481604642f3dc67c7852246b78",
+    "semantic_hash": "5c8093481604642f3dc67c7852246b78"
+  },
+  "Assets/Plugins/Demigiant/DOTweenPro/Editor/DOTweenAnimationInspector.cs": {
+    "mtime": 1786877216.869527,
+    "seen": 1787459822.9146426,
+    "ast_hash": "c77b9ae073846d17aa3f3d8226cfafd7",
+    "semantic_hash": "c77b9ae073846d17aa3f3d8226cfafd7"
+  },
+  "Assets/Plugins/Demigiant/DOTweenPro/Editor/DOTweenPreviewManager.cs": {
+    "mtime": 1786877216.8700411,
+    "seen": 1787459822.9146426,
+    "ast_hash": "5dcef7d2d9ffacbeaed48a7d4774ec1e",
+    "semantic_hash": "5dcef7d2d9ffacbeaed48a7d4774ec1e"
+  },
+  "Assets/Plugins/Demigiant/DOTween/Modules/DOTweenModuleAudio.cs": {
+    "mtime": 1786877216.8546169,
+    "seen": 1787459822.9146426,
+    "ast_hash": "99fa007d66f3bef5b303eea2fb2164b9",
+    "semantic_hash": "99fa007d66f3bef5b303eea2fb2164b9"
+  },
+  "Assets/Plugins/Demigiant/DOTween/Modules/DOTweenModulePhysics.cs": {
+    "mtime": 1786877216.855714,
+    "seen": 1787459822.9146426,
+    "ast_hash": "027541711a671bfe1b392314bf6a9c1c",
+    "semantic_hash": "027541711a671bfe1b392314bf6a9c1c"
+  },
+  "Assets/Plugins/Demigiant/DOTween/Modules/DOTweenModulePhysics2D.cs": {
+    "mtime": 1786877216.8562255,
+    "seen": 1787459822.9146426,
+    "ast_hash": "638792fbe5ad5dec344df1f35447cca0",
+    "semantic_hash": "638792fbe5ad5dec344df1f35447cca0"
+  },
+  "Assets/Plugins/Demigiant/DOTween/Modules/DOTweenModuleSprite.cs": {
+    "mtime": 1786877216.8567417,
+    "seen": 1787459822.9146426,
+    "ast_hash": "9c47c55c39a2c2eb4000080c9e0f7080",
+    "semantic_hash": "9c47c55c39a2c2eb4000080c9e0f7080"
+  },
+  "Assets/Plugins/Demigiant/DOTween/Modules/DOTweenModuleUI.cs": {
+    "mtime": 1786877216.8577669,
+    "seen": 1787459822.9146426,
+    "ast_hash": "d65a0ae6d084c71cd66a1728badca3aa",
+    "semantic_hash": "d65a0ae6d084c71cd66a1728badca3aa"
+  },
+  "Assets/Plugins/Demigiant/DOTween/Modules/DOTweenModuleUIToolkit.cs": {
+    "mtime": 1786877216.8582778,
+    "seen": 1787459822.9146426,
+    "ast_hash": "def81333a370179015f4362adc5f4300",
+    "semantic_hash": "def81333a370179015f4362adc5f4300"
+  },
+  "Assets/Plugins/Demigiant/DOTween/Modules/DOTweenModuleUnityVersion.cs": {
+    "mtime": 1786877216.8582778,
+    "seen": 1787459822.9146426,
+    "ast_hash": "45232a2fcc32328c0597880ce6a559dd",
+    "semantic_hash": "45232a2fcc32328c0597880ce6a559dd"
+  },
+  "Assets/Plugins/Demigiant/DOTween/Modules/DOTweenModuleUtils.cs": {
+    "mtime": 1786877216.8587904,
+    "seen": 1787459822.9146426,
+    "ast_hash": "781c648e4003027187720f524e502ee5",
+    "semantic_hash": "781c648e4003027187720f524e502ee5"
+  },
+  "Assets/Scripts/BossHealth.cs": {
+    "mtime": 1787283586.9260132,
+    "seen": 1787459822.9146426,
+    "ast_hash": "9aefa086a6e1c067ef668596a306f3e6",
+    "semantic_hash": "9aefa086a6e1c067ef668596a306f3e6"
+  },
+  "Assets/Scripts/BossPo.cs": {
+    "mtime": 1787365752.5675304,
+    "seen": 1787459822.9146426,
+    "ast_hash": "99cab0e5afe906c07d45406b71c9da84",
+    "semantic_hash": "99cab0e5afe906c07d45406b71c9da84"
+  },
+  "Assets/Scripts/BrushWeapon.cs": {
+    "mtime": 1787366556.230558,
+    "seen": 1787459822.9146426,
+    "ast_hash": "8618d6fbe930cee4840797b0b336c99a",
+    "semantic_hash": "8618d6fbe930cee4840797b0b336c99a"
+  },
+  "Assets/Scripts/ColorOrbPickup.cs": {
+    "mtime": 1787280189.243907,
+    "seen": 1787459822.9146426,
+    "ast_hash": "b68b2805e78828a43dfa7aef6527914e",
+    "semantic_hash": "b68b2805e78828a43dfa7aef6527914e"
+  },
+  "Assets/Scripts/ColorOrbPool.cs": {
+    "mtime": 1787018437.1845324,
+    "seen": 1787459822.9146426,
+    "ast_hash": "b4489f4d1e2c3ce8336667154deed99d",
+    "semantic_hash": "b4489f4d1e2c3ce8336667154deed99d"
+  },
+  "Assets/Scripts/ColorSkillController.cs": {
+    "mtime": 1787021532.1525464,
+    "seen": 1787459822.9146426,
+    "ast_hash": "365425d4b0eadfc247d2ddbe5f8a7413",
+    "semantic_hash": "365425d4b0eadfc247d2ddbe5f8a7413"
+  },
+  "Assets/Scripts/ColorSystemManager.cs": {
+    "mtime": 1787283586.9315398,
+    "seen": 1787459822.9146426,
+    "ast_hash": "2fcb633ac46561b99a2e958f22d356f1",
+    "semantic_hash": "2fcb633ac46561b99a2e958f22d356f1"
+  },
+  "Assets/Scripts/ColorWaveEffect.cs": {
+    "mtime": 1787020704.8344488,
+    "seen": 1787459822.9146426,
+    "ast_hash": "ffd887ab27553612e7ab65952c8e26b5",
+    "semantic_hash": "ffd887ab27553612e7ab65952c8e26b5"
+  },
+  "Assets/Scripts/CubeFaceData.cs": {
+    "mtime": 1787099516.197011,
+    "seen": 1787459822.9146426,
+    "ast_hash": "9d84ebdaafc9c5d0856610ac9c63f1a9",
+    "semantic_hash": "9d84ebdaafc9c5d0856610ac9c63f1a9"
+  },
+  "Assets/Scripts/CubeMapManager.cs": {
+    "mtime": 1787365752.5730488,
+    "seen": 1787459822.9146426,
+    "ast_hash": "578e9b3c08b5122eb70a77f902f4e512",
+    "semantic_hash": "578e9b3c08b5122eb70a77f902f4e512"
+  },
+  "Assets/Scripts/CubeRevealSequence.cs": {
+    "mtime": 1787365752.5780923,
+    "seen": 1787459822.9146426,
+    "ast_hash": "966958e54f195660ff98d4273d7f070f",
+    "semantic_hash": "966958e54f195660ff98d4273d7f070f"
+  },
+  "Assets/Scripts/DamageZone.cs": {
+    "mtime": 1787103458.3770225,
+    "seen": 1787459822.9146426,
+    "ast_hash": "23c2100b07ee123080b149f18cfec44e",
+    "semantic_hash": "23c2100b07ee123080b149f18cfec44e"
+  },
+  "Assets/Scripts/DebugOrbCheat.cs": {
+    "mtime": 1787099516.2070465,
+    "seen": 1787459822.9146426,
+    "ast_hash": "8f4f2babd5985eeb63363e6af5869813",
+    "semantic_hash": "8f4f2babd5985eeb63363e6af5869813"
+  },
+  "Assets/Scripts/Editor/FaceBootstrapWindow.cs": {
+    "mtime": 1787369514.1937528,
+    "seen": 1787459822.9146426,
+    "ast_hash": "7e87615ec852c5507f880055affbe2b8",
+    "semantic_hash": "7e87615ec852c5507f880055affbe2b8"
+  },
+  "Assets/Scripts/EncounterSpawner.cs": {
+    "mtime": 1787107189.7815983,
+    "seen": 1787459822.9146426,
+    "ast_hash": "0a6517ea24135803680a9c4ed84170d0",
+    "semantic_hash": "0a6517ea24135803680a9c4ed84170d0"
+  },
+  "Assets/Scripts/EnemyBun.cs": {
+    "mtime": 1787022526.9780254,
+    "seen": 1787459822.9146426,
+    "ast_hash": "571d3c3b52a8d889293f08196d351254",
+    "semantic_hash": "571d3c3b52a8d889293f08196d351254"
+  },
+  "Assets/Scripts/EnemyHealth.cs": {
+    "mtime": 1787364599.8134923,
+    "seen": 1787459822.9146426,
+    "ast_hash": "242dd16560da8b62bdd451ea4597db21",
+    "semantic_hash": "242dd16560da8b62bdd451ea4597db21"
+  },
+  "Assets/Scripts/EnemyHeup.cs": {
+    "mtime": 1787285331.0507238,
+    "seen": 1787459822.9146426,
+    "ast_hash": "3f168cb53d4fb0aa4442c4bf53f7fe05",
+    "semantic_hash": "3f168cb53d4fb0aa4442c4bf53f7fe05"
+  },
+  "Assets/Scripts/EnemyPyeong.cs": {
+    "mtime": 1787021532.1662986,
+    "seen": 1787459822.9146426,
+    "ast_hash": "5afc31ea0cd95bc7e0d74db32f5eaa81",
+    "semantic_hash": "5afc31ea0cd95bc7e0d74db32f5eaa81"
+  },
+  "Assets/Scripts/EnemyWon.cs": {
+    "mtime": 1787369514.2033443,
+    "seen": 1787459822.9146426,
+    "ast_hash": "357850a41ec147b4252c52412630239a",
+    "semantic_hash": "357850a41ec147b4252c52412630239a"
+  },
+  "Assets/Scripts/FadeManager.cs": {
+    "mtime": 1787099516.2115562,
+    "seen": 1787459822.9146426,
+    "ast_hash": "7f6bc08c85465d77338b13e797befef1",
+    "semantic_hash": "7f6bc08c85465d77338b13e797befef1"
+  },
+  "Assets/Scripts/GameOverManager.cs": {
+    "mtime": 1787283586.9501164,
+    "seen": 1787459822.9146426,
+    "ast_hash": "5be1d60fc4b3dfb310df8c5884f15439",
+    "semantic_hash": "5be1d60fc4b3dfb310df8c5884f15439"
+  },
+  "Assets/Scripts/GameState.cs": {
+    "mtime": 1787283586.953627,
+    "seen": 1787459822.9146426,
+    "ast_hash": "52464fbda94c22705ecc68018464f59d",
+    "semantic_hash": "52464fbda94c22705ecc68018464f59d"
+  },
+  "Assets/Scripts/HiddenOrbSpawner.cs": {
+    "mtime": 1787281009.717729,
+    "seen": 1787459822.9146426,
+    "ast_hash": "dd8e71366485f42d6218f5090c19b175",
+    "semantic_hash": "dd8e71366485f42d6218f5090c19b175"
+  },
+  "Assets/Scripts/IDamageable.cs": {
+    "mtime": 1786880218.951014,
+    "seen": 1787459822.9146426,
+    "ast_hash": "9b4b9f75c5c1e772476e0dc486e4ee64",
+    "semantic_hash": "9b4b9f75c5c1e772476e0dc486e4ee64"
+  },
+  "Assets/Scripts/IKnockbackable.cs": {
+    "mtime": 1787021532.1718266,
+    "seen": 1787459822.9146426,
+    "ast_hash": "11c840899b054bcdf8ddcb1b69952b0c",
+    "semantic_hash": "11c840899b054bcdf8ddcb1b69952b0c"
+  },
+  "Assets/Scripts/InkProjectile.cs": {
+    "mtime": 1787022526.997984,
+    "seen": 1787459822.9146426,
+    "ast_hash": "09558071e023e3fabc5e4b3d9b9a6ee0",
+    "semantic_hash": "09558071e023e3fabc5e4b3d9b9a6ee0"
+  },
+  "Assets/Scripts/MouseSensitivitySetting.cs": {
+    "mtime": 1786880218.9570155,
+    "seen": 1787459822.9146426,
+    "ast_hash": "9a56eed5779f9f4d1e1eabac232eb17f",
+    "semantic_hash": "9a56eed5779f9f4d1e1eabac232eb17f"
+  },
+  "Assets/Scripts/NarrationManager.cs": {
+    "mtime": 1787102774.685481,
+    "seen": 1787459822.9146426,
+    "ast_hash": "2cc37f94caa2db8478a77bb8b9ee2c69",
+    "semantic_hash": "2cc37f94caa2db8478a77bb8b9ee2c69"
+  },
+  "Assets/Scripts/OrbColor.cs": {
+    "mtime": 1787018437.2021663,
+    "seen": 1787459822.9146426,
+    "ast_hash": "31688b3548112068fdcd7f2b2161e7c4",
+    "semantic_hash": "31688b3548112068fdcd7f2b2161e7c4"
+  },
+  "Assets/Scripts/PaintableObject.cs": {
+    "mtime": 1787280189.2534811,
+    "seen": 1787459822.9146426,
+    "ast_hash": "1e29feb281e87223d24965f57c5bb8cf",
+    "semantic_hash": "1e29feb281e87223d24965f57c5bb8cf"
+  },
+  "Assets/Scripts/PlayerController.cs": {
+    "mtime": 1787103458.3820374,
+    "seen": 1787459822.9146426,
+    "ast_hash": "f056e50c99e8df908845815e1deeb7c2",
+    "semantic_hash": "f056e50c99e8df908845815e1deeb7c2"
+  },
+  "Assets/Scripts/PlayerDodge.cs": {
+    "mtime": 1787020704.8520067,
+    "seen": 1787459822.9146426,
+    "ast_hash": "725c32b6b997105c582a44a5e7d5ad79",
+    "semantic_hash": "725c32b6b997105c582a44a5e7d5ad79"
+  },
+  "Assets/Scripts/PlayerHealth.cs": {
+    "mtime": 1787366556.230558,
+    "seen": 1787459822.9146426,
+    "ast_hash": "0243f5efff0b4d773c225ca8483bdb3b",
+    "semantic_hash": "0243f5efff0b4d773c225ca8483bdb3b"
+  },
+  "Assets/Scripts/RestoredAreaRegistry.cs": {
+    "mtime": 1787022527.007512,
+    "seen": 1787459822.9146426,
+    "ast_hash": "50a9bb714597ecac9bc01fe23b19ab0f",
+    "semantic_hash": "50a9bb714597ecac9bc01fe23b19ab0f"
+  },
+  "Assets/Scripts/RoomClearGate.cs": {
+    "mtime": 1787101701.6772752,
+    "seen": 1787459822.9146426,
+    "ast_hash": "813f3d25d2f53911be4435c8a1a7d4f1",
+    "semantic_hash": "813f3d25d2f53911be4435c8a1a7d4f1"
+  },
+  "Assets/Scripts/SaveData.cs": {
+    "mtime": 1787283586.9755237,
+    "seen": 1787459822.9146426,
+    "ast_hash": "7367119f0be97481db98815b40f53f52",
+    "semantic_hash": "7367119f0be97481db98815b40f53f52"
+  },
+  "Assets/Scripts/SaveManager.cs": {
+    "mtime": 1787283586.9790318,
+    "seen": 1787459822.9146426,
+    "ast_hash": "a599e6f5c33a202026b1f109ec42b16d",
+    "semantic_hash": "a599e6f5c33a202026b1f109ec42b16d"
+  },
+  "Assets/Scripts/Stairs.cs": {
+    "mtime": 1787101701.6817884,
+    "seen": 1787459822.9146426,
+    "ast_hash": "e10ed8449cb57879a33c15c21c51b074",
+    "semantic_hash": "e10ed8449cb57879a33c15c21c51b074"
+  },
+  "Assets/Scripts/WallExplosionHazard.cs": {
+    "mtime": 1787364599.8200643,
+    "seen": 1787459822.9146426,
+    "ast_hash": "a50c323782cd207d77c3bf994121b5df",
+    "semantic_hash": "a50c323782cd207d77c3bf994121b5df"
+  },
+  "Assets/TutorialInfo/Scripts/Editor/ReadmeEditor.cs": {
+    "mtime": 1786877216.9906552,
+    "seen": 1787459822.9146426,
+    "ast_hash": "8092f1aee92852ae5091cd1e845d48df",
+    "semantic_hash": "8092f1aee92852ae5091cd1e845d48df"
+  },
+  "Assets/TutorialInfo/Scripts/Readme.cs": {
+    "mtime": 1786877216.9911692,
+    "seen": 1787459822.9146426,
+    "ast_hash": "7c8eeb74a94701a4b4a5b5f8d6259965",
+    "semantic_hash": "7c8eeb74a94701a4b4a5b5f8d6259965"
+  },
+  "Packages/manifest.json": {
+    "mtime": 1786877216.9917765,
+    "seen": 1787459822.9146426,
+    "ast_hash": "04a449f4e0e4352684aa25784d40aeeb",
+    "semantic_hash": "04a449f4e0e4352684aa25784d40aeeb"
+  },
+  "Packages/packages-lock.json": {
+    "mtime": 1786880218.9570155,
+    "seen": 1787459822.9146426,
+    "ast_hash": "373bab5bb94e1ca383a33fc0dc5fa60f",
+    "semantic_hash": "373bab5bb94e1ca383a33fc0dc5fa60f"
+  },
+  "ProjectSettings/SceneTemplateSettings.json": {
+    "mtime": 1786877216.9963894,
+    "seen": 1787459822.9146426,
+    "ast_hash": "3620a2b0a1c79cc4ae4b6b6ad599ff4d",
+    "semantic_hash": "3620a2b0a1c79cc4ae4b6b6ad599ff4d"
+  },
+  "Assets/Plugins/Demigiant/DOTweenPro/readme.txt": {
+    "mtime": 1786877216.8716564,
+    "seen": 1787459822.9146426,
+    "ast_hash": "e029dda023d37ca8d71bfc7197e0720e",
+    "semantic_hash": "e029dda023d37ca8d71bfc7197e0720e"
+  },
+  "Assets/Plugins/Demigiant/DOTween/readme.txt": {
+    "mtime": 1786877216.859302,
+    "seen": 1787459822.9146426,
+    "ast_hash": "00cb411e1c371dd85c78fccb0681fb20",
+    "semantic_hash": "00cb411e1c371dd85c78fccb0681fb20"
+  },
+  "Assets/Plugins/Demigiant/readme_DOTweenPro.txt": {
+    "mtime": 1786877216.979906,
+    "seen": 1787459822.9146426,
+    "ast_hash": "e029dda023d37ca8d71bfc7197e0720e",
+    "semantic_hash": "e029dda023d37ca8d71bfc7197e0720e"
+  },
+  "ProjectSettings/ProjectVersion.txt": {
+    "mtime": 1786877216.9958775,
+    "seen": 1787459822.9146426,
+    "ast_hash": "d0a53e1e6cfa32fc69fd09d437879ce3",
+    "semantic_hash": "d0a53e1e6cfa32fc69fd09d437879ce3"
+  },
+  "README.md": {
+    "mtime": 1786877216.9979317,
+    "seen": 1787459822.9146426,
+    "ast_hash": "6e439cd12a3bd82b03eb35ac764939c8",
+    "semantic_hash": "6e439cd12a3bd82b03eb35ac764939c8"
+  },
+  "\uae30\ud68d\uc11c/00 \uac8c\uc784 \uac1c\uc694.md": {
+    "mtime": 1786877216.998443,
+    "seen": 1787459822.9146426,
+    "ast_hash": "07c9df4ac1e6a751c5c6d38763e88fcf",
+    "semantic_hash": "07c9df4ac1e6a751c5c6d38763e88fcf"
+  },
+  "\uae30\ud68d\uc11c/01 \uc138\uacc4\uad00 & \uc2a4\ud1a0\ub9ac.md": {
+    "mtime": 1786877216.998443,
+    "seen": 1787459822.9146426,
+    "ast_hash": "dd815fe1be558606dafdbad5a90de8cf",
+    "semantic_hash": "dd815fe1be558606dafdbad5a90de8cf"
+  },
+  "\uae30\ud68d\uc11c/02 \ud50c\ub808\uc774\uc5b4 \uc2dc\uc2a4\ud15c.md": {
+    "mtime": 1786877216.9989557,
+    "seen": 1787459822.9146426,
+    "ast_hash": "b8384c30691b2e35ff89653c892178de",
+    "semantic_hash": "b8384c30691b2e35ff89653c892178de"
+  },
+  "\uae30\ud68d\uc11c/03 \uba39\uad34\uc74c - \uc801 \uc124\uacc4.md": {
+    "mtime": 1786877216.999466,
+    "seen": 1787459822.9146426,
+    "ast_hash": "19c9d354c512b4821cdb5fb6cd64793d",
+    "semantic_hash": "19c9d354c512b4821cdb5fb6cd64793d"
+  },
+  "\uae30\ud68d\uc11c/04 \uc0c9 \uad6c\uc2ac \uc2dc\uc2a4\ud15c.md": {
+    "mtime": 1786877216.999466,
+    "seen": 1787459822.9146426,
+    "ast_hash": "10ece63409c29856e7b9b0254697f035",
+    "semantic_hash": "10ece63409c29856e7b9b0254697f035"
+  },
+  "\uae30\ud68d\uc11c/05 \ub9f5 \uc2dc\uc2a4\ud15c - \ud050\ube0c \uad6c\uc870.md": {
+    "mtime": 1786877216.999466,
+    "seen": 1787459822.9146426,
+    "ast_hash": "1e8862bc91684458c180c1bf397091f5",
+    "semantic_hash": "1e8862bc91684458c180c1bf397091f5"
+  },
+  "\uae30\ud68d\uc11c/06 \ubcf4\uc2a4 \uc124\uacc4.md": {
+    "mtime": 1786877216.999466,
+    "seen": 1787459822.9146426,
+    "ast_hash": "dee6c1cafbc397fc72c059a290ce67b4",
+    "semantic_hash": "dee6c1cafbc397fc72c059a290ce67b4"
+  },
+  "\uae30\ud68d\uc11c/07 UI & \uc544\ud2b8 \ubc29\ud5a5.md": {
+    "mtime": 1786877217.0004728,
+    "seen": 1787459822.9146426,
+    "ast_hash": "d7a6330608b4647ac8f0f4a1ec73aaeb",
+    "semantic_hash": "d7a6330608b4647ac8f0f4a1ec73aaeb"
+  },
+  "\uae30\ud68d\uc11c/08 \uc0ac\uc6b4\ub4dc \uae30\ud68d.md": {
+    "mtime": 1786877217.0004728,
+    "seen": 1787459822.9146426,
+    "ast_hash": "9aec0f43c9c108047d6a5d08060d7ed0",
+    "semantic_hash": "9aec0f43c9c108047d6a5d08060d7ed0"
+  },
+  "\uae30\ud68d\uc11c/09 \uac1c\ubc1c \ub9c8\uc77c\uc2a4\ud1a4.md": {
+    "mtime": 1787103897.7551076,
+    "seen": 1787459822.9146426,
+    "ast_hash": "074f58ae0b52a02b11d9cec0f1fed726",
+    "semantic_hash": "074f58ae0b52a02b11d9cec0f1fed726"
+  },
+  "\uae30\ud68d\uc11c/10 \uc52c \uad6c\uc870 & \uae30\uc220 \uc2a4\ud399.md": {
+    "mtime": 1786877217.0004728,
+    "seen": 1787459822.9146426,
+    "ast_hash": "7296809eadfc756a151627895380948c",
+    "semantic_hash": "7296809eadfc756a151627895380948c"
+  },
+  "\uae30\ud68d\uc11c/11 \uc170\uc774\ub354 \uc124\uacc4 - \uc0c9 \ubcf5\uc6d0 \ud30c\ub3d9.md": {
+    "mtime": 1786877217.0004728,
+    "seen": 1787459822.9146426,
+    "ast_hash": "e683816edad187c02242b570f6f44afa",
+    "semantic_hash": "e683816edad187c02242b570f6f44afa"
+  },
+  "\uae30\ud68d\uc11c/12 \ud050\ube0c \uc88c\ud45c\uacc4 \uc124\uacc4.md": {
+    "mtime": 1786877217.001473,
+    "seen": 1787459822.9146426,
+    "ast_hash": "5862bc1e041944041b0ec71a1cc0854e",
+    "semantic_hash": "5862bc1e041944041b0ec71a1cc0854e"
+  },
+  "\uae30\ud68d\uc11c/13 \uba39\uad34\uc74c AI \uc124\uacc4.md": {
+    "mtime": 1786877217.001473,
+    "seen": 1787459822.9146426,
+    "ast_hash": "b3c66a85475c306931649e55864ef63f",
+    "semantic_hash": "b3c66a85475c306931649e55864ef63f"
+  },
+  "\uae30\ud68d\uc11c/14 \ubc38\ub7f0\uc2a4 \uc218\uce58 \uc2dc\ud2b8.md": {
+    "mtime": 1787018140.2024808,
+    "seen": 1787459822.9146426,
+    "ast_hash": "489d5980f034e77234972d142c21ecc6",
+    "semantic_hash": "489d5980f034e77234972d142c21ecc6"
+  },
+  "\uae30\ud68d\uc11c/15 \ud29c\ud1a0\ub9ac\uc5bc \uc124\uacc4.md": {
+    "mtime": 1786877217.0019784,
+    "seen": 1787459822.9146426,
+    "ast_hash": "50dfd98db2e9843e8474bc6243a0e18e",
+    "semantic_hash": "50dfd98db2e9843e8474bc6243a0e18e"
+  },
+  "\uae30\ud68d\uc11c/16 \uc870\uc791 \uc124\uacc4.md": {
+    "mtime": 1786877217.0019784,
+    "seen": 1787459822.9146426,
+    "ast_hash": "64b40e5557490b7ed7ac7eed1d05e699",
+    "semantic_hash": "64b40e5557490b7ed7ac7eed1d05e699"
+  },
+  "\uae30\ud68d\uc11c/17 \uac8c\uc784\uc624\ubc84 & \ub9ac\ud2b8\ub77c\uc774.md": {
+    "mtime": 1786877217.0019784,
+    "seen": 1787459822.9146426,
+    "ast_hash": "1af930e769d78c4f770fb74432dbc838",
+    "semantic_hash": "1af930e769d78c4f770fb74432dbc838"
+  },
+  "\uae30\ud68d\uc11c/18 \uc138\uc774\ube0c & \ub85c\ub4dc \uae30\ud68d.md": {
+    "mtime": 1786877217.0019784,
+    "seen": 1787459822.9146426,
+    "ast_hash": "2af8c0abd7bab1495c44b3cd5b05bc17",
+    "semantic_hash": "2af8c0abd7bab1495c44b3cd5b05bc17"
+  },
+  "\uae30\ud68d\uc11c/19 \uce35\ubcc4 \uc0c1\uc138 \uc124\uacc4.md": {
+    "mtime": 1786877217.0019784,
+    "seen": 1787459822.9146426,
+    "ast_hash": "b98bfbcbc4126ed52d123a72ad6216e9",
+    "semantic_hash": "b98bfbcbc4126ed52d123a72ad6216e9"
+  },
+  "\uae30\ud68d\uc11c/20 \ucef7\uc52c & \uc5f0\ucd9c \uae30\ud68d.md": {
+    "mtime": 1786877217.0029802,
+    "seen": 1787459822.9146426,
+    "ast_hash": "05f6bfbe1b9cde158751296f917d37a5",
+    "semantic_hash": "05f6bfbe1b9cde158751296f917d37a5"
+  },
+  "\uae30\ud68d\uc11c/21 \uc2a4\ud300 \ud398\uc774\uc9c0 \uae30\ud68d.md": {
+    "mtime": 1786877217.0029802,
+    "seen": 1787459822.9146426,
+    "ast_hash": "0d52c914e6e3c26ab7b3ccb4c3065a27",
+    "semantic_hash": "0d52c914e6e3c26ab7b3ccb4c3065a27"
+  },
+  "\uae30\ud68d\uc11c/22 \ud575\uc2ec \uc2dc\uc2a4\ud15c \ud1b5\ud569 \uae30\ud68d - \ud050\ube0c \uc88c\ud45c\uacc4\uc640 \uc0c9 \ubcf5\uc6d0 \uc5f0\uacc4.md": {
+    "mtime": 1786877217.0029802,
+    "seen": 1787459822.9146426,
+    "ast_hash": "2e1a6826332dfea61ff3f74b52fe4fcc",
+    "semantic_hash": "2e1a6826332dfea61ff3f74b52fe4fcc"
+  },
+  "\uae30\ud68d\uc11c/23 UI \ub514\uc790\uc778 \uae30\ud68d\uc11c (Stitch AI\uc6a9).md": {
+    "mtime": 1786877217.0029802,
+    "seen": 1787459822.9146426,
+    "ast_hash": "7ad6442e6834acc01fb97ae44efa7eb4",
+    "semantic_hash": "7ad6442e6834acc01fb97ae44efa7eb4"
+  },
+  "\uae30\ud68d\uc11c/24 \ub514\uc790\uc778 \ud544\ub7ec.md": {
+    "mtime": 1786877217.003981,
+    "seen": 1787459822.9146426,
+    "ast_hash": "7ce7740a24b2b79545d60efc783fc85a",
+    "semantic_hash": "7ce7740a24b2b79545d60efc783fc85a"
+  },
+  "\uae30\ud68d\uc11c/25 \uc0c9\ub9f9 \uc811\uadfc\uc131 \uc124\uacc4.md": {
+    "mtime": 1786877217.003981,
+    "seen": 1787459822.9146426,
+    "ast_hash": "4b1d618b737d51a9070b472d40ab7495",
+    "semantic_hash": "4b1d618b737d51a9070b472d40ab7495"
+  },
+  "\uae30\ud68d\uc11c/26 \uacbd\uc7c1\uc791 \ube44\uad50 & \ud3ec\uc9c0\uc154\ub2dd.md": {
+    "mtime": 1786877217.003981,
+    "seen": 1787459822.9146426,
+    "ast_hash": "168b6e805744fcbc8e5c191d305ad989",
+    "semantic_hash": "168b6e805744fcbc8e5c191d305ad989"
+  },
+  "\uae30\ud68d\uc11c/27 \uc804\ud22c \ud504\ub808\uc784 \ub370\uc774\ud130.md": {
+    "mtime": 1786877217.003981,
+    "seen": 1787459822.9146426,
+    "ast_hash": "1c6cbe136aae70e973292742bfa37661",
+    "semantic_hash": "1c6cbe136aae70e973292742bfa37661"
+  },
+  "\uae30\ud68d\uc11c/28 \ub808\ubca8 \ub514\uc790\uc778 - \uc778\uce74\uc6b4\ud130 \ud398\uc774\uc2f1\uacfc \ube14\ub85d\uc544\uc6c3.md": {
+    "mtime": 1786877217.00498,
+    "seen": 1787459822.9146426,
+    "ast_hash": "047337c3f8f612e9ce8eaf6d5be0d23b",
+    "semantic_hash": "047337c3f8f612e9ce8eaf6d5be0d23b"
+  },
+  "\uae30\ud68d\uc11c/29 \uac1c\ubc1c \ub9ac\uc2a4\ud06c \uc9c4\ub2e8 & \uc2a4\ucf54\ud504 \ucef7 \uacc4\ud68d.md": {
+    "mtime": 1786877217.00498,
+    "seen": 1787459822.9146426,
+    "ast_hash": "5b38d966dfd423787b85f82c0c8950b9",
+    "semantic_hash": "5b38d966dfd423787b85f82c0c8950b9"
+  },
+  "\uae30\ud68d\uc11c/30 \ud50c\ub808\uc774\ud14c\uc2a4\ud2b8 & \ubc38\ub7f0\uc2f1 \uac80\uc99d \uacc4\ud68d.md": {
+    "mtime": 1786877217.00498,
+    "seen": 1787459822.9146426,
+    "ast_hash": "b7318ab8aca5a3344d42a652fd7bae1d",
+    "semantic_hash": "b7318ab8aca5a3344d42a652fd7bae1d"
+  },
+  "\uae30\ud68d\uc11c/31 \uc5d8\ub9ac\ubca0\uc774\ud130 \ud53c\uce58 (1\ud398\uc774\uc9c0 \uc694\uc57d).md": {
+    "mtime": 1786877217.00498,
+    "seen": 1787459822.9146426,
+    "ast_hash": "0cf36307dc4dbda723eb5636ff44c27b",
+    "semantic_hash": "0cf36307dc4dbda723eb5636ff44c27b"
+  },
+  "\uae30\ud68d\uc11c/32 QA \ub9ac\ubdf0 - \uae30\ud68d\uc790 3\uc778.md": {
+    "mtime": 1786877217.00498,
+    "seen": 1787459822.9146426,
+    "ast_hash": "eabdaa7a4ff74a028af2bd8633670bd0",
+    "semantic_hash": "eabdaa7a4ff74a028af2bd8633670bd0"
+  },
+  "\uae30\ud68d\uc11c/CLAUDE.md": {
+    "mtime": 1787369514.2139933,
+    "seen": 1787459822.9146426,
+    "ast_hash": "96ab1a3f603156505e9ef644818c091a",
+    "semantic_hash": "96ab1a3f603156505e9ef644818c091a"
+  },
+  "\uae30\ud68d\uc11c/changelog/2026-08-16_Cinemachine-\uc644\ub8cc-\ub9c8\uc6b0\uc2a4\uac10\ub3c4\uc124\uc815.md": {
+    "mtime": 1786880218.9580154,
+    "seen": 1787459822.9146426,
+    "ast_hash": "f144953e22c17fcb5685944c0b426f42",
+    "semantic_hash": "f144953e22c17fcb5685944c0b426f42"
+  },
+  "\uae30\ud68d\uc11c/changelog/2026-08-16_Major-4\uac74-\ud574\uacb0.md": {
+    "mtime": 1786877217.0064871,
+    "seen": 1787459822.9146426,
+    "ast_hash": "797049005a4b4357934eb59d0b3861c2",
+    "semantic_hash": "797049005a4b4357934eb59d0b3861c2"
+  },
+  "\uae30\ud68d\uc11c/changelog/2026-08-16_NavMesh-Unity6-\uc6cc\ud06c\ud50c\ub85c\uc6b0-\uc815\uc815.md": {
+    "mtime": 1787017485.3407133,
+    "seen": 1787459822.9146426,
+    "ast_hash": "3b23b65131d8767aeca9df02a002d951",
+    "semantic_hash": "3b23b65131d8767aeca9df02a002d951"
+  },
+  "\uae30\ud68d\uc11c/changelog/2026-08-16_QA\ub9ac\ubdf0-3\uc778-\ubc1c\uacac\uc0ac\ud56d.md": {
+    "mtime": 1786877217.0065832,
+    "seen": 1787459822.9146426,
+    "ast_hash": "443926b091cd434dc3d8e7ad190e7f50",
+    "semantic_hash": "443926b091cd434dc3d8e7ad190e7f50"
+  },
+  "\uae30\ud68d\uc11c/changelog/2026-08-16_v0.1-\uc774\ub3d9\uce74\uba54\ub77c-\ucc29\uc218.md": {
+    "mtime": 1786877217.0065832,
+    "seen": 1787459822.9146426,
+    "ast_hash": "f5580ea08d38543b27b7e40bec2a7dbb",
+    "semantic_hash": "f5580ea08d38543b27b7e40bec2a7dbb"
+  },
+  "\uae30\ud68d\uc11c/changelog/2026-08-16_\uae30\ud68d\ubb38\uc11c-24-31-\ucd94\uac00.md": {
+    "mtime": 1786877217.0065832,
+    "seen": 1787459822.9146426,
+    "ast_hash": "c9fb3c36661c12d6a03e5811c99661c5",
+    "semantic_hash": "c9fb3c36661c12d6a03e5811c99661c5"
+  },
+  "\uae30\ud68d\uc11c/changelog/2026-08-16_\uba39\uad34\uc74c-\ud3c9-1\uc885.md": {
+    "mtime": 1787017145.0098045,
+    "seen": 1787459822.9146426,
+    "ast_hash": "78d6b26b69de01f8c8c73fb2135b4a46",
+    "semantic_hash": "78d6b26b69de01f8c8c73fb2135b4a46"
+  },
+  "\uae30\ud68d\uc11c/changelog/2026-08-16_\uba39\uad34\uc74c\ud3c9-HP\uc870\uc815-QA\uc6a9.md": {
+    "mtime": 1787018140.2163596,
+    "seen": 1787459822.9146426,
+    "ast_hash": "1fbb3521f4c62f45b3c3041cc7349168",
+    "semantic_hash": "1fbb3521f4c62f45b3c3041cc7349168"
+  },
+  "\uae30\ud68d\uc11c/changelog/2026-08-16_\ubd93\uacf5\uaca9-3\ud0c0\ucf64\ubcf4.md": {
+    "mtime": 1786880218.9590156,
+    "seen": 1787459822.9146426,
+    "ast_hash": "a5906c4d672c373311e5a3bc95410465",
+    "semantic_hash": "a5906c4d672c373311e5a3bc95410465"
+  },
+  "\uae30\ud68d\uc11c/changelog/2026-08-16_\uc0c9\uad6c\uc2ac-\ub4dc\ub78d\ud68d\ub4dd.md": {
+    "mtime": 1787018437.2293732,
+    "seen": 1787459822.9146426,
+    "ast_hash": "3d1fdc6255e3344d5ee37b532b380788",
+    "semantic_hash": "3d1fdc6255e3344d5ee37b532b380788"
+  },
+  "\uae30\ud68d\uc11c/changelog/2026-08-16_\uc0c9\ubcf5\uc6d0\ud30c\ub3d9-\ud0c0\uc774\ubc0d\uc870\uc815.md": {
+    "mtime": 1787020704.8712995,
+    "seen": 1787459822.9146426,
+    "ast_hash": "8eb58bfddd55e2c7066e5a193a435461",
+    "semantic_hash": "8eb58bfddd55e2c7066e5a193a435461"
+  },
+  "\uae30\ud68d\uc11c/changelog/2026-08-16_\uc0c9\ubcf5\uc6d0\ud30c\ub3d9.md": {
+    "mtime": 1787019061.5542536,
+    "seen": 1787459822.9146426,
+    "ast_hash": "54a7df4cf7b8bc88669ab7a07f71f15b",
+    "semantic_hash": "54a7df4cf7b8bc88669ab7a07f71f15b"
+  },
+  "\uae30\ud68d\uc11c/changelog/2026-08-16_\uc801\ud53c\uaca9\ub85c\uadf8-\uc6d0\uce59\ud654.md": {
+    "mtime": 1787018140.22039,
+    "seen": 1787459822.9146426,
+    "ast_hash": "4b19c5cb8bd0634fee3c03d13fb471f6",
+    "semantic_hash": "4b19c5cb8bd0634fee3c03d13fb471f6"
+  },
+  "\uae30\ud68d\uc11c/changelog/2026-08-16_\ud06c\ub9ac\ud2f0\uceec-2\uac74-\ud574\uacb0.md": {
+    "mtime": 1786877217.0075853,
+    "seen": 1787459822.9146426,
+    "ast_hash": "1b0cdbb052d6c404ccd460608a76200c",
+    "semantic_hash": "1b0cdbb052d6c404ccd460608a76200c"
+  },
+  "\uae30\ud68d\uc11c/changelog/2026-08-18_v0.1\uc644\uc131-\ub2e4\uc74c\ubc29\ud5a5\uacb0\uc815.md": {
+    "mtime": 1787020704.8789048,
+    "seen": 1787459822.9146426,
+    "ast_hash": "d98269710874bfb2bc0b2b583c9e828c",
+    "semantic_hash": "d98269710874bfb2bc0b2b583c9e828c"
+  },
+  "\uae30\ud68d\uc11c/changelog/2026-08-18_\uad6c\ub974\uae30-\ud68c\ud53c-\uad6c\ud604.md": {
+    "mtime": 1787021532.1874871,
+    "seen": 1787459822.9146426,
+    "ast_hash": "789a2a3b298a0091359aff04f47f69b5",
+    "semantic_hash": "789a2a3b298a0091359aff04f47f69b5"
+  },
+  "\uae30\ud68d\uc11c/changelog/2026-08-18_\uba39\uad34\uc74c3\uc885-\ucd94\uac00.md": {
+    "mtime": 1787022853.0818198,
+    "seen": 1787459822.9146426,
+    "ast_hash": "25631378bf4f5852cab50e5f3d4af919",
+    "semantic_hash": "25631378bf4f5852cab50e5f3d4af919"
+  },
+  "\uae30\ud68d\uc11c/changelog/2026-08-18_\uc0c9\uc2a4\ud0ac3\uc885-\uad6c\ud604.md": {
+    "mtime": 1787021969.9002116,
+    "seen": 1787459822.9146426,
+    "ast_hash": "ddb144de8bf6a0c6108c3e1adaf6369b",
+    "semantic_hash": "ddb144de8bf6a0c6108c3e1adaf6369b"
+  },
+  "\uae30\ud68d\uc11c/changelog/2026-08-19_\uacc4\ub2e8-\uce35\uad6c\uc870-\uad6c\ud604.md": {
+    "mtime": 1787102507.6054795,
+    "seen": 1787459822.9146426,
+    "ast_hash": "a0e5290272fbe39370c6344044cbc1a8",
+    "semantic_hash": "a0e5290272fbe39370c6344044cbc1a8"
+  },
+  "\uae30\ud68d\uc11c/changelog/2026-08-19_\ubc18\ubcf5\uce35-\ub098\ub808\uc774\uc158-\uad6c\ud604.md": {
+    "mtime": 1787103458.39617,
+    "seen": 1787459822.9146426,
+    "ast_hash": "824df8de3bea42aff52eb222ce1b92bc",
+    "semantic_hash": "824df8de3bea42aff52eb222ce1b92bc"
+  },
+  "\uae30\ud68d\uc11c/changelog/2026-08-19_\ubcf4\uc2a41-2\ud398\uc774\uc988-\uad6c\ud604.md": {
+    "mtime": 1787104259.325116,
+    "seen": 1787459822.9146426,
+    "ast_hash": "53e94a52f75d09d89f3f366e1a2e216a",
+    "semantic_hash": "53e94a52f75d09d89f3f366e1a2e216a"
+  },
+  "\uae30\ud68d\uc11c/changelog/2026-08-19_\uc778\uce74\uc6b4\ud130\uc2a4\ud3ec\ub108-1\uce35\ucf58\ud150\uce20.md": {
+    "mtime": 1787107425.4690778,
+    "seen": 1787459822.9146426,
+    "ast_hash": "d21d5a21b52e286fb9eaa3d032ad83f3",
+    "semantic_hash": "d21d5a21b52e286fb9eaa3d032ad83f3"
+  },
+  "\uae30\ud68d\uc11c/changelog/2026-08-19_\ud050\ube0c\ub178\ucd9c-APV-\ucd5c\uc18c\ud2c0.md": {
+    "mtime": 1787104759.6215587,
+    "seen": 1787459822.9146426,
+    "ast_hash": "dfc05413031b8ea39ab29a3ba0c3a0e1",
+    "semantic_hash": "dfc05413031b8ea39ab29a3ba0c3a0e1"
+  },
+  "\uae30\ud68d\uc11c/changelog/2026-08-19_\ud050\ube0c\uc88c\ud45c\uacc4-\uad6c\ud604.md": {
+    "mtime": 1787101701.7064002,
+    "seen": 1787459822.9146426,
+    "ast_hash": "9f0388f343098543d92b1bfbd972ea8e",
+    "semantic_hash": "9f0388f343098543d92b1bfbd972ea8e"
+  },
+  "\uae30\ud68d\uc11c/changelog/2026-08-20_2\uce35\ucf58\ud150\uce20-\uc228\uaca8\uc9c4\uad6c\uc2ac.md": {
+    "mtime": 1787281584.291462,
+    "seen": 1787459822.9146426,
+    "ast_hash": "aa17c1e26389b92879a0b15d3b285244",
+    "semantic_hash": "aa17c1e26389b92879a0b15d3b285244"
+  },
+  "\uae30\ud68d\uc11c/changelog/2026-08-20_3\uce35\ucf58\ud150\uce20-\uc900\ube44.md": {
+    "mtime": 1787282575.589777,
+    "seen": 1787459822.9146426,
+    "ast_hash": "28729c6694242164fed7f05b8802b47b",
+    "semantic_hash": "28729c6694242164fed7f05b8802b47b"
+  },
+  "\uae30\ud68d\uc11c/changelog/2026-08-20_4\uce35\ucf58\ud150\uce20-\uc900\ube44.md": {
+    "mtime": 1787369514.2215016,
+    "seen": 1787459822.9146426,
+    "ast_hash": "102b6b3e58329783cb6f4890333a0b0d",
+    "semantic_hash": "102b6b3e58329783cb6f4890333a0b0d"
+  },
+  "\uae30\ud68d\uc11c/changelog/2026-08-20_\uc138\uc774\ube0c\ub85c\ub4dc-\ucd5c\uc18c\ubc84\uc804.md": {
+    "mtime": 1787285054.3790424,
+    "seen": 1787459822.9146426,
+    "ast_hash": "c2cb570d26094c9137216b9fa7fd84ee",
+    "semantic_hash": "c2cb570d26094c9137216b9fa7fd84ee"
+  },
+  "\uae30\ud68d\uc11c/changelog/2026-08-20_\ud761-\ud68c\ubcf5\uac1c\uc120-\uacf5\uaca9\ucd94\uac00.md": {
+    "mtime": 1787285766.5033548,
+    "seen": 1787459822.9146426,
+    "ast_hash": "cd8ca486ae20b800d5cb9349f7d32be4",
+    "semantic_hash": "cd8ca486ae20b800d5cb9349f7d32be4"
+  },
+  "\uae30\ud68d\uc11c/changelog/2026-08-21_5\uce35\ucf58\ud150\uce20-\uc900\ube44.md": {
+    "mtime": 1787369514.231024,
+    "seen": 1787459822.9146426,
+    "ast_hash": "ecfd5b21707d0ed39bf6e0e6b7b27f54",
+    "semantic_hash": "ecfd5b21707d0ed39bf6e0e6b7b27f54"
+  },
+  "\uae30\ud68d\uc11c/changelog/2026-08-21_6\uce35\ucf58\ud150\uce20-\uc900\ube44.md": {
+    "mtime": 1787369514.2380238,
+    "seen": 1787459822.9146426,
+    "ast_hash": "11d47cc55e74e8050be77fddc33d638e",
+    "semantic_hash": "11d47cc55e74e8050be77fddc33d638e"
+  },
+  "\uae30\ud68d\uc11c/changelog/2026-08-21_7\uce35-\uad11\uac80\ud1a0.md": {
+    "mtime": 1787369514.2462165,
+    "seen": 1787459822.9146426,
+    "ast_hash": "52ecde93b7916034234eaec901c20f7d",
+    "semantic_hash": "52ecde93b7916034234eaec901c20f7d"
+  },
+  "\uae30\ud68d\uc11c/changelog/2026-08-21_\ubd93\uacf5\uaca9-\uc790\ud574\ubc84\uadf8.md": {
+    "mtime": 1787366556.2409275,
+    "seen": 1787459822.9146426,
+    "ast_hash": "04b44e44d899217991ef8f61500e2041",
+    "semantic_hash": "04b44e44d899217991ef8f61500e2041"
+  },
+  "\uae30\ud68d\uc11c/changelog/2026-08-21_\uc0c8\uba74-\uc790\ub3d9\ud654\ub3c4\uad6c.md": {
+    "mtime": 1787369514.2567406,
+    "seen": 1787459822.9146426,
+    "ast_hash": "bb8b6d435049305faaa14996f0e30a0c",
+    "semantic_hash": "bb8b6d435049305faaa14996f0e30a0c"
+  },
+  "\uae30\ud68d\uc11c/changelog/2026-08-21_\uc804\ud658\uc911-\ubb34\uc801\ucc98\ub9ac.md": {
+    "mtime": 1787366279.8419042,
+    "seen": 1787459822.9146426,
+    "ast_hash": "5a3fa6e243844318635823c720096808",
+    "semantic_hash": "5a3fa6e243844318635823c720096808"
+  },
+  "\uae30\ud68d\uc11c/logic/2\uce35 \ucf58\ud150\uce20 - \uc548\uac1c \uace8\ubaa9 \uc52c \uc124\uc815.md": {
+    "mtime": 1787280189.269555,
+    "seen": 1787459822.9146426,
+    "ast_hash": "bd5e9a334aff2c05c406a8fb17b0ff71",
+    "semantic_hash": "bd5e9a334aff2c05c406a8fb17b0ff71"
+  },
+  "\uae30\ud68d\uc11c/logic/3\uce35 \ucf58\ud150\uce20 - \uc804\ubd07\ub300 \uac70\ub9ac \uc52c \uc124\uc815.md": {
+    "mtime": 1787281584.3077624,
+    "seen": 1787459822.9146426,
+    "ast_hash": "0c0d066ca9c76f3e37d9eb892087e659",
+    "semantic_hash": "0c0d066ca9c76f3e37d9eb892087e659"
+  },
+  "\uae30\ud68d\uc11c/logic/4\uce35 \ucf58\ud150\uce20 - \ud750\ub9b0 \uc0c1\uc810\uac00 \uc52c \uc124\uc815.md": {
+    "mtime": 1787364239.301959,
+    "seen": 1787459822.9146426,
+    "ast_hash": "e70ef16b31d11be400de859e2fc4a548",
+    "semantic_hash": "e70ef16b31d11be400de859e2fc4a548"
+  },
+  "\uae30\ud68d\uc11c/logic/5\uce35 \ucf58\ud150\uce20 - \uc775\uc219\ud55c \uace8\ubaa9 \uc52c \uc124\uc815.md": {
+    "mtime": 1787369514.2652512,
+    "seen": 1787459822.9146426,
+    "ast_hash": "96ef14482dfb04b18c6bf2e757b8a1d6",
+    "semantic_hash": "96ef14482dfb04b18c6bf2e757b8a1d6"
+  },
+  "\uae30\ud68d\uc11c/logic/6\uce35 \ucf58\ud150\uce20 - \ube44 \uc624\ub294 \uac70\ub9ac \uc52c \uc124\uc815.md": {
+    "mtime": 1787369514.2731009,
+    "seen": 1787459822.9146426,
+    "ast_hash": "90f2577f26ddad3204062be2c39ec1bf",
+    "semantic_hash": "90f2577f26ddad3204062be2c39ec1bf"
+  },
+  "\uae30\ud68d\uc11c/logic/APV \uc870\uba85 \uc124\uc815.md": {
+    "mtime": 1787104259.3341513,
+    "seen": 1787459822.9146426,
+    "ast_hash": "d3601046db28046a821ea9d6d67a1144",
+    "semantic_hash": "d3601046db28046a821ea9d6d67a1144"
+  },
+  "\uae30\ud68d\uc11c/logic/Cinemachine 3\uc778\uce6d \uce74\uba54\ub77c \uc124\uc815.md": {
+    "mtime": 1786880218.9590156,
+    "seen": 1787459822.9146426,
+    "ast_hash": "b0735554c2c6f03142b87522db17ae2d",
+    "semantic_hash": "b0735554c2c6f03142b87522db17ae2d"
+  },
+  "\uae30\ud68d\uc11c/logic/\uacc4\ub2e8 & \ubc29 \ud074\ub9ac\uc5b4 \uac8c\uc774\ud2b8 \uc52c \uc124\uc815.md": {
+    "mtime": 1787369514.2820833,
+    "seen": 1787459822.9146426,
+    "ast_hash": "ce922457302ff482795bbb6a4ff34fb0",
+    "semantic_hash": "ce922457302ff482795bbb6a4ff34fb0"
+  },
+  "\uae30\ud68d\uc11c/logic/\ub9c8\uc6b0\uc2a4 \uac10\ub3c4 \uc124\uc815.md": {
+    "mtime": 1786880218.9590156,
+    "seen": 1787459822.9146426,
+    "ast_hash": "52e5680f225a7cae1fa7bea5cbef4103",
+    "semantic_hash": "52e5680f225a7cae1fa7bea5cbef4103"
+  },
+  "\uae30\ud68d\uc11c/logic/\uba39\uad34\uc74c - \ud3c9 \uc52c \uc124\uc815.md": {
+    "mtime": 1787017485.346251,
+    "seen": 1787459822.9146426,
+    "ast_hash": "de12e1b45a7e1ea378769c39c3242d0f",
+    "semantic_hash": "de12e1b45a7e1ea378769c39c3242d0f"
+  },
+  "\uae30\ud68d\uc11c/logic/\uc0c8 \uba74 \uc790\ub3d9\ud654 \ub3c4\uad6c.md": {
+    "mtime": 1787369514.286083,
+    "seen": 1787459822.9146426,
+    "ast_hash": "2173e715f3ca344c1e64aacb9e42bf4a",
+    "semantic_hash": "2173e715f3ca344c1e64aacb9e42bf4a"
+  },
+  "\uae30\ud68d\uc11c/logic/\uc0c9 \uad6c\uc2ac \uc2dc\uc2a4\ud15c \uc52c \uc124\uc815.md": {
+    "mtime": 1787018437.2348852,
+    "seen": 1787459822.9146426,
+    "ast_hash": "8c4e14839f0fb322e5f6b469c534c7bc",
+    "semantic_hash": "8c4e14839f0fb322e5f6b469c534c7bc"
+  },
+  "\uae30\ud68d\uc11c/logic/\uc0c9 \ubcf5\uc6d0 \ud30c\ub3d9 \uc52c \uc124\uc815.md": {
+    "mtime": 1787019061.5597594,
+    "seen": 1787459822.9146426,
+    "ast_hash": "1edd3b90bd3e9648ab085d6ef51f9f2f",
+    "semantic_hash": "1edd3b90bd3e9648ab085d6ef51f9f2f"
+  },
+  "\uae30\ud68d\uc11c/logic/\uc138\uc774\ube0c \ub85c\ub4dc \uc124\uc815.md": {
+    "mtime": 1787283587.0121875,
+    "seen": 1787459822.9146426,
+    "ast_hash": "edcd0f5fee0223f12a602c18588eadb1",
+    "semantic_hash": "edcd0f5fee0223f12a602c18588eadb1"
+  },
+  "\uae30\ud68d\uc11c/logic/\ud050\ube0c \uc88c\ud45c\uacc4 \uc52c \uc124\uc815.md": {
+    "mtime": 1787099516.2334502,
+    "seen": 1787459822.9146426,
+    "ast_hash": "d9186af395789ef85f4b814e7fffcd9f",
+    "semantic_hash": "d9186af395789ef85f4b814e7fffcd9f"
+  },
+  "\uae30\ud68d\uc11c/refactor/\uc0c9 \ubcf5\uc6d0 \ud30c\ub3d9 - Shader Graph \uc5c5\uadf8\ub808\uc774\ub4dc.md": {
+    "mtime": 1787019061.5642903,
+    "seen": 1787459822.9146426,
+    "ast_hash": "a8d238a32da88a2b3ff81845f6454706",
+    "semantic_hash": "a8d238a32da88a2b3ff81845f6454706"
+  },
+  "\uae30\ud68d\uc11c/\ub514\uc790\uc774\ub108 \ud300\uc6d0 \uc81c\uc548\uc11c.md": {
+    "mtime": 1786877217.0075853,
+    "seen": 1787459822.9146426,
+    "ast_hash": "b2345e30980781770a6e7b7a95a72c79",
+    "semantic_hash": "b2345e30980781770a6e7b7a95a72c79"
+  },
+  "Assets/TutorialInfo/Icons/URP.png": {
+    "mtime": 1786877221.1941042,
+    "seen": 1787459822.9146426,
+    "ast_hash": "6d2f425093f43ca4866c76d333895ab8",
+    "semantic_hash": "6d2f425093f43ca4866c76d333895ab8"
+  }
+}

@@ -12,6 +12,7 @@ using UnityEngine.InputSystem;
 /// 없었다"는 것이었습니다. 그래서 숫자를 깎는 대신 원안대로 구르기를 구현합니다.
 /// </summary>
 [RequireComponent(typeof(CharacterController))]
+[RequireComponent(typeof(PlayerController))] // Start()에서 PlayerController.InputActions를 공유해서 씀
 public class PlayerDodge : MonoBehaviour
 {
     [Header("설정 (27 전투 프레임 데이터, 14 밸런스 수치 시트)")]
@@ -35,7 +36,7 @@ public class PlayerDodge : MonoBehaviour
 
     private CharacterController cc;
     private PlayerHealth playerHealth;
-    private PlayerInputActions inputActions;
+    private PlayerInputActions inputActions; // PlayerController가 소유 — 여기선 구독/조회만 함
     private bool dodgeQueued;
     private float cooldownTimer;
 
@@ -50,14 +51,9 @@ public class PlayerDodge : MonoBehaviour
         if (cameraTransform == null && Camera.main != null)
             cameraTransform = Camera.main.transform;
 
-        inputActions = new PlayerInputActions();
+        // PlayerController가 Awake()에서 만들어 Enable()까지 해둔 인스턴스를 공유해서 씁니다.
+        inputActions = GetComponent<PlayerController>().InputActions;
         inputActions.Player.Dodge.performed += _ => dodgeQueued = true;
-        inputActions.Enable();
-    }
-
-    private void OnDestroy()
-    {
-        inputActions?.Disable();
     }
 
     private void Update()

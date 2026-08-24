@@ -37,17 +37,18 @@ public class PlayerController : MonoBehaviour
     private float speedMultiplier = 1f; // [[BossPo]] 왜곡 공격 등 슬로우 디버프용
     private Coroutine slowRoutine;
 
-    private void Start()
+    /// <summary>
+    /// 같은 GameObject의 BrushWeapon/ColorSkillController/PlayerDodge가 공유해서 쓰는
+    /// PlayerInputActions 인스턴스입니다. (예전엔 4개 스크립트가 각자 따로 만들었는데,
+    /// 같은 캐릭터에 대해 인스턴스 4개를 유지할 이유가 없어서 여기 한 곳에서만 소유하도록 정리했습니다.)
+    /// </summary>
+    public PlayerInputActions InputActions => inputActions;
+
+    private void Awake()
     {
-        cc = GetComponent<CharacterController>();
-        dodge = GetComponent<PlayerDodge>(); // 없어도(구르기 미부착) 동작은 그대로 — null 체크로 방어
-        skills = GetComponent<ColorSkillController>(); // 없어도(색 스킬 미부착) 동작은 그대로 — null 체크로 방어
-
-        // 카메라가 연결 안 되어 있으면 메인 카메라를 자동으로 찾습니다.
-        if (cameraTransform == null && Camera.main != null)
-            cameraTransform = Camera.main.transform;
-
-        // 인스턴스 생성
+        // Unity는 "모든 컴포넌트의 Awake()가 끝난 뒤에야 Start()가 실행된다"를 보장하므로,
+        // 인스턴스 생성/Enable()을 Awake()에서 해두면 다른 스크립트들이 자기 Start()에서
+        // InputActions를 안전하게 가져다 쓸 수 있습니다.
         inputActions = new PlayerInputActions();
 
         // 키를 누르는 동안 moveInput에 값 저장
@@ -58,6 +59,17 @@ public class PlayerController : MonoBehaviour
 
         // 입력 감지 시작
         inputActions.Enable();
+    }
+
+    private void Start()
+    {
+        cc = GetComponent<CharacterController>();
+        dodge = GetComponent<PlayerDodge>(); // 없어도(구르기 미부착) 동작은 그대로 — null 체크로 방어
+        skills = GetComponent<ColorSkillController>(); // 없어도(색 스킬 미부착) 동작은 그대로 — null 체크로 방어
+
+        // 카메라가 연결 안 되어 있으면 메인 카메라를 자동으로 찾습니다.
+        if (cameraTransform == null && Camera.main != null)
+            cameraTransform = Camera.main.transform;
     }
 
     private void OnDestroy()

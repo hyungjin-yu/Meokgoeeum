@@ -13,6 +13,7 @@ using UnityEngine.InputSystem;
 /// Animation Event 호출로 교체하면 되고, 바깥에서 보이는 동작(콤보 흐름, 판정
 /// 타이밍)은 그대로 유지되도록 상태머신 구조를 잡아뒀습니다.
 /// </summary>
+[RequireComponent(typeof(PlayerController))] // Start()에서 PlayerController.InputActions를 공유해서 씀
 public class BrushWeapon : MonoBehaviour
 {
     [Header("공격력 (14 밸런스 수치 시트)")]
@@ -40,7 +41,7 @@ public class BrushWeapon : MonoBehaviour
     private bool attackQueued;      // 클릭 입력을 여기 담아뒀다가 매 프레임 소비
     private bool nextComboBuffered; // Recovery 버퍼 구간에서 다음 콤보 확정 여부
 
-    private PlayerInputActions inputActions;
+    private PlayerInputActions inputActions; // PlayerController가 소유 — 여기선 구독만 함
 
     // 프레임 데이터 (60fps 기준 초 단위로 미리 환산 — 매 프레임 나눗셈 피함)
     // 인덱스: 0 = 1타, 1 = 2타, 2 = 3타
@@ -58,14 +59,9 @@ public class BrushWeapon : MonoBehaviour
 
     private void Start()
     {
-        inputActions = new PlayerInputActions();
+        // PlayerController가 Awake()에서 만들어 Enable()까지 해둔 인스턴스를 공유해서 씁니다.
+        inputActions = GetComponent<PlayerController>().InputActions;
         inputActions.Player.Attack.performed += _ => attackQueued = true;
-        inputActions.Enable();
-    }
-
-    private void OnDestroy()
-    {
-        inputActions?.Disable();
     }
 
     private void Update()
