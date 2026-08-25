@@ -117,18 +117,18 @@
 
 ### 최근 changelog (최신이 위)
 
-- `2026-08-25_씬소속버그-잔여정리.md` — `2026-08-24_재방문-랜덤인카운터`에서 낮은 우선순위로 남겨뒀던 `DamageZone`/`EnemyGwang` 경고 인디케이터/`EnemyWon` 투사체(`CreatePrimitive` 기반, `Instantiate` 아님)의 씬 소속 정리. 시전자를 따라 움직이면 안 되는 오브젝트라 `transform.parent` 대신 `SceneManager.MoveGameObjectToScene()`으로 씬만 맞춤. 컴파일/런타임 검증은 다음 세션에 필요
+- `2026-08-25_게임오버-리트라이확정.md` — [[17 게임오버 & 리트라이]] 원 기획("처음부터 재시작")을 폐기하고, 개발 편의로 임시 도입했던 "죽은 면에서 다시 시작" 방식을 정식 스펙으로 확정. 문서 정정만, 코드 변경 없음
+- `2026-08-25_씬소속버그-잔여정리.md` — `2026-08-24_재방문-랜덤인카운터`에서 낮은 우선순위로 남겨뒀던 `DamageZone`/`EnemyGwang` 경고 인디케이터/`EnemyWon` 투사체(`CreatePrimitive` 기반, `Instantiate` 아님)의 씬 소속 정리. 시전자를 따라 움직이면 안 되는 오브젝트라 `transform.parent` 대신 `SceneManager.MoveGameObjectToScene()`으로 씬만 맞춤. 컴파일 에러 없음 확인 완료(런타임 검증은 낮은 우선순위)
 - `2026-08-24_재방문-랜덤인카운터.md` — `RandomEncounterSpawner.cs` 신규(재방문마다 무작위 N마리, 종류당 중복 최대 2, `minVisitCount`로 1~6층 첫 방문은 스킵). ⚠️ **씬 소속 심각한 기존 버그 발견·수정**: `CubeMapManager`가 `SetActiveScene()`을 한 번도 안 불러서 스폰된 적들이 전부 영구 씬(`SC_Game`)에 쌓이고 있었음 — `SetActiveScene` 추가 + `Instantiate()` 부모 명시(`EncounterSpawner`/`EnemyBun`/`RandomEncounterSpawner`) + `currentFaceIndex` 갱신 순서 수정으로 해결, Unity 검증 완료. **[2026-08-25 추가]** 1~6층 첫 방문 스킵 경로도 새 게임으로 실측 완료
 - `2026-08-24_7층-광구현.md` — `03`/`19` 문서 층별 등장 표 불일치 정정(분 6층/광 7층 첫 등장으로). `EnemyGwang.cs` 신규, 프리팹화 + Unity 검증 완료. **[2026-08-25 추가]** 재방문-랜덤 방식 전환에 맞춰 03/19 문서 "7층=광 고정" 서술도 정정 완료
 - `2026-08-24_입력시스템-리팩토링.md` — graphify 그래프 분석으로 발견한 `PlayerInputActions` 4중 생성 정리(4개 스크립트 → `PlayerController` 소유 1개 공유). Unity 검증 완료. `FaceBootstrapWindow` 컴파일 에러도 같이 수정 + 실사용 테스트 완료(더미 씬으로 검증 후 정리)
-- `2026-08-21_새면-자동화도구.md` — `FaceBootstrapWindow.cs` 신규(에디터 전용, `MG > 새 면 만들기` 메뉴). 씬 생성+Addressable+CubeFaceData+GameState 연결까지 버튼 한 번에 자동화
 
 ### 지금 당장 다음에 할 일
 
 - ✅ **[2026-08-25 완료]** 새 게임으로 1층 첫 방문 테스트 — 91층 세이브 백업 후 삭제, 새 게임으로 검증. `RandomEncounterSpawner`가 "재방문 조건을 채우지 못해 스폰을 건너뜁니다" 로그와 함께 정상 스킵됨 확인. 백업은 `save_slot_0.backup_91f.json`으로 남아있음(필요하면 복원)
 - ✅ **[2026-08-25 완료]** `03`/`19` 기획서의 "7층=광 첫 등장" 서술을 실제 구현(재방문 시 무작위 풀 스폰, 특정 층 고정 아님)에 맞게 정정
 - ✅ **[2026-08-25 완료]** `DamageZone`/`EnemyGwang` 경고 인디케이터/`EnemyWon` 투사체 씬 소속 정리 — `SceneManager.MoveGameObjectToScene()`으로 수정, 컴파일 에러 없음 확인. (런타임 씬 소속 확인은 안 함 — 자체 타이머로 금방 소멸돼서 게임플레이엔 원래도 영향 없던 버그) 근거: [[changelog/2026-08-25_씬소속버그-잔여정리]]
-- ⚠️ **게임 오버가 "죽은 층에서 다시 시작"으로 구현돼있음** (원 기획 "처음부터"와 다름, 임시 결정 — 사유는 [[changelog/2026-08-20_4층콘텐츠-준비]] 참고)
+- ✅ **[2026-08-25 확정]** 게임 오버 리트라이 방식 — "죽은 면에서 다시 시작"(현재 구현)을 정식 채택으로 확정, 원 기획 "처음부터 재시작"은 폐기. [[17 게임오버 & 리트라이]] 문서 정정 완료
 - 1층의 "방B(색 구슬 파동 트리거)"·"입장 복도(튜토리얼 유도)"도 아직 별도 콘텐츠 작업 필요
 - **⚠️ Enemy 프리팹을 Waves 배열에 채울 때는 반드시 Project 창에서 드래그할 것** — Hierarchy의 씬 오브젝트를 잘못 참조하면 그 오브젝트가 파괴되는 순간 웨이브가 조용히 깨짐 (오늘 겪은 버그, [[changelog/2026-08-19_인카운터스포너-1층콘텐츠]] 참고)
 - ⚠️ **`CubeMapManager`의 `Cube Reveal Floor Number`를 테스트용으로 3으로 낮춰뒀다면 12로 복구했는지 확인할 것**
