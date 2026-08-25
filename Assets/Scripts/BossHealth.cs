@@ -15,10 +15,18 @@ public class BossHealth : MonoBehaviour, IDamageable
     [Range(0f, 1f)]
     public float phase2Threshold = 0.5f;
 
+    /// <summary>
+    /// [[14 밸런스 수치 시트]] "보스 DPS 역산 검증"의 순수 콤보 DPS(붓 3타 풀콤보 23댐 ÷ 1.22초).
+    /// [[BrushWeapon]]의 attackPower(10) × DamageMultiplier(0.6/0.7/1.0 = 23) ÷ 프레임 합산(73f/60=1.22초)과
+    /// 정확히 일치하는 값 — 코드가 바뀌면 이 상수도 같이 갱신해야 아래 실측 로그가 의미 있음.
+    /// </summary>
+    private const float RawComboDpsAssumption = 18.9f;
+
     private float currentHP;
     private bool isDead;
     private bool phase2Triggered;
     private bool isInvulnerable;
+    private float fightStartTime = -1f; // 첫 피격 시각 — [[30 플레이테스트 & 밸런싱 검증 계획]] "실효 교전 비율 40%" 가정 실측용
 
     public float CurrentHP => currentHP;
     public float HpRatio => currentHP / maxHP;
@@ -42,6 +50,12 @@ public class BossHealth : MonoBehaviour, IDamageable
         {
             Debug.Log($"[BossHealth] {name} 무적 중이라 피격 무시됨!");
             return;
+        }
+
+        if (fightStartTime < 0f)
+        {
+            fightStartTime = Time.time;
+            Debug.Log($"[BossHealth] {name} 전투 시작(첫 피격) — 실효 DPS 실측 타이머 시작.");
         }
 
         currentHP -= amount;
@@ -82,8 +96,38 @@ public class BossHealth : MonoBehaviour, IDamageable
     {
         isDead = true;
         Debug.Log($"[BossHealth] {name} 처치! (3페이즈/처치 연출/보상은 v0.3 범위 밖 — 다음 마일스톤)");
+        LogDpsMeasurement();
         OnDeath?.Invoke();
 
         SaveManager.Instance?.Save(); // [[18 세이브 & 로드 기획]] "보스 처치 후 자동 저장"
+    }
+
+    /// <summary>
+    /// [[14 밸런스 수치 시트]] "보스 DPS 역산 검증"의 "실효 교전 비율 40%" 가정을 실측으로 검증합니다.
+    /// 첫 피격~처치까지 걸린 실제 시간으로 실효 DPS를 역산하고, 이론상 순수 콤보 DPS(18.9/초) 대비
+    /// 비율을 구해 문서가 가정한 40%와 비교합니다. 스킬 사용은 포함된 실측치라 문서의 "66초는
+    /// 상한에 가까운 보수적 추정치" 서술과 자연스럽게 비교 가능.
+    /// </summary>
+    private void LogDpsMeasurement()
+    {
+        if (fightStartTime < 0f)
+        {
+            Debug.LogWarning("[BossHealth] DPS 실측 실패 — 첫 피격 시각이 기록 안 됨(전투 시작 전에 즉사시켰거나 디버그 커맨드 등).");
+            return;
+        }
+
+        float elapsed = Time.time - fightStartTime;
+        if (elapsed <= 0f) return;
+
+        float measuredDps = maxHP / elapsed;
+        float impliedEngagementRatio = measuredDps / RawComboDpsAssumption;
+
+        Debug.Log(
+            $"[BossHealth] === 보스 DPS 실측 결과 (14 밸런스 수치 시트 '보스 DPS 역산 검증' 대응) ===\n" +
+            $"  전투 시간: {elapsed:F1}초 (문서 목표: 60~90초)\n" +
+            $"  실측 실효 DPS: {measuredDps:F1}/초 (문서 가정: 7.6/초)\n" +
+            $"  역산된 실효 교전 비율: {impliedEngagementRatio:P0} (문서 가정: 40%)\n" +
+            $"  → 이 비율이 40%와 크게 다르면 [[14 밸런스 수치 시트]]의 가정을 이 실측값으로 갱신할 것."
+        );
     }
 }
