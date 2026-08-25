@@ -1,5 +1,6 @@
 using UnityEngine;
 using UnityEngine.AI;
+using UnityEngine.SceneManagement;
 
 /// <summary>
 /// EnemyGwang (먹괴음 - 광, 광역형)
@@ -215,6 +216,11 @@ public class EnemyGwang : MonoBehaviour, IKnockbackable
         Destroy(warningIndicator.GetComponent<Collider>());
         warningIndicator.transform.position = transform.position;
         warningIndicator.transform.localScale = new Vector3(aoeRadius * 2f, 0.05f, aoeRadius * 2f);
+        // ⚠️ 2026-08-25: CreatePrimitive는 parent 인자가 없어 기본적으로 "지금 활성 씬"에 생성됨
+        // ([[changelog/2026-08-24_재방문-랜덤인카운터]] 참고). 인디케이터는 광의 이동을 안 따라가야
+        // 하므로(위치 고정, windup 중엔 광도 안 움직이지만 혹시 몰라 transform.parent로는 안 붙임)
+        // 부모 지정 대신 씬 소속만 광 본인 기준으로 맞춤.
+        SceneManager.MoveGameObjectToScene(warningIndicator, gameObject.scene);
 
         var renderer = warningIndicator.GetComponent<Renderer>();
         renderer.material.color = new Color(1f, 0.15f, 0.15f, 0.6f); // 붉은 경고색 (반투명)

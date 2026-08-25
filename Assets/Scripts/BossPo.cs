@@ -280,7 +280,7 @@ public class BossPo : MonoBehaviour
     {
         Debug.Log("[BossPo] 먹물(검정) 시전!");
         Vector3 spawnPos = player != null ? player.position : transform.position;
-        DamageZone.Create(spawnPos, zoneRadius, zoneDamagePerSecond, zoneLifetime);
+        DamageZone.Create(spawnPos, zoneRadius, zoneDamagePerSecond, zoneLifetime, gameObject.scene);
     }
 
     /// <summary>

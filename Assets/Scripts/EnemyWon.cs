@@ -1,5 +1,6 @@
 using UnityEngine;
 using UnityEngine.AI;
+using UnityEngine.SceneManagement;
 
 /// <summary>
 /// EnemyWon (먹괴음 - 원, 원거리형)
@@ -184,6 +185,10 @@ public class EnemyWon : MonoBehaviour, IKnockbackable
         projectileObj.name = "InkProjectile";
         projectileObj.transform.position = transform.position + Vector3.up * 1f + transform.forward * 0.5f;
         projectileObj.transform.localScale = Vector3.one * 0.3f;
+        // ⚠️ 2026-08-25: CreatePrimitive는 parent 인자가 없어 기본적으로 "지금 활성 씬"에 생성됨
+        // ([[changelog/2026-08-24_재방문-랜덤인카운터]] 참고). 투사체는 원을 향해 독립적으로 날아가야
+        // 하므로(원이 나중에 움직여도 안 따라가야 함) transform.parent로는 안 붙이고 씬 소속만 맞춤.
+        SceneManager.MoveGameObjectToScene(projectileObj, gameObject.scene);
 
         var col = projectileObj.GetComponent<SphereCollider>();
         col.isTrigger = true;
