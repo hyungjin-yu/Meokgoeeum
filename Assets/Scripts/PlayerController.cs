@@ -29,6 +29,7 @@ public class PlayerController : MonoBehaviour
     private Vector2 moveInput;
     private PlayerDodge dodge; // 구르기 중엔 일반 이동을 넘긴다 (PlayerDodge가 대신 이동시킴)
     private ColorSkillController skills; // 강타(빨강)의 대시 구간 중엔 일반 이동을 넘긴다
+    private LockOnController lockOn; // 락온 중엔 이동 방향이 아니라 타겟을 바라봐야 해서, 회전만 넘긴다
 
     private float verticalVelocity;
     private const float Gravity = -20f;
@@ -66,6 +67,7 @@ public class PlayerController : MonoBehaviour
         cc = GetComponent<CharacterController>();
         dodge = GetComponent<PlayerDodge>(); // 없어도(구르기 미부착) 동작은 그대로 — null 체크로 방어
         skills = GetComponent<ColorSkillController>(); // 없어도(색 스킬 미부착) 동작은 그대로 — null 체크로 방어
+        lockOn = GetComponent<LockOnController>(); // 없어도(락온 미부착) 동작은 그대로 — null 체크로 방어
 
         // 카메라가 연결 안 되어 있으면 메인 카메라를 자동으로 찾습니다.
         if (cameraTransform == null && Camera.main != null)
@@ -110,9 +112,15 @@ public class PlayerController : MonoBehaviour
 
         cc.Move(moveDir * moveSpeed * speedMultiplier * Time.deltaTime);
 
-        // 이동 방향을 부드럽게 바라보도록 캐릭터를 회전시킵니다.
-        Quaternion targetRotation = Quaternion.LookRotation(moveDir);
-        transform.rotation = Quaternion.RotateTowards(transform.rotation, targetRotation, rotationSpeed * Time.deltaTime);
+        // 락온 중엔 [[LockOnController]]가 대신 타겟 방향으로 회전시킵니다 — 여기서 이동 방향으로
+        // 돌려버리면 두 스크립트가 매 프레임 회전을 다투게 됩니다. 이동(위 cc.Move)은 락온 중에도
+        // 그대로 둬서 측면 스트레이프가 가능하게 합니다 ([[16 조작 설계]]).
+        if (lockOn == null || !lockOn.IsLockedOn)
+        {
+            // 이동 방향을 부드럽게 바라보도록 캐릭터를 회전시킵니다.
+            Quaternion targetRotation = Quaternion.LookRotation(moveDir);
+            transform.rotation = Quaternion.RotateTowards(transform.rotation, targetRotation, rotationSpeed * Time.deltaTime);
+        }
     }
 
     /// <summary>

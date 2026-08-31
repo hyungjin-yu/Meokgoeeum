@@ -18,6 +18,10 @@ public class EnemyHealth : MonoBehaviour, IDamageable
 
     public float CurrentHP => currentHP;
 
+    /// <summary>죽었는지 여부입니다. 보통은 Die()에서 바로 Destroy돼서 굳이 안 필요하지만,
+    /// [[LockOnController]]가 다른 IDamageable 타입(BossHealth 등)과 똑같은 방식으로 다룰 수 있게 노출합니다.</summary>
+    public bool IsDead => isDead;
+
     private void Awake()
     {
         currentHP = maxHP;

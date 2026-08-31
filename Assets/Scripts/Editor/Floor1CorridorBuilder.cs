@@ -31,7 +31,6 @@ public static class Floor1CorridorBuilder
     private const float CorridorCenterZ = 0.47f;
 
     private const float WallHeight = 3f;
-    private const float WallThickness = 0.3f;
 
     // 2026-08-25 실측: 장애물과 벽 사이에 낀 순간 CharacterController가 바닥을 뚫고 떨어지는
     // 버그 발견. 장애물(Transform로 직접 이동, Rigidbody 없음)이 플레이어를 밀어내지 못하고
@@ -41,6 +40,15 @@ public static class Floor1CorridorBuilder
     // 두껍게 만들면(콜라이더에 실제 부피를 줘서) 이런 순간적인 큰 보정에도 뚫리지 않음 —
     // 근본 원인(장애물 겹침 자체)을 없애기보다, 결과(바닥 뚫림)를 물리적으로 불가능하게 막는 방식.
     private const float FloorThickness = 2f;
+
+    // 2026-08-31 실측: 같은 터널링 현상이 벽에서도 재현됨 — "장애물에 밀려 벽 쪽으로 겹치면
+    // 벽을 뚫고 떨어진다". 원래 WallThickness=0.3은 바닥과 똑같이 얇아서 장애물에 눌린 순간의
+    // 큰 보정 이동이 한 프레임에 벽을 그냥 통과해버릴 수 있었음(원인은 바닥 뚫림 버그와 동일).
+    // 바닥 때와 같은 처방 — 벽 콜라이더에 실제 부피를 줘서 물리적으로 뚫을 수 없게 만듦.
+    // 안쪽 면(복도를 향한 면) 위치는 두께와 무관하게 CorridorCenterZ + side*width/2로 고정되므로
+    // (BuildWall의 z 계산식이 두께의 절반만큼 바깥으로 밀어내는 구조), 두껍게 해도 복도 폭에는
+    // 영향 없음 — 벽이 바깥으로만 두꺼워짐.
+    private const float WallThickness = 2f;
 
     private struct SegmentDef
     {
@@ -66,6 +74,12 @@ public static class Floor1CorridorBuilder
         new SegmentDef { Label = "1단계-직선복도", Length = 6f, Width = 4f, HasObstacle = false },
         new SegmentDef { Label = "2단계-장애물구간", Length = 4f, Width = 3f, HasObstacle = true },
     };
+
+    // 2026-08-31 실측: 방A(기존 Ground, 원점 중심 10x10 기본 Plane, x:[-5,5] z:[-5,5])에
+    // 경계벽이 아예 없어서, 보스전 중 넓게 물러나거나 밀리면 맵 밖(허공)으로 떨어지는 실제
+    // 버그 발견. 복도가 붙는 +X쪽만 문(장애물 구간 폭만큼)으로 뚫어두고 나머지 3면 + 문 옆
+    // 벽을 둘러서 막음. 두께는 바닥/복도벽과 같은 이유(터널링 방지)로 얇지 않게 잡음.
+    private const float RoomWallThickness = 2f;
 
     // 장애물의 "가로 막는 방향(월드 Z)" 두께. 플레이어 CharacterController 반지름이 0.5(지름 1m,
     // [[Assets/Scenes/SC_Game.unity]] 확인)라서, 장애물이 가장 비켜난 순간 열리는 틈이
@@ -117,15 +131,47 @@ public static class Floor1CorridorBuilder
         PlacedSegment straight = placed.Find(p => !p.Def.HasObstacle);
         PlacedSegment obstacleSeg = placed.Find(p => p.Def.HasObstacle);
 
-        // 1단계 끝(직선 복도 → 장애물 구간 진입) = 두 세그먼트의 경계
-        BuildCheckpoint(root.transform, "Checkpoint_CorridorEnd", "1단계 - 복도 끝",
-            straight.StartX, Mathf.Max(straight.Def.Width, obstacleSeg.Def.Width));
+        // 2026-08-31 실측: EncounterSpawner.autoStart=true라서 씬이 로드되자마자(플레이어가
+        // 아직 복도 저 끝에 있어도) 방A 전투가 이미 시작돼있었음 — "방 진입 직후 전투 시작"이라는
+        // 튜토리얼 의도와 어긋나고, 그 순간 뜬 좌클릭 힌트가 거의 동시에 뜨는 WASD 힌트한테 바로
+        // 덮여써져서 안 보이는 부작용까지 있었음. autoStart를 끄고 "장애물 통과" 체크포인트에서
+        // 대신 StartEncounter()를 호출하게 바꿈(아래).
+        GameObject spawner = GameObject.Find("Spawner");
+        EncounterSpawner encounterSpawner = spawner != null ? spawner.GetComponent<EncounterSpawner>() : null;
+        if (encounterSpawner != null)
+        {
+            encounterSpawner.autoStart = false;
+            encounterSpawner.showFirstAttackHint = true;
+        }
+        else
+        {
+            Debug.LogWarning("[Floor1CorridorBuilder] Spawner(EncounterSpawner)를 못 찾아 전투 시작 연결을 건너뛰었습니다.");
+        }
 
-        // 2단계 끝(장애물 통과 직후, 방A 진입 직전) = 장애물 구간의 방 쪽 끝에서 살짝 안쪽
+        // 0단계 시작(스폰 지점) = [[15 튜토리얼 설계]] "WASD — 이동" 힌트, 게임 시작 직후 타이밍.
+        // 스폰 위치와 겹치게 둬서 씬 시작과 거의 동시에 트리거되게 함.
+        BuildCheckpoint(root.transform, "Checkpoint_CorridorStart", "0단계 - 이동 시작",
+            straight.EndX - 1.5f, straight.Def.Width, hintText: "WASD — 이동");
+
+        // 1단계 끝(직선 복도 → 장애물 구간 진입) = [[15 튜토리얼 설계]] "Space — 구르기" 힌트,
+        // "장애물 구역 진입 시" 타이밍과 정확히 일치하는 위치(두 세그먼트의 경계).
+        BuildCheckpoint(root.transform, "Checkpoint_CorridorEnd", "1단계 - 복도 끝",
+            straight.StartX, Mathf.Max(straight.Def.Width, obstacleSeg.Def.Width), hintText: "Space — 구르기");
+
+        // 2단계 끝(장애물 통과 직후, 방A 진입 직전) = 장애물 구간의 방 쪽 끝에서 살짝 안쪽.
+        // 여기서 방A 전투(EncounterSpawner)를 실제로 시작시킴 — 위 설명 참고. [[TutorialSkipManager]]의
+        // "1층 시작 지점"이기도 하고("ESC 스킵" 확인 시 이 오브젝트 위치로 순간이동), 이 지점을 통과하면
+        // 스킵 확인창을 더는 띄울 이유가 없어서 disablesTutorialSkip도 같이 켬. 스킵이 꺼진다는 건 곧
+        // "이제부터 ESC는 메뉴"라는 뜻이라 [[15 튜토리얼 설계]] 마지막 힌트("ESC — 메뉴", 튜토리얼
+        // 종료 시)도 여기 붙임 — 이걸로 힌트 6종 전부 연결.
         BuildCheckpoint(root.transform, "Checkpoint_ObstaclePassed", "2단계 - 장애물 통과",
-            obstacleSeg.StartX + 0.5f, obstacleSeg.Def.Width);
+            obstacleSeg.StartX + 0.5f, obstacleSeg.Def.Width, hintText: "ESC — 메뉴",
+            spawnerToStart: encounterSpawner, disablesTutorialSkip: true);
 
         BuildObstacle(root.transform, obstacleSeg.MidX, obstacleSeg.Def.Width);
+
+        // 방A 경계벽 — 복도가 붙는 문(장애물 구간과 같은 폭)만 남기고 나머지를 막습니다.
+        BuildRoomABoundaryWalls(root.transform, RoomEdgeX, obstacleSeg.Def.Width);
 
         // 플레이어 시작 위치를 복도 입구로. 방(=-X)을 바라보도록 회전도 같이 맞춥니다.
         GameObject spawnPoint = GameObject.Find("SpawnPoint");
@@ -168,7 +214,14 @@ public static class Floor1CorridorBuilder
         wall.transform.localScale = new Vector3(length, WallHeight, WallThickness);
     }
 
-    private static void BuildCheckpoint(Transform parent, string objectName, string checkpointName, float x, float width)
+    // 2026-08-31 실측: "Space — 구르기" 힌트가 설계 의도(장애물 진입 시, 실제 접촉보다 1m+ 전)보다
+    // 훨씬 늦게, 장애물에 닿고 나서야 뜸 — 바닥/벽 뚫림 버그와 원인이 같음. 트리거 박스가 진행
+    // 방향(X)으로 0.5m뿐이라 플레이어가 한 Update() 프레임에 그 얇은 구간을 그냥 지나쳐버릴 수
+    // 있었던 것(트리거는 CharacterController.Move()의 스윕 경로 전체가 아니라 매 프레임 위치
+    // 기준으로 판정됨). 두께를 키워서 스킵될 확률을 없앰 — 바닥/벽 때와 같은 처방.
+    private const float CheckpointDepth = 2f;
+
+    private static void BuildCheckpoint(Transform parent, string objectName, string checkpointName, float x, float width, string hintText = "", EncounterSpawner spawnerToStart = null, bool disablesTutorialSkip = false)
     {
         var go = new GameObject(objectName);
         go.transform.SetParent(parent, worldPositionStays: false);
@@ -176,10 +229,13 @@ public static class Floor1CorridorBuilder
 
         BoxCollider box = go.AddComponent<BoxCollider>();
         box.isTrigger = true;
-        box.size = new Vector3(0.5f, 3f, width);
+        box.size = new Vector3(CheckpointDepth, 3f, width);
 
         TutorialCheckpoint checkpoint = go.AddComponent<TutorialCheckpoint>();
         checkpoint.checkpointName = checkpointName;
+        checkpoint.hintText = hintText;
+        checkpoint.encounterSpawnerToStart = spawnerToStart;
+        checkpoint.disablesTutorialSkip = disablesTutorialSkip;
     }
 
     private static void BuildObstacle(Transform parent, float midX, float narrowWidth)
@@ -206,6 +262,61 @@ public static class Floor1CorridorBuilder
         // narrowWidth/ObstacleBlockWidth를 같이 골랐습니다(1.6m 이상 여유).
         mover.travelDistance = Mathf.Max(0.5f, narrowWidth - ObstacleBlockWidth - 0.2f);
         mover.period = 4f;
+    }
+
+    /// <summary>
+    /// 방A(Ground, 원점 중심 정사각형, half=roomHalfExtent) 둘레에 벽을 두릅니다. +X쪽에는
+    /// doorWidth 폭만큼 문(복도 연결부)을 남겨둡니다. Ground의 실제 절반 크기를 그대로
+    /// 재사용하므로(RoomEdgeX가 +X 경계이자 정사각형 기준) 별도 인자로 정사각형임을 가정합니다.
+    /// </summary>
+    private static void BuildRoomABoundaryWalls(Transform parent, float roomHalfExtent, float doorWidth)
+    {
+        float half = roomHalfExtent;
+        float t = RoomWallThickness;
+        float doorHalfWidth = doorWidth * 0.5f;
+        float doorMinZ = CorridorCenterZ - doorHalfWidth;
+        float doorMaxZ = CorridorCenterZ + doorHalfWidth;
+
+        // 북/남쪽 벽(월드 X 방향으로 긴 벽) — 모서리가 안 뚫리게 양 끝을 두께만큼 더 늘림.
+        BuildBoxWall(parent, "Wall_방A_PlusZ",
+            new Vector3(0f, WallHeight * 0.5f, half + t * 0.5f),
+            new Vector3(half * 2f + t * 2f, WallHeight, t));
+        BuildBoxWall(parent, "Wall_방A_MinusZ",
+            new Vector3(0f, WallHeight * 0.5f, -half - t * 0.5f),
+            new Vector3(half * 2f + t * 2f, WallHeight, t));
+
+        // 서쪽 벽(문 없음, 통째로)
+        BuildBoxWall(parent, "Wall_방A_MinusX",
+            new Vector3(-half - t * 0.5f, WallHeight * 0.5f, 0f),
+            new Vector3(t, WallHeight, half * 2f));
+
+        // 동쪽 벽 — 복도 문(doorMinZ~doorMaxZ)만 남기고 위아래 두 조각으로 막음.
+        float southZ = (-half + doorMinZ) * 0.5f;
+        float southLen = doorMinZ - (-half);
+        if (southLen > 0.01f)
+        {
+            BuildBoxWall(parent, "Wall_방A_PlusX_South",
+                new Vector3(half + t * 0.5f, WallHeight * 0.5f, southZ),
+                new Vector3(t, WallHeight, southLen));
+        }
+
+        float northZ = (doorMaxZ + half) * 0.5f;
+        float northLen = half - doorMaxZ;
+        if (northLen > 0.01f)
+        {
+            BuildBoxWall(parent, "Wall_방A_PlusX_North",
+                new Vector3(half + t * 0.5f, WallHeight * 0.5f, northZ),
+                new Vector3(t, WallHeight, northLen));
+        }
+    }
+
+    private static void BuildBoxWall(Transform parent, string name, Vector3 center, Vector3 size)
+    {
+        GameObject wall = GameObject.CreatePrimitive(PrimitiveType.Cube);
+        wall.name = name;
+        wall.transform.SetParent(parent, worldPositionStays: false);
+        wall.transform.position = center;
+        wall.transform.localScale = size;
     }
 
     private static void BuildSignboard(Transform parent)

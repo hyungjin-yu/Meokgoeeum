@@ -14,6 +14,10 @@ public class PlayerHealth : MonoBehaviour, IDamageable
     [Header("체력 (14 밸런스 수치 시트)")]
     public float maxHP = 100f;
 
+    [Header("⚠️ 테스트 전용 — 배포 전 꺼져있는지 확인")]
+    [Tooltip("켜면 모든 피격을 무시합니다. 보스 DPS 실측 등 전투 자체를 방해받지 않고 테스트할 때만 사용.")]
+    public bool debugInvincible = false;
+
     private float currentHP;
     private bool isInvulnerable; // [[PlayerDodge]]의 구르기 무적 프레임(i-frame) 동안 true
     private bool isDead;
@@ -60,6 +64,12 @@ public class PlayerHealth : MonoBehaviour, IDamageable
     public void TakeDamage(float amount)
     {
         if (isDead) return; // 게임 오버 처리 중 추가 피격 무시 (중복 OnDeath 방지)
+
+        if (debugInvincible)
+        {
+            Debug.Log("[PlayerHealth] debugInvincible 켜져있어서 피격 무시됨! (테스트 전용)");
+            return;
+        }
 
         if (isInvulnerable)
         {

@@ -50,9 +50,18 @@ public class ColorSystemManager : MonoBehaviour
     /// <summary>
     /// 구슬 1개를 획득 처리합니다. (드랍된 구슬을 주웠을 때 호출)
     /// </summary>
+    // [[15 튜토리얼 설계]] "1~6 — 스킬" 힌트(첫 구슬 획득 후)를 세션 전체에서 한 번만 띄우기 위한 플래그.
+    private static bool hasShownFirstOrbHint;
+
     public void AddOrb(OrbColor color)
     {
         lifetimeCollected[(int)color]++; // 누적은 상한 없이 무조건 증가
+
+        if (!hasShownFirstOrbHint)
+        {
+            hasShownFirstOrbHint = true;
+            HintPopupManager.Instance?.ShowHint("1~6 단축키로도 스킬 사용 가능");
+        }
 
         if (TotalHeld() >= maxHeldOrbs && acquisitionOrder.Count > 0)
         {

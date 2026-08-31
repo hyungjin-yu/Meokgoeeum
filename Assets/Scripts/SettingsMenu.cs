@@ -47,10 +47,29 @@ public class SettingsMenu : MonoBehaviour
         panel.SetActive(false);
     }
 
+    /// <summary>
+    /// [[TutorialSkipManager]]와 Esc를 공유합니다 — 둘 다 각자 Esc를 폴링하면 같은 프레임에
+    /// 둘 다 열리는 경쟁 상태가 생겨서, 이 스크립트 하나가 우선순위를 판단해 대신 호출해줍니다
+    /// (2026-08-31 추가). 우선순위: 스킵 확인창이 떠있으면 그걸 닫는 것부터(취소) → 스킵이
+    /// 아직 가능한 구간이면 설정 대신 스킵 확인창을 띄움 → 그 외엔 평소대로 설정 메뉴.
+    /// </summary>
     private void Update()
     {
-        if (Keyboard.current != null && Keyboard.current.escapeKey.wasPressedThisFrame)
-            Toggle();
+        if (Keyboard.current == null || !Keyboard.current.escapeKey.wasPressedThisFrame) return;
+
+        if (TutorialSkipManager.Instance != null && TutorialSkipManager.Instance.IsShowing)
+        {
+            TutorialSkipManager.Instance.Cancel();
+            return;
+        }
+
+        if (TutorialSkipManager.Instance != null && TutorialSkipManager.Instance.SkipAvailable && !panel.activeSelf)
+        {
+            TutorialSkipManager.Instance.ShowSkipConfirm();
+            return;
+        }
+
+        Toggle();
     }
 
     private void Toggle()

@@ -24,6 +24,11 @@ public class BossHealth : MonoBehaviour, IDamageable
 
     private float currentHP;
     private bool isDead;
+
+    /// <summary>죽었는지 여부입니다. 이 스크립트는 처치 연출(v0.3 범위 밖) 예정이라 죽어도 오브젝트를
+    /// Destroy하지 않고 남겨두는데, [[LockOnController]]가 시체를 계속 타겟팅하지 않게 이걸로 걸러냅니다.</summary>
+    public bool IsDead => isDead;
+
     private bool phase2Triggered;
     private bool isInvulnerable;
     private float fightStartTime = -1f; // 첫 피격 시각 — [[30 플레이테스트 & 밸런싱 검증 계획]] "실효 교전 비율 40%" 가정 실측용

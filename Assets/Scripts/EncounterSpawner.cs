@@ -38,6 +38,12 @@ public class EncounterSpawner : MonoBehaviour
     [Tooltip("씬 시작과 동시에 자동으로 첫 웨이브를 시작할지 여부입니다. 꺼두면 StartEncounter()를 직접 호출해야 합니다.")]
     public bool autoStart = true;
 
+    [Tooltip("[[15 튜토리얼 설계]] \"마우스 좌클릭 — 공격\" 힌트(첫 먹괴음 감지 시)를 이 스포너의 1웨이브 시작 시 띄울지 여부입니다. 이 스크립트는 여러 층에서 재사용되므로 기본은 꺼짐 — 1층 튜토리얼 스포너에서만 켭니다.")]
+    public bool showFirstAttackHint = false;
+
+    // 세션 전체에서 한 번만 뜨면 되는 힌트라 static — 여러 층을 오가도 두 번 안 뜸.
+    private static bool hasShownFirstAttackHint;
+
     private readonly List<EnemyHealth> aliveInCurrentWave = new List<EnemyHealth>();
 
     private void Start()
@@ -64,6 +70,20 @@ public class EncounterSpawner : MonoBehaviour
         for (int i = 0; i < waves.Length; i++)
         {
             SpawnWave(waves[i]);
+
+            if (i == 0 && showFirstAttackHint && !hasShownFirstAttackHint)
+            {
+                if (HintPopupManager.Instance != null)
+                {
+                    hasShownFirstAttackHint = true; // 실제로 뜬 경우에만 소모 — null이면 다음 기회에 다시 시도
+                    HintPopupManager.Instance.ShowHint("마우스 좌클릭 — 공격");
+                    Debug.Log("[EncounterSpawner] 좌클릭 공격 힌트 표시함.");
+                }
+                else
+                {
+                    Debug.LogWarning("[EncounterSpawner] HintPopupManager.Instance가 아직 없어서 좌클릭 공격 힌트를 못 띄웠습니다 (초기화 순서 문제일 수 있음).");
+                }
+            }
 
             // 이번 웨이브의 모든 적이 죽을 때까지 대기 (Destroy()된 오브젝트는 Unity에서 null과 같음)
             yield return new WaitUntil(() => aliveInCurrentWave.TrueForAll(e => e == null));
