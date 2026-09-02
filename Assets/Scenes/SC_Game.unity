@@ -1180,6 +1180,7 @@ GameObject:
   - component: {fileID: 1752313416}
   - component: {fileID: 1752313417}
   - component: {fileID: 1752313418}
+  - component: {fileID: 1752313419}
   m_Layer: 0
   m_Name: GameSystems
   m_TagString: Untagged
@@ -1405,6 +1406,19 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::LockOnMarkerUI
   spinSpeed: 90
   heightOffset: 1.2
+--- !u!114 &1752313419
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1752313403}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a17ba5cf75d1abf4c8c78baf2a3c0e66, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::DebugCombatHud
+  refreshInterval: 1
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0

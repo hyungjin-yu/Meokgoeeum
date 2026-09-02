@@ -53,6 +53,15 @@ public class RoomClearGate : MonoBehaviour
         {
             if (hit.GetComponent<EnemyHealth>() != null)
                 return true;
+
+            // 2026-09-02 발견·수정: 보스는 EnemyHealth가 아니라 별도의 BossHealth를 씁니다
+            // ([[BossHealth]] 클래스 doc 참고 — 구슬 미드랍/페이즈 전환 때문에 독립 구현).
+            // 그래서 여기서 안 걸러지면 보스룸에 이 게이트가 있을 때 "일반 적이 하나도 없다"만
+            // 보고 보스가 멀쩡히 살아있어도 즉시 클리어 판정 → 계단 활성화되던 실제 버그가 있었음
+            // (사용자 리포트: "보스 잡고 있는데 스테이지가 넘어가버렸어").
+            var boss = hit.GetComponent<BossHealth>();
+            if (boss != null && !boss.IsDead)
+                return true;
         }
         return false;
     }

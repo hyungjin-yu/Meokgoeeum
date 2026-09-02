@@ -28,6 +28,15 @@ public class CubeMapManager : MonoBehaviour
     [Tooltip("게임 시작 시 로드할 첫 면입니다.")]
     public int startingFaceIndex = 0;
 
+    [Header("⚠️ 테스트 전용 — 배포 전 꺼져있는지 확인")]
+    [Tooltip("켜면 세이브 파일에 있던 playerHP를 무시하고 항상 풀피로 시작합니다. " +
+        "정상적인 '이어하기'는 저장 시점 체력 그대로 이어지는 게 맞는 동작이지만(18 세이브 & 로드 " +
+        "기획), 개발 중엔 보스전 등을 반복 테스트하려고 Stop&Play를 자주 누르는데 그때마다 " +
+        "직전 세션에서 낮았던 HP가 그대로 실려 와서 매번 세이브 파일을 손으로 고쳐야 했음 " +
+        "(2026-09-02 반복된 사용자 불만 — \"게임을 멈추고 다시 Play를 누르면 HP가 100으로 " +
+        "되돌아가야할거 아니야\"). 이어하기 자체(층수/면/구슬 등)는 그대로 두고 HP만 예외 처리.")]
+    public bool debugAlwaysFullPlayerHpOnLoad = false;
+
     [Header("12층 - 큐브 구조 노출 (v0.3 최소 틀)")]
     [Tooltip("이 층수에 도달하면 6면 순환과 별개로 큐브 구조 노출 연출 훅이 발동합니다. (05 맵 시스템 - 큐브 구조, 12 큐브 좌표계 설계 기준)")]
     public int cubeRevealFloorNumber = 12;
@@ -160,6 +169,13 @@ public class CubeMapManager : MonoBehaviour
         GameObject player = GameObject.FindGameObjectWithTag("Player");
         var health = player != null ? player.GetComponent<PlayerHealth>() : null;
         if (health == null) return;
+
+        if (debugAlwaysFullPlayerHpOnLoad)
+        {
+            Debug.Log("[CubeMapManager] debugAlwaysFullPlayerHpOnLoad 켜져있어서 세이브된 HP 무시하고 풀피로 시작합니다. (테스트 전용)");
+            health.ResetHealth();
+            return;
+        }
 
         if (hp <= 0f)
         {

@@ -62,6 +62,15 @@ public class EncounterSpawner : MonoBehaviour
 
     public void StartEncounter()
     {
+        // 2026-09-02: 보스 단독 테스트하려고 이 오브젝트를 Hierarchy에서 꺼둔 상태로
+        // 체크포인트를 지나면 StartCoroutine이 예외를 던지며 시끄러운 에러 로그가 남고,
+        // 체크포인트 쪽의 이후 로직(disablesTutorialSkip 등)까지 같이 끊겨버렸음.
+        // 비활성 상태면 조용히 무시하도록 방어.
+        if (!isActiveAndEnabled)
+        {
+            Debug.LogWarning($"[EncounterSpawner] {name}이 비활성 상태라 인카운터를 시작하지 않습니다.");
+            return;
+        }
         StartCoroutine(RunWaves());
     }
 

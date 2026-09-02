@@ -23,9 +23,12 @@ public class BossPo : MonoBehaviour
     private enum Phase { Phase1, Phase2 }
     private enum AttackType { Strike, Line, AoE, Heal, Debuff, Zone, Displace }
 
-    [Header("스탯 (14 밸런스 수치 시트 — 1페이즈 공격력 20, 2페이즈 25)")]
-    public float phase1AttackPower = 20f;
-    public float phase2AttackPower = 25f;
+    // 2026-09-02: 실측(2026-08-31) 결과 초안 수치(20/25)로는 플레이어 HP(100) 대비
+    // 4~5방 즉사라 DPS 실측 자체가 불가능했음 — 공격력을 낮추고 윈드업도 늘려서 재조정.
+    // 자세한 진단은 [[14 밸런스 수치 시트]] "보스 DPS 역산 검증" 참고.
+    [Header("스탯 (14 밸런스 수치 시트 — 2026-09-02 재조정: 1페이즈 공격력 12, 2페이즈 16)")]
+    public float phase1AttackPower = 12f;
+    public float phase2AttackPower = 16f;
     public float moveSpeed = 3.5f;
 
     [Header("감지")]
@@ -59,6 +62,14 @@ public class BossPo : MonoBehaviour
     [Header("페이즈 2 전용 — 위치 교란")]
     public float displaceRadius = 8f;
 
+    // 2026-09-02 발견·수정: displaceRadius(8m)가 방A 크기(10x10, 반경 5m —
+    // [[Floor1CorridorBuilder]] RoomEdgeX와 동일)보다 커서, 보스 위치 기준으로 무작위 원을
+    // 그리면 벽 밖(맵 밖)으로 순간이동시킬 수 있었음 — 사용자 리포트: "보스가 위치 교란 썼는데
+    // 맵 밖으로 떨어져". 원 반경을 줄이는 대신(보스 위치에 따라 여전히 애매할 수 있어서)
+    // 결과 좌표 자체를 방 안전 범위로 clamp하는 방식으로 근본 수정 — 벽 두께/플레이어
+    // 콜라이더 반경 여유를 감안해 방 절반 크기(5m)보다 살짝 작게(4.3m) 잡음.
+    private const float DisplaceRoomHalfExtent = 4.3f;
+
     [Tooltip("공격 사이 추격 대기 시간입니다.")]
     public float attackCooldown = 1.5f;
 
@@ -67,7 +78,8 @@ public class BossPo : MonoBehaviour
     public event System.Action OnAttackHit;
 
     // 27 전투 프레임 데이터 - 보스 텔레그래프 20~30f 기준 (60fps 환산)
-    private const float WindupSeconds = 25f / 60f;
+    // 2026-09-02: 25f(≈0.42초)는 회피 반응 시간이 짧다는 실측 신호가 있어 35f(≈0.58초)로 늘림.
+    private const float WindupSeconds = 35f / 60f;
     private const float RecoverySeconds = 20f / 60f;
 
     private NavMeshAgent agent;
@@ -302,6 +314,8 @@ public class BossPo : MonoBehaviour
 
         Vector2 randomCircle = Random.insideUnitCircle * displaceRadius;
         Vector3 newPos = transform.position + new Vector3(randomCircle.x, 0f, randomCircle.y);
+        newPos.x = Mathf.Clamp(newPos.x, -DisplaceRoomHalfExtent, DisplaceRoomHalfExtent);
+        newPos.z = Mathf.Clamp(newPos.z, -DisplaceRoomHalfExtent, DisplaceRoomHalfExtent);
 
         CharacterController cc = player.GetComponent<CharacterController>();
         if (cc != null) cc.enabled = false;

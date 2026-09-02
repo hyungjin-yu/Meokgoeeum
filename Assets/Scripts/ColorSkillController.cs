@@ -45,6 +45,7 @@ public class ColorSkillController : MonoBehaviour
 
     private CharacterController cc;
     private BrushWeapon brushWeapon; // 스킬 대미지의 기준이 되는 "붓 공격력"을 여기서 읽어옴 (단일 출처 유지)
+    private LockOnController lockOn; // 락온 중이면 스킬 조준을 여기 맞춤 (2026-09-02, 아래 GetAimDirection 참고)
     private PlayerInputActions inputActions; // PlayerController가 소유 — 여기선 구독만 함
 
     private float strikeCooldownTimer;
@@ -55,6 +56,26 @@ public class ColorSkillController : MonoBehaviour
     {
         cc = GetComponent<CharacterController>();
         brushWeapon = GetComponent<BrushWeapon>();
+        lockOn = GetComponent<LockOnController>();
+    }
+
+    /// <summary>
+    /// 2026-09-02: 강타/흐름이 `transform.forward`(순간 이동 방향/카메라 방향)만 보고 조준하다
+    /// 보니, 실측 중 구슬 소모하고 스킬은 나가는데 보스한테 "0대상"으로 빗맞는 게 반복 확인됨
+    /// (기본 콤보는 관대한 구체 판정이라 잘 맞는데, 강타는 5m 고정 거리 대시 끝 지점에서만,
+    /// 흐름은 정면 좁은 박스에서만 판정해서 순간 방향이 살짝만 틀어져도 허공을 침). 락온
+    /// 중이면([[LockOnController]]) 타겟 방향으로 조준을 강제해서 이 문제를 줄입니다 —
+    /// 락온 없이 쓰면 기존처럼 `transform.forward` 그대로.
+    /// </summary>
+    private Vector3 GetAimDirection()
+    {
+        if (lockOn != null && lockOn.IsLockedOn)
+        {
+            Vector3 toTarget = lockOn.CurrentTarget.position - transform.position;
+            toTarget.y = 0f;
+            if (toTarget.sqrMagnitude > 0.0001f) return toTarget.normalized;
+        }
+        return transform.forward;
     }
 
     private void Start()
@@ -144,7 +165,7 @@ public class ColorSkillController : MonoBehaviour
         yield return new WaitForSeconds(StartupSeconds);
 
         IsDashing = true;
-        Vector3 direction = transform.forward;
+        Vector3 direction = GetAimDirection();
         float speed = strikeDashDistance / strikeDashDuration;
 
         float elapsed = 0f;
@@ -172,10 +193,12 @@ public class ColorSkillController : MonoBehaviour
         yield return new WaitForSeconds(StartupSeconds);
 
         float damage = BaseAttackPower * flowDamageMultiplier;
-        Vector3 center = transform.position + transform.forward * (flowLength / 2f);
+        Vector3 aimDir = GetAimDirection();
+        Quaternion aimRot = Quaternion.LookRotation(aimDir);
+        Vector3 center = transform.position + aimDir * (flowLength / 2f);
         Vector3 halfExtents = new Vector3(flowWidth / 2f, 1f, flowLength / 2f);
 
-        Collider[] hits = Physics.OverlapBox(center, halfExtents, transform.rotation);
+        Collider[] hits = Physics.OverlapBox(center, halfExtents, aimRot);
         int hitCount = DamageAll(hits, damage);
         Debug.Log($"[ColorSkillController] 흐름 적중! 대미지 {damage} x {hitCount}대상");
     }

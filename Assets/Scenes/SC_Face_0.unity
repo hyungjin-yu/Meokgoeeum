@@ -2324,7 +2324,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 4328177191374932052, guid: 363b703c96fcd794fa8348965afff845, type: 3}
       propertyPath: m_IsActive
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -2472,7 +2472,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!114 &1687619968
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2729,7 +2729,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!114 &1931112874
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2901,7 +2901,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!114 &2082581746
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2914,8 +2914,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8925104adb822f842a30f309978d59e8, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::BossPo
-  phase1AttackPower: 20
-  phase2AttackPower: 25
+  phase1AttackPower: 12
+  phase2AttackPower: 16
   moveSpeed: 3.5
   perceptionInterval: 0.2
   strikeDashDistance: 4
@@ -3118,7 +3118,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 9161517108320201939, guid: ac3ab422f1e135146acd8e456479365c, type: 3}
       propertyPath: m_IsActive
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -3139,7 +3139,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 4998171028398206162, guid: 8445dd301591f43438851e4df3d845fa, type: 3}
       propertyPath: m_IsActive
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 6662257214486464133, guid: 8445dd301591f43438851e4df3d845fa, type: 3}
       propertyPath: m_LocalPosition.x
