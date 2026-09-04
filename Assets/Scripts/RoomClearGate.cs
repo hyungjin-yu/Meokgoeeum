@@ -24,8 +24,24 @@ public class RoomClearGate : MonoBehaviour
     [Tooltip("검사 주기입니다. 매 프레임 안 하고 이 간격으로 확인합니다 (최적화 원칙 — EnemyPyeong의 perceptionInterval과 같은 이유).")]
     public float checkInterval = 0.5f;
 
+    [Tooltip("적이 0마리인 상태가 이만큼 '연속으로' 지속돼야 클리어로 판정합니다. " +
+             "EncounterSpawner처럼 웨이브 사이에 인터벌(대기 시간)이 있는 스포너와 같이 쓸 때, " +
+             "그 인터벌 동안의 일시적 0마리 상태를 클리어로 오판하지 않으려면 이 값이 " +
+             "스포너의 웨이브 인터벌보다 넉넉히 커야 합니다 (기본 3초 — 이 프로젝트의 " +
+             "EncounterSpawner.waveInterval 기본값 2초보다 여유 있게 잡음).")]
+    public float clearGraceDuration = 3f;
+
     private bool cleared;
     private float timer;
+
+    // 2026-09-04 발견·수정: 처음엔 "한 번이라도 적을 본 적 있으면 그 다음 0마리 즉시 클리어"로
+    // 고쳤는데, 이러면 여전히 웨이브 사이 인터벌(예: 1웨이브 처치 → 2웨이브 스폰까지 2초 대기)
+    // 동안의 일시적 0마리를 클리어로 오판했음(사용자 리포트: 1웨이브만 잡았는데 계단이 열림).
+    // "한 번이라도 봤는가"가 아니라 "0마리 상태가 얼마나 오래 지속됐는가"로 바꿔서, 웨이브
+    // 인터벌보다 넉넉한 유예 시간(clearGraceDuration) 동안 계속 0마리여야만 클리어로 판정.
+    // 적이 다시 나타나면(다음 웨이브 스폰) 유예 타이머는 그 즉시 리셋됩니다.
+    private bool hasEverSeenEnemy;
+    private float emptyStreakDuration;
 
     private void Update()
     {
@@ -35,15 +51,25 @@ public class RoomClearGate : MonoBehaviour
         if (timer < checkInterval) return;
         timer = 0f;
 
-        if (!AnyEnemyAlive())
+        bool anyAlive = AnyEnemyAlive();
+        if (anyAlive)
         {
-            cleared = true;
-            Debug.Log($"[RoomClearGate] {name} 클리어! 계단 활성화.");
-            if (stairs != null)
-                stairs.Activate();
-            else
-                Debug.LogWarning($"[RoomClearGate] {name}에 Stairs가 연결 안 되어 있습니다.");
+            hasEverSeenEnemy = true;
+            emptyStreakDuration = 0f;
+            return;
         }
+
+        if (!hasEverSeenEnemy) return; // 아직 인카운터가 시작조차 안 함 — 판정 보류
+
+        emptyStreakDuration += checkInterval;
+        if (emptyStreakDuration < clearGraceDuration) return;
+
+        cleared = true;
+        Debug.Log($"[RoomClearGate] {name} 클리어! 계단 활성화.");
+        if (stairs != null)
+            stairs.Activate();
+        else
+            Debug.LogWarning($"[RoomClearGate] {name}에 Stairs가 연결 안 되어 있습니다.");
     }
 
     private bool AnyEnemyAlive()

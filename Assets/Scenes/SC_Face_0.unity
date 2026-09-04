@@ -1028,6 +1028,37 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &990001001
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 990001002}
+  m_Layer: 0
+  m_Name: Wave3SpawnPoint
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &990001002
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 990001001}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 2.5, y: 0, z: 1}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &832575517
 GameObject:
   m_ObjectHideFlags: 0
@@ -2472,7 +2503,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!114 &1687619968
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2497,6 +2528,12 @@ MonoBehaviour:
     - {fileID: 2035348967774861881, guid: f259674311affc4488989801187c33e8, type: 3}
     spawnPoints:
     - {fileID: 814162459}
+    hpMultiplier: 1
+  - waveName: "3\uC6E8\uC774\uBE0C \uD761 \u2014 \uC0C9 \uC2A4\uD0AC+\uAD6C\uB974\uAE30 \uB109\uBC31 \uC2E4\uC804 \uC801\uC6A9"
+    enemyPrefabs:
+    - {fileID: 9161517108320201939, guid: ac3ab422f1e135146acd8e456479365c, type: 3}
+    spawnPoints:
+    - {fileID: 990001002}
     hpMultiplier: 1
   waveInterval: 2
   autoStart: 0
@@ -3118,7 +3155,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 9161517108320201939, guid: ac3ab422f1e135146acd8e456479365c, type: 3}
       propertyPath: m_IsActive
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -3202,6 +3239,7 @@ SceneRoots:
   - {fileID: 405625043}
   - {fileID: 873139240}
   - {fileID: 2082581752}
+  - {fileID: 990001001}
   - {fileID: 1156388129}
   - {fileID: 814162459}
   - {fileID: 1687619969}
