@@ -22,6 +22,16 @@ public class PlayerDodge : MonoBehaviour
     [Tooltip("구르기 재사용 대기시간입니다. (14 밸런스 수치 시트 기준 1.0초)")]
     public float dodgeCooldown = 1.0f;
 
+    [Header("넉백 (32 QA 리뷰 SYS-4 — 흡 회복 저지 수단)")]
+    [Tooltip("구르는 동안 스치는 적을 밀어내는 판정 반경입니다.")]
+    public float knockbackRadius = 1.5f;
+
+    [Tooltip("구르기가 적에게 주는 넉백 힘입니다. (다른 넉백 소스들과 동일 범위 — 번쩍 12, 보스 AoE 10)")]
+    public float dodgeKnockbackForce = 10f;
+
+    [Tooltip("이 레이어만 판정합니다. 비워두면(Everything) 전부 검사하되, IKnockbackable이 없는 대상은 자동으로 무시됩니다.")]
+    public LayerMask knockbackLayers = ~0;
+
     [Header("연결 (References)")]
     [Tooltip("이동 방향 계산 기준 카메라입니다. 비워두면 Start()에서 Camera.main을 자동으로 찾습니다.")]
     public Transform cameraTransform;
@@ -89,6 +99,7 @@ public class PlayerDodge : MonoBehaviour
                 playerHealth.SetInvulnerable(shouldBeInvulnerable);
 
             cc.Move(direction * speed * dt);
+            ApplyKnockbackToNearbyEnemies(direction);
             yield return null;
         }
 
@@ -97,6 +108,26 @@ public class PlayerDodge : MonoBehaviour
 
         IsDodging = false;
         Debug.Log("[PlayerDodge] 구르기 종료.");
+    }
+
+    /// <summary>
+    /// 2026-09-04 — [[32 QA 리뷰 - 기획자 3인]] SYS-4: "흡(EnemyHeup)의 회복 후퇴를 저지할
+    /// 수단이 없다"는 지적에 대한 최소 픽스. 구르기로 스치면 밀려나게 해서, 회복 구역으로
+    /// 도망가는 흡을 구르기로 쳐내 저지할 수 있게 합니다. 이미 있는 IKnockbackable을
+    /// 그대로 재사용 — 새 시스템 없이 기존 넉백 파이프라인(EnemyHeup 등)에 얹었습니다.
+    /// [[BrushWeapon]]과 같은 방식(OverlapSphere + IKnockbackable)이라 매 프레임 불러도
+    /// 이미 넉백 중인 대상은 각 Enemy의 ApplyKnockback이 자체적으로 무시합니다.
+    /// </summary>
+    private void ApplyKnockbackToNearbyEnemies(Vector3 dodgeDirection)
+    {
+        Collider[] hits = Physics.OverlapSphere(transform.position, knockbackRadius, knockbackLayers);
+        foreach (var hit in hits)
+        {
+            if (hit.gameObject == gameObject) continue;
+
+            var knockbackable = hit.GetComponent<IKnockbackable>();
+            knockbackable?.ApplyKnockback(dodgeDirection, dodgeKnockbackForce);
+        }
     }
 
     /// <summary>
