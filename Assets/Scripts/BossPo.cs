@@ -102,6 +102,22 @@ public class BossPo : MonoBehaviour
             Debug.Log("[BossPo] \"숨바꼭질 하자~ 내가 술래할게~\" — 2페이즈 돌입!");
             StartCoroutine(EnterPhase2Routine());
         };
+        health.OnDeath += HandleDeath;
+    }
+
+    /// <summary>
+    /// 2026-09-04 발견·수정: 킬샷이 공격 windup 도중에 들어가면(PerformRandomAttack이 이미
+    /// WaitForSeconds(WindupSeconds) 대기 중), BossHealth.Die()가 isDead만 세우고 이 스크립트한테
+    /// 알려주는 게 없어서 죽은 채로 그대로 스킬을 발동시켰음 — 사용자 리포트: "보스 잡고 계단
+    /// 노출은 확인했는데, 죽은 보스가 왜곡(보라) 스킬을 씀". OnDeath를 구독해서 죽는 즉시 진행
+    /// 중이던 공격 코루틴을 전부 멈추고 컴포넌트 자체를 비활성화(Update도 더 안 돎).
+    /// </summary>
+    private void HandleDeath()
+    {
+        StopAllCoroutines();
+        isAttacking = false;
+        if (agent != null && agent.isOnNavMesh) agent.isStopped = true;
+        enabled = false;
     }
 
     /// <summary>
