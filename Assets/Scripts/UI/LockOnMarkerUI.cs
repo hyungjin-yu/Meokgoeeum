@@ -67,7 +67,7 @@ namespace Meokgoeeum
         private void Update()
         {
             if (mainCamera == null) mainCamera = Camera.main;
-            if (lockOn == null) lockOn = FindObjectOfType<LockOnController>();
+            if (lockOn == null) lockOn = LockOnController.Instance;
 
             if (mainCamera == null || lockOn == null || !lockOn.IsLockedOn)
             {

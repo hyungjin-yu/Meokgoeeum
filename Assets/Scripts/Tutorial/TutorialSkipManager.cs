@@ -58,7 +58,7 @@ namespace Meokgoeeum
         /// <summary>[[SettingsMenu]]가 씬에 하나만 만들면 되지만, Awake 순서가 보장되지 않아 방어적으로 여기서도 확인합니다.</summary>
         private void EnsureEventSystem()
         {
-            if (FindObjectOfType<EventSystem>() != null) return;
+            if (FindFirstObjectByType<EventSystem>() != null) return;
 
             var esObj = new GameObject("EventSystem");
             esObj.AddComponent<EventSystem>();

@@ -18,6 +18,8 @@ namespace Meokgoeeum
     /// </summary>
     public class MouseSensitivitySetting : MonoBehaviour
     {
+        public static MouseSensitivitySetting Instance { get; private set; }
+
         private const string PrefsKey = "MouseSensitivity";
         private const float DefaultSensitivity = 1f;
         private const float MinSensitivity = 0.1f;
@@ -31,7 +33,18 @@ namespace Meokgoeeum
 
         private void Awake()
         {
-            axisController = FindObjectOfType<CinemachineInputAxisController>();
+            if (Instance == null)
+            {
+                Instance = this;
+            }
+            else
+            {
+                Debug.LogWarning("[MouseSensitivitySetting] 이미 인스턴스가 존재합니다. 중복 오브젝트를 파괴합니다.");
+                Destroy(gameObject);
+                return;
+            }
+
+            axisController = FindFirstObjectByType<CinemachineInputAxisController>();
             if (axisController == null)
             {
                 Debug.LogWarning("[MouseSensitivitySetting] CinemachineInputAxisController를 씬에서 못 찾았습니다 — 감도 설정이 아무 효과가 없습니다.");

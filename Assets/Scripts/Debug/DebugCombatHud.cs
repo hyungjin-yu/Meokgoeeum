@@ -9,8 +9,9 @@ namespace Meokgoeeum
     /// 건지 판단이 안 됨. 정식 HP바(아트 필요) 대신 OnGUI로 화면 왼쪽 위에 숫자만 바로
     /// 찍어서 즉시 확인할 수 있게 하는 디버그 전용 도구입니다.
     ///
-    /// `FindObjectOfType`을 매 프레임 대신 일정 간격으로만 다시 찾습니다(최적화 원칙) — 씬
-    /// 전환/보스 스폰 등으로 참조가 끊길 수 있어서 한 번만 캐싱하지 않고 주기적으로 갱신.
+    /// `PlayerHealth.Instance`/`BossHealth.Instance`를 매 프레임 대신 일정 간격으로만 다시
+    /// 읽습니다(최적화 원칙) — 씬 전환/보스 스폰 등으로 참조가 끊길 수 있어서 한 번만 캐싱하지
+    /// 않고 주기적으로 갱신.
     /// </summary>
     public class DebugCombatHud : MonoBehaviour
     {
@@ -26,8 +27,8 @@ namespace Meokgoeeum
             if (timer < refreshInterval) return;
             timer = 0f;
 
-            if (player == null) player = FindObjectOfType<PlayerHealth>();
-            if (boss == null) boss = FindObjectOfType<BossHealth>();
+            if (player == null) player = PlayerHealth.Instance;
+            if (boss == null) boss = BossHealth.Instance;
         }
 
         private void OnGUI()

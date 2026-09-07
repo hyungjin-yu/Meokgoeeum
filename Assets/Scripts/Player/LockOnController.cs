@@ -25,6 +25,8 @@ namespace Meokgoeeum
     [RequireComponent(typeof(CharacterController))]
     public class LockOnController : MonoBehaviour
     {
+        public static LockOnController Instance { get; private set; }
+
         [Header("타겟 탐지")]
         [Tooltip("이 반경 안의 적만 락온 후보로 고려합니다.")]
         public float lockOnRadius = 3.5f;
@@ -42,6 +44,20 @@ namespace Meokgoeeum
         public bool IsLockedOn => CurrentTarget != null;
 
         private float switchCooldownTimer;
+
+        private void Awake()
+        {
+            if (Instance == null)
+            {
+                Instance = this;
+            }
+            else
+            {
+                Debug.LogWarning("[LockOnController] 이미 인스턴스가 존재합니다. 중복 오브젝트를 파괴합니다.");
+                Destroy(gameObject);
+                return;
+            }
+        }
 
         private void Update()
         {

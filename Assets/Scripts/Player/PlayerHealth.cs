@@ -13,6 +13,8 @@ namespace Meokgoeeum
     /// </summary>
     public class PlayerHealth : MonoBehaviour, IDamageable
     {
+        public static PlayerHealth Instance { get; private set; }
+
         [Header("체력 (14 밸런스 수치 시트)")]
         public float maxHP = 100f;
 
@@ -31,6 +33,17 @@ namespace Meokgoeeum
 
         private void Awake()
         {
+            if (Instance == null)
+            {
+                Instance = this;
+            }
+            else
+            {
+                Debug.LogWarning("[PlayerHealth] 이미 인스턴스가 존재합니다. 중복 오브젝트를 파괴합니다.");
+                Destroy(gameObject);
+                return;
+            }
+
             currentHP = maxHP;
         }
 

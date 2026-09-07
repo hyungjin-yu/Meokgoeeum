@@ -10,6 +10,8 @@ namespace Meokgoeeum
     /// </summary>
     public class BossHealth : MonoBehaviour, IDamageable
     {
+        public static BossHealth Instance { get; private set; }
+
         [Header("체력 (14 밸런스 수치 시트 — 1페이즈 500, 2페이즈부터 연속)")]
         public float maxHP = 500f;
 
@@ -46,6 +48,17 @@ namespace Meokgoeeum
 
         private void Awake()
         {
+            if (Instance == null)
+            {
+                Instance = this;
+            }
+            else
+            {
+                Debug.LogWarning("[BossHealth] 이미 인스턴스가 존재합니다. 중복 오브젝트를 파괴합니다.");
+                Destroy(gameObject);
+                return;
+            }
+
             currentHP = maxHP;
         }
 

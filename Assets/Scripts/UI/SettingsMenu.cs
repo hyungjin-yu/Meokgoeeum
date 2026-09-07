@@ -95,7 +95,7 @@ namespace Meokgoeeum
         /// <summary>씬에 EventSystem이 없으면 만듭니다 — 없으면 슬라이더를 드래그해도 반응하지 않습니다.</summary>
         private void EnsureEventSystem()
         {
-            if (FindObjectOfType<EventSystem>() != null) return;
+            if (FindFirstObjectByType<EventSystem>() != null) return;
 
             var esObj = new GameObject("EventSystem");
             esObj.AddComponent<EventSystem>();
@@ -221,7 +221,7 @@ namespace Meokgoeeum
         private void RefreshSliderValue()
         {
             if (sensitivitySetting == null)
-                sensitivitySetting = FindObjectOfType<MouseSensitivitySetting>();
+                sensitivitySetting = MouseSensitivitySetting.Instance;
 
             if (sensitivitySetting == null)
             {
@@ -237,7 +237,7 @@ namespace Meokgoeeum
         private void OnSensitivityChanged(float value)
         {
             if (sensitivitySetting == null)
-                sensitivitySetting = FindObjectOfType<MouseSensitivitySetting>();
+                sensitivitySetting = MouseSensitivitySetting.Instance;
 
             sensitivitySetting?.SetSensitivity(value);
             sensitivityValueText.text = $"마우스 감도: {value:F1}";
