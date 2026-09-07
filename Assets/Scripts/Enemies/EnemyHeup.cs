@@ -1,151 +1,154 @@
 using UnityEngine;
 
-/// <summary>
-/// EnemyHeup (먹괴음 - 흡, 흡수형)
-/// **비공격 유닛입니다** — [[27 전투 프레임 데이터]] "텔레그래프 불필요(비공격 유닛)" 명시대로
-/// 플레이어를 절대 공격하지 않습니다. HP가 절반 밑으로 떨어지면 가장 가까운 색 복원 구역을
-/// 찾아가 흡수해서 회복하고, 그렇지 않을 때는 플레이어 쪽으로 다가만 옵니다(공격 없이).
-///
-/// [[13 먹괴음 AI 설계]] BT_Enemy_Heup 그대로: HP&lt;50% → FindNearestColorRestoredArea + Absorb,
-/// 아니면 MoveToPlayer. "구역 찾기"는 [[RestoredAreaRegistry]] 정적 유틸로 구현.
-///
-/// 단순화: 원안은 색마다 회복 폭이 다르지만(빨강 크게, 보라 작게 — 가시광선 스펙트럼 기준),
-/// 구역별 색 정보까지 등록소에 저장하는 건 지금 범위를 넘어서서 **모든 구역 동일 회복량**으로
-/// 단순화했습니다. 나중에 [[RestoredAreaRegistry]]가 색까지 같이 저장하게 확장하면 됩니다.
-///
-/// 2026-08-20: HP 50% 이상일 때 공격도 하도록 확장했다가, 실제로 공격이 들어오는지 체감이
-/// 잘 안 된다는 피드백으로 **다시 원래대로 비공격 유닛으로 되돌림**. 회복 히스테리시스(한 번
-/// 시작하면 100%까지 계속 회복)만 남기고 공격 관련 코드는 제거했습니다.
-///
-/// 시야 퍼셉션/넉백/에이전트 세팅은 [[EnemyBase]] 공통 구현을 씁니다. 다른 4종과 달리 넉백
-/// 종료 시 상태 리셋을 하지 않는데, 이건 기존 동작을 그대로 보존한 것입니다(EnemyBase의
-/// OnKnockbackEnd 기본 주석 참고) — 애초에 공격 상태가 없어서 리셋할 게 없었던 것으로 추정.
-/// </summary>
-public class EnemyHeup : EnemyBase
+namespace Meokgoeeum
 {
-    [Header("스탯 (14 밸런스 수치 시트)")]
-    public float moveSpeed = 2.5f;
-
-    [Header("흡수 (13 먹괴음 AI 설계)")]
-    [Tooltip("이 비율 밑으로 HP가 떨어지면 색 복원 구역을 찾아 회복하러 갑니다.")]
-    [Range(0f, 1f)]
-    public float lowHpThreshold = 0.5f;
-
-    [Tooltip("구역에 이만큼 가까워지면 흡수(회복)를 시작합니다.")]
-    public float absorbRadius = 1.5f;
-
-    [Tooltip("초당 회복량입니다. (구역 안에 있는 동안 계속 적용)")]
-    public float healPerSecond = 5f;
-
     /// <summary>
-    /// 회복 구역에 도달해서 흡수를 막 시작한 순간(딱 한 번) 발동합니다.
-    /// 2026-08-20: 4층 [[WallExplosionHazard]]가 구독해서 "접근 전에 처치" 페널티를 겁니다.
-    /// </summary>
-    public event System.Action OnAbsorbStart;
-
-    private enum State { Idle, Chase, SeekHealArea, Absorbing }
-    private State state = State.Idle;
-    private bool isHealingCommitted; // 한 번 회복 시작하면 100% 찰 때까지 true
-
-    private EnemyHealth health;
-    private Vector3 healTargetPos;
-    private bool hasHealTarget;
-
-    protected override float MoveSpeed => moveSpeed;
-
-    protected override void Awake()
-    {
-        base.Awake();
-        health = GetComponent<EnemyHealth>();
-    }
-
-    private void Update()
-    {
-        if (isKnockedBack) return;
-
-        // 퍼셉션 갱신 + 목적지 재계산(SetDestination)은 매 프레임 안 하고 perceptionInterval마다만
-        // 합니다 (최적화 원칙 — EnemyPyeong/EnemyWon과 동일한 이유).
-        TickPerception();
-
-        // 회복은 상태가 유지되는 동안 매 프레임 스무스하게 적용합니다.
-        if (state == State.Absorbing)
-            health.Heal(healPerSecond * Time.deltaTime);
-    }
-
-    protected override void OnPerceptionUpdated()
-    {
-        UpdateDecision();
-    }
-
-    /// <summary>
-    /// BT_Enemy_Heup의 Selector: HP 낮으면 회복 구역 탐색/흡수, 아니면 플레이어 쪽으로 이동만.
+    /// EnemyHeup (먹괴음 - 흡, 흡수형)
+    /// **비공격 유닛입니다** — [[27 전투 프레임 데이터]] "텔레그래프 불필요(비공격 유닛)" 명시대로
+    /// 플레이어를 절대 공격하지 않습니다. HP가 절반 밑으로 떨어지면 가장 가까운 색 복원 구역을
+    /// 찾아가 흡수해서 회복하고, 그렇지 않을 때는 플레이어 쪽으로 다가만 옵니다(공격 없이).
     ///
-    /// 2026-08-20: [[13 먹괴음 AI 설계]] 원안은 "HP&lt;50%" 조건을 매 틱 재검사하는 순수
-    /// Selector라서, 회복 중 HP가 50%를 살짝 넘는 순간 곧바로 멈춰버리는 문제가 있었습니다
-    /// (사용자 피드백: "왜 절반까지만 회복해?"). 그래서 히스테리시스를 추가했습니다 —
-    /// 한 번 회복이 시작되면(`isHealingCommitted`) HP가 완전히 꽉 찰 때까지는 멈추지 않습니다.
-    /// 트리거 조건(50% 밑에서 시작)은 기획서 그대로 유지, "언제 멈추는지"만 다르게 해석.
+    /// [[13 먹괴음 AI 설계]] BT_Enemy_Heup 그대로: HP&lt;50% → FindNearestColorRestoredArea + Absorb,
+    /// 아니면 MoveToPlayer. "구역 찾기"는 [[RestoredAreaRegistry]] 정적 유틸로 구현.
+    ///
+    /// 단순화: 원안은 색마다 회복 폭이 다르지만(빨강 크게, 보라 작게 — 가시광선 스펙트럼 기준),
+    /// 구역별 색 정보까지 등록소에 저장하는 건 지금 범위를 넘어서서 **모든 구역 동일 회복량**으로
+    /// 단순화했습니다. 나중에 [[RestoredAreaRegistry]]가 색까지 같이 저장하게 확장하면 됩니다.
+    ///
+    /// 2026-08-20: HP 50% 이상일 때 공격도 하도록 확장했다가, 실제로 공격이 들어오는지 체감이
+    /// 잘 안 된다는 피드백으로 **다시 원래대로 비공격 유닛으로 되돌림**. 회복 히스테리시스(한 번
+    /// 시작하면 100%까지 계속 회복)만 남기고 공격 관련 코드는 제거했습니다.
+    ///
+    /// 시야 퍼셉션/넉백/에이전트 세팅은 [[EnemyBase]] 공통 구현을 씁니다. 다른 4종과 달리 넉백
+    /// 종료 시 상태 리셋을 하지 않는데, 이건 기존 동작을 그대로 보존한 것입니다(EnemyBase의
+    /// OnKnockbackEnd 기본 주석 참고) — 애초에 공격 상태가 없어서 리셋할 게 없었던 것으로 추정.
     /// </summary>
-    private void UpdateDecision()
+    public class EnemyHeup : EnemyBase
     {
-        bool isLowHp = health.CurrentHP < health.maxHP * lowHpThreshold;
-        if (isLowHp) isHealingCommitted = true;
+        [Header("스탯 (14 밸런스 수치 시트)")]
+        public float moveSpeed = 2.5f;
 
-        if (isHealingCommitted)
+        [Header("흡수 (13 먹괴음 AI 설계)")]
+        [Tooltip("이 비율 밑으로 HP가 떨어지면 색 복원 구역을 찾아 회복하러 갑니다.")]
+        [Range(0f, 1f)]
+        public float lowHpThreshold = 0.5f;
+
+        [Tooltip("구역에 이만큼 가까워지면 흡수(회복)를 시작합니다.")]
+        public float absorbRadius = 1.5f;
+
+        [Tooltip("초당 회복량입니다. (구역 안에 있는 동안 계속 적용)")]
+        public float healPerSecond = 5f;
+
+        /// <summary>
+        /// 회복 구역에 도달해서 흡수를 막 시작한 순간(딱 한 번) 발동합니다.
+        /// 2026-08-20: 4층 [[WallExplosionHazard]]가 구독해서 "접근 전에 처치" 페널티를 겁니다.
+        /// </summary>
+        public event System.Action OnAbsorbStart;
+
+        private enum State { Idle, Chase, SeekHealArea, Absorbing }
+        private State state = State.Idle;
+        private bool isHealingCommitted; // 한 번 회복 시작하면 100% 찰 때까지 true
+
+        private EnemyHealth health;
+        private Vector3 healTargetPos;
+        private bool hasHealTarget;
+
+        protected override float MoveSpeed => moveSpeed;
+
+        protected override void Awake()
         {
-            if (health.CurrentHP >= health.maxHP)
+            base.Awake();
+            health = GetComponent<EnemyHealth>();
+        }
+
+        private void Update()
+        {
+            if (isKnockedBack) return;
+
+            // 퍼셉션 갱신 + 목적지 재계산(SetDestination)은 매 프레임 안 하고 perceptionInterval마다만
+            // 합니다 (최적화 원칙 — EnemyPyeong/EnemyWon과 동일한 이유).
+            TickPerception();
+
+            // 회복은 상태가 유지되는 동안 매 프레임 스무스하게 적용합니다.
+            if (state == State.Absorbing)
+                health.Heal(healPerSecond * Time.deltaTime);
+        }
+
+        protected override void OnPerceptionUpdated()
+        {
+            UpdateDecision();
+        }
+
+        /// <summary>
+        /// BT_Enemy_Heup의 Selector: HP 낮으면 회복 구역 탐색/흡수, 아니면 플레이어 쪽으로 이동만.
+        ///
+        /// 2026-08-20: [[13 먹괴음 AI 설계]] 원안은 "HP&lt;50%" 조건을 매 틱 재검사하는 순수
+        /// Selector라서, 회복 중 HP가 50%를 살짝 넘는 순간 곧바로 멈춰버리는 문제가 있었습니다
+        /// (사용자 피드백: "왜 절반까지만 회복해?"). 그래서 히스테리시스를 추가했습니다 —
+        /// 한 번 회복이 시작되면(`isHealingCommitted`) HP가 완전히 꽉 찰 때까지는 멈추지 않습니다.
+        /// 트리거 조건(50% 밑에서 시작)은 기획서 그대로 유지, "언제 멈추는지"만 다르게 해석.
+        /// </summary>
+        private void UpdateDecision()
+        {
+            bool isLowHp = health.CurrentHP < health.maxHP * lowHpThreshold;
+            if (isLowHp) isHealingCommitted = true;
+
+            if (isHealingCommitted)
             {
-                isHealingCommitted = false; // 완전히 다 찼으면 회복 종료, 정상 행동으로 복귀
+                if (health.CurrentHP >= health.maxHP)
+                {
+                    isHealingCommitted = false; // 완전히 다 찼으면 회복 종료, 정상 행동으로 복귀
+                }
+                else
+                {
+                    UpdateSeekHealArea();
+                    return;
+                }
+            }
+
+            hasHealTarget = false; // 회복 완전히 끝났으면 다음에 다시 낮아졌을 때 새로 탐색
+            state = player != null ? State.Chase : State.Idle;
+
+            if (state == State.Chase)
+                agent.SetDestination(player.position);
+        }
+
+        private void UpdateSeekHealArea()
+        {
+            if (!hasHealTarget)
+            {
+                hasHealTarget = RestoredAreaRegistry.TryFindNearest(transform.position, out healTargetPos);
+                if (!hasHealTarget)
+                {
+                    // 등록된 색 복원 구역이 하나도 없으면 할 수 있는 게 없어서 그냥 대기
+                    state = State.Idle;
+                    return;
+                }
+            }
+
+            float distToHealArea = Vector3.Distance(transform.position, healTargetPos);
+            if (distToHealArea <= absorbRadius)
+            {
+                if (state != State.Absorbing) // 상태 전이 시점에만 1회 발동 (매 퍼셉션 틱마다 X)
+                {
+                    state = State.Absorbing;
+                    agent.isStopped = true;
+                    OnAbsorbStart?.Invoke();
+                }
             }
             else
             {
-                UpdateSeekHealArea();
-                return;
+                state = State.SeekHealArea;
+                agent.isStopped = false;
+                agent.SetDestination(healTargetPos);
             }
         }
 
-        hasHealTarget = false; // 회복 완전히 끝났으면 다음에 다시 낮아졌을 때 새로 탐색
-        state = player != null ? State.Chase : State.Idle;
-
-        if (state == State.Chase)
-            agent.SetDestination(player.position);
-    }
-
-    private void UpdateSeekHealArea()
-    {
-        if (!hasHealTarget)
+        protected override void OnDrawGizmosSelected()
         {
-            hasHealTarget = RestoredAreaRegistry.TryFindNearest(transform.position, out healTargetPos);
-            if (!hasHealTarget)
-            {
-                // 등록된 색 복원 구역이 하나도 없으면 할 수 있는 게 없어서 그냥 대기
-                state = State.Idle;
-                return;
-            }
+            base.OnDrawGizmosSelected();
+            Gizmos.color = Color.green;
+            Gizmos.DrawWireSphere(transform.position, absorbRadius);
         }
-
-        float distToHealArea = Vector3.Distance(transform.position, healTargetPos);
-        if (distToHealArea <= absorbRadius)
-        {
-            if (state != State.Absorbing) // 상태 전이 시점에만 1회 발동 (매 퍼셉션 틱마다 X)
-            {
-                state = State.Absorbing;
-                agent.isStopped = true;
-                OnAbsorbStart?.Invoke();
-            }
-        }
-        else
-        {
-            state = State.SeekHealArea;
-            agent.isStopped = false;
-            agent.SetDestination(healTargetPos);
-        }
-    }
-
-    protected override void OnDrawGizmosSelected()
-    {
-        base.OnDrawGizmosSelected();
-        Gizmos.color = Color.green;
-        Gizmos.DrawWireSphere(transform.position, absorbRadius);
     }
 }
