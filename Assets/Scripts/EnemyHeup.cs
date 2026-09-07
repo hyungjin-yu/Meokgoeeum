@@ -1,5 +1,4 @@
 using UnityEngine;
-using UnityEngine.AI;
 
 /// <summary>
 /// EnemyHeup (먹괴음 - 흡, 흡수형)
@@ -17,10 +16,12 @@ using UnityEngine.AI;
 /// 2026-08-20: HP 50% 이상일 때 공격도 하도록 확장했다가, 실제로 공격이 들어오는지 체감이
 /// 잘 안 된다는 피드백으로 **다시 원래대로 비공격 유닛으로 되돌림**. 회복 히스테리시스(한 번
 /// 시작하면 100%까지 계속 회복)만 남기고 공격 관련 코드는 제거했습니다.
+///
+/// 시야 퍼셉션/넉백/에이전트 세팅은 [[EnemyBase]] 공통 구현을 씁니다. 다른 4종과 달리 넉백
+/// 종료 시 상태 리셋을 하지 않는데, 이건 기존 동작을 그대로 보존한 것입니다(EnemyBase의
+/// OnKnockbackEnd 기본 주석 참고) — 애초에 공격 상태가 없어서 리셋할 게 없었던 것으로 추정.
 /// </summary>
-[RequireComponent(typeof(NavMeshAgent))]
-[RequireComponent(typeof(EnemyHealth))]
-public class EnemyHeup : MonoBehaviour, IKnockbackable
+public class EnemyHeup : EnemyBase
 {
     [Header("스탯 (14 밸런스 수치 시트)")]
     public float moveSpeed = 2.5f;
@@ -36,10 +37,6 @@ public class EnemyHeup : MonoBehaviour, IKnockbackable
     [Tooltip("초당 회복량입니다. (구역 안에 있는 동안 계속 적용)")]
     public float healPerSecond = 5f;
 
-    [Header("감지 (13 AI 설계)")]
-    public float sightRadius = 6f;
-    public float perceptionInterval = 0.2f;
-
     /// <summary>
     /// 회복 구역에 도달해서 흡수를 막 시작한 순간(딱 한 번) 발동합니다.
     /// 2026-08-20: 4층 [[WallExplosionHazard]]가 구독해서 "접근 전에 처치" 페널티를 겁니다.
@@ -48,22 +45,17 @@ public class EnemyHeup : MonoBehaviour, IKnockbackable
 
     private enum State { Idle, Chase, SeekHealArea, Absorbing }
     private State state = State.Idle;
-    private float perceptionTimer;
-    private bool isKnockedBack;
     private bool isHealingCommitted; // 한 번 회복 시작하면 100% 찰 때까지 true
 
-    private NavMeshAgent agent;
     private EnemyHealth health;
-    private Transform player;
     private Vector3 healTargetPos;
     private bool hasHealTarget;
 
-    private const float KnockbackDuration = 0.25f;
+    protected override float MoveSpeed => moveSpeed;
 
-    private void Awake()
+    protected override void Awake()
     {
-        agent = GetComponent<NavMeshAgent>();
-        agent.speed = moveSpeed;
+        base.Awake();
         health = GetComponent<EnemyHealth>();
     }
 
@@ -73,28 +65,16 @@ public class EnemyHeup : MonoBehaviour, IKnockbackable
 
         // 퍼셉션 갱신 + 목적지 재계산(SetDestination)은 매 프레임 안 하고 perceptionInterval마다만
         // 합니다 (최적화 원칙 — EnemyPyeong/EnemyWon과 동일한 이유).
-        perceptionTimer += Time.deltaTime;
-        if (perceptionTimer >= perceptionInterval)
-        {
-            perceptionTimer = 0f;
-            player = FindPlayerInSight();
-            UpdateDecision();
-        }
+        TickPerception();
 
         // 회복은 상태가 유지되는 동안 매 프레임 스무스하게 적용합니다.
         if (state == State.Absorbing)
             health.Heal(healPerSecond * Time.deltaTime);
     }
 
-    private Transform FindPlayerInSight()
+    protected override void OnPerceptionUpdated()
     {
-        Collider[] hits = Physics.OverlapSphere(transform.position, sightRadius);
-        foreach (var hit in hits)
-        {
-            if (hit.CompareTag("Player"))
-                return hit.transform;
-        }
-        return null;
+        UpdateDecision();
     }
 
     /// <summary>
@@ -162,46 +142,9 @@ public class EnemyHeup : MonoBehaviour, IKnockbackable
         }
     }
 
-    /// <summary>IKnockbackable 구현. [[EnemyPyeong]]과 동일한 방식입니다.</summary>
-    public void ApplyKnockback(Vector3 direction, float force)
+    protected override void OnDrawGizmosSelected()
     {
-        if (isKnockedBack) return;
-        StartCoroutine(KnockbackRoutine(direction.normalized, force));
-    }
-
-    private System.Collections.IEnumerator KnockbackRoutine(Vector3 direction, float force)
-    {
-        Debug.Log($"[EnemyHeup] {name} 넉백당함! 방향: {direction}, 힘: {force}");
-
-        isKnockedBack = true;
-        bool wasAgentEnabled = agent.enabled;
-        if (wasAgentEnabled) agent.enabled = false;
-
-        float elapsed = 0f;
-        while (elapsed < KnockbackDuration)
-        {
-            float dt = Time.deltaTime;
-            elapsed += dt;
-            float speed = force * (1f - elapsed / KnockbackDuration);
-            transform.position += direction * speed * dt;
-            yield return null;
-        }
-
-        if (wasAgentEnabled)
-        {
-            agent.enabled = true;
-            agent.Warp(transform.position);
-            agent.isStopped = false;
-        }
-
-        isKnockedBack = false;
-        Debug.Log($"[EnemyHeup] {name} 넉백 종료.");
-    }
-
-    private void OnDrawGizmosSelected()
-    {
-        Gizmos.color = Color.yellow;
-        Gizmos.DrawWireSphere(transform.position, sightRadius);
+        base.OnDrawGizmosSelected();
         Gizmos.color = Color.green;
         Gizmos.DrawWireSphere(transform.position, absorbRadius);
     }

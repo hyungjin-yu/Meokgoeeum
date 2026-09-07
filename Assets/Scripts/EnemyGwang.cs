@@ -1,5 +1,4 @@
 using UnityEngine;
-using UnityEngine.AI;
 using UnityEngine.SceneManagement;
 
 /// <summary>
@@ -16,27 +15,21 @@ using UnityEngine.SceneManagement;
 ///
 /// 텔레그래프/판정/후딜 프레임은 [[27 전투 프레임 데이터]] 기준(25f/8f/20f) — 5종 중 텔레그래프가
 /// 가장 길어서 "가장 위협적"으로 문서화돼있고, "바닥에 원형 경고 범위 인디케이터"가 특징입니다.
+///
+/// 시야 퍼셉션/넉백/에이전트 세팅은 [[EnemyBase]] 공통 구현을 씁니다.
 /// </summary>
-[RequireComponent(typeof(NavMeshAgent))]
-[RequireComponent(typeof(EnemyHealth))]
-public class EnemyGwang : MonoBehaviour, IKnockbackable
+public class EnemyGwang : EnemyBase
 {
     [Header("스탯 (14 밸런스 수치 시트 - 먹괴음 스탯표: HP 60/공격력 15/이동속도 1.5f/s)")]
     public float attackPower = 15f;
     public float moveSpeed = 1.5f;
 
-    [Header("감지 (13 AI 설계)")]
-    [Tooltip("이 반경 안에 들어오면 플레이어를 인지합니다.")]
-    public float sightRadius = 6f;
-
+    [Header("판정 (13 AI 설계)")]
     [Tooltip("AOE 공격 판정 반경입니다. (13 AI 설계: Physics.OverlapSphere 반경 3f)")]
     public float aoeRadius = 3f;
 
     [Tooltip("AOE 공격 사이 쿨다운입니다. 프레임 데이터 문서엔 값이 없어서 임의값(3초) — 실전 테스트로 조정 필요.")]
     public float aoeCooldown = 3f;
-
-    [Tooltip("퍼셉션(플레이어 탐지)과 이동 목적지 갱신 주기입니다. 매 프레임 안 하고 이 간격으로 쉬어갑니다 — 적이 여러 마리일 때 부하를 줄이기 위함 (최적화 원칙).")]
-    public float perceptionInterval = 0.2f;
 
     // 텔레그래프 연출 훅 — VFX/애니메이션은 나중에 이 이벤트를 구독해서 붙이면 됩니다. 지금은 로직만.
     public event System.Action OnAttackWindupStart;
@@ -45,24 +38,19 @@ public class EnemyGwang : MonoBehaviour, IKnockbackable
     private enum State { Idle, Chase, AttackWindup, AttackActive, AttackRecovery }
     private State state = State.Idle;
     private float stateTimer;
-    private float perceptionTimer;
     private float cooldownTimer;
-
-    private NavMeshAgent agent;
-    private Transform player;
-    private bool isKnockedBack; // [[번쩍(노랑) 스킬]] 등 IKnockbackable 호출로 넉백당하는 동안 true
     private GameObject warningIndicator; // Windup 동안만 보이는 바닥 경고 범위
 
     // 27 전투 프레임 데이터 - 먹괴음 광 (60fps 기준 초 단위 환산, 5종 중 텔레그래프 최장)
     private const float WindupSeconds = 25f / 60f;
     private const float ActiveSeconds = 8f / 60f;
     private const float RecoverySeconds = 20f / 60f;
-    private const float KnockbackDuration = 0.25f; // EnemyPyeong과 동일 — 넉백 자체는 프레임 데이터 문서에 없어서 임의값
 
-    private void Awake()
+    protected override float MoveSpeed => moveSpeed;
+
+    protected override void Awake()
     {
-        agent = GetComponent<NavMeshAgent>();
-        agent.speed = moveSpeed;
+        base.Awake();
         cooldownTimer = aoeCooldown; // 스폰 직후 바로 시야에 플레이어가 있어도 즉시 공격하지 않도록
 
         // EnemyHealth 기본값(20)은 평/원 기준 — 광은 14 밸런스 수치 시트에 HP 60으로 명시돼있어서
@@ -75,7 +63,7 @@ public class EnemyGwang : MonoBehaviour, IKnockbackable
     {
         if (isKnockedBack) return; // 넉백 중엔 AI 로직을 통째로 쉰다 (agent를 꺼둔 상태라 이동 관련 호출이 위험함)
 
-        UpdatePerception();
+        TickPerception();
 
         switch (state)
         {
@@ -104,32 +92,11 @@ public class EnemyGwang : MonoBehaviour, IKnockbackable
         }
     }
 
-    /// <summary>
-    /// 매 프레임이 아니라 perceptionInterval마다 플레이어를 찾고 이동 목적지를 갱신합니다.
-    /// (EnemyPyeong과 동일한 패턴. Tag == "Player" 기준으로 찾습니다.)
-    /// </summary>
-    private void UpdatePerception()
+    /// <summary>공격 중이 아닐 때만 이동 목적지를 갱신합니다 (공격 도중엔 agent가 멈춰있음).</summary>
+    protected override void OnPerceptionUpdated()
     {
-        perceptionTimer += Time.deltaTime;
-        if (perceptionTimer < perceptionInterval) return;
-        perceptionTimer = 0f;
-
-        player = FindPlayerInSight();
-
-        // 공격 중이 아닐 때만 이동 목적지를 갱신합니다 (공격 도중엔 agent가 멈춰있음).
         if (player != null && IsChasingState())
             agent.SetDestination(player.position);
-    }
-
-    private Transform FindPlayerInSight()
-    {
-        Collider[] hits = Physics.OverlapSphere(transform.position, sightRadius);
-        foreach (var hit in hits)
-        {
-            if (hit.CompareTag("Player"))
-                return hit.transform;
-        }
-        return null;
     }
 
     private bool IsChasingState() => state == State.Idle || state == State.Chase;
@@ -232,48 +199,17 @@ public class EnemyGwang : MonoBehaviour, IKnockbackable
             Destroy(warningIndicator);
     }
 
-    /// <summary>
-    /// IKnockbackable 구현. [[02 플레이어 시스템]] "번쩍(노랑)" 스킬 등에서 호출합니다.
-    /// EnemyPyeong과 동일한 패턴.
-    /// </summary>
-    public void ApplyKnockback(Vector3 direction, float force)
+    /// <summary>공격 준비 중 넉백당하면 경고 표시도 같이 취소.</summary>
+    protected override void OnKnockbackStart()
     {
-        if (isKnockedBack) return; // 이미 넉백 중이면 중첩 무시
-        StartCoroutine(KnockbackRoutine(direction.normalized, force));
+        DespawnWarningIndicator();
     }
 
-    private System.Collections.IEnumerator KnockbackRoutine(Vector3 direction, float force)
+    /// <summary>공격 중이었더라도 넉백당하면 리셋 — 맞고도 태연히 공격을 이어가면 안 맞은 것처럼 느껴짐.</summary>
+    protected override void OnKnockbackEnd()
     {
-        Debug.Log($"[EnemyGwang] {name} 넉백당함! 방향: {direction}, 힘: {force}");
-
-        isKnockedBack = true;
-        DespawnWarningIndicator(); // 공격 준비 중 넉백당하면 경고 표시도 같이 취소
-        bool wasAgentEnabled = agent.enabled;
-        if (wasAgentEnabled) agent.enabled = false; // 켜진 채로는 매 프레임 경로 이동이 넉백 이동을 덮어씀
-
-        float elapsed = 0f;
-        while (elapsed < KnockbackDuration)
-        {
-            float dt = Time.deltaTime;
-            elapsed += dt;
-            float speed = force * (1f - elapsed / KnockbackDuration); // 선형 감쇠
-            transform.position += direction * speed * dt;
-            yield return null;
-        }
-
-        if (wasAgentEnabled)
-        {
-            agent.enabled = true;
-            agent.Warp(transform.position); // 넉백으로 밀려난 위치를 NavMesh 위로 재동기화
-            agent.isStopped = false;
-        }
-
-        // 공격 중이었더라도 넉백당하면 리셋 — 맞고도 태연히 공격을 이어가면 안 맞은 것처럼 느껴짐
         state = player != null ? State.Chase : State.Idle;
         stateTimer = 0f;
-        isKnockedBack = false;
-
-        Debug.Log($"[EnemyGwang] {name} 넉백 종료.");
     }
 
     // 공격 준비 도중(경고 인디케이터가 떠있는 채로) 처치돼도 인디케이터가 안 남게 정리합니다.
@@ -283,10 +219,9 @@ public class EnemyGwang : MonoBehaviour, IKnockbackable
     }
 
     // 에디터에서 감지/공격 범위를 눈으로 확인하기 위한 기즈모입니다.
-    private void OnDrawGizmosSelected()
+    protected override void OnDrawGizmosSelected()
     {
-        Gizmos.color = Color.yellow;
-        Gizmos.DrawWireSphere(transform.position, sightRadius);
+        base.OnDrawGizmosSelected();
         Gizmos.color = Color.red;
         Gizmos.DrawWireSphere(transform.position, aoeRadius);
     }

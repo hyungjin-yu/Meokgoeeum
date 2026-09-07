@@ -1,18 +1,16 @@
 using UnityEngine;
-using UnityEngine.AI;
 
 /// <summary>
 /// EnemyBun (먹괴음 - 분, 분열형)
 /// 행동 자체는 [[EnemyPyeong]](평)과 완전히 동일한 근접형입니다 — [[13 먹괴음 AI 설계]]에도
-/// "평과 동일 BT"로 명시되어 있어서, 별도 추상화 없이 같은 상태머신을 그대로 복제했습니다
-/// (지금 규모에서 상속/공유 베이스 클래스로 묶는 것보다 단순 복제가 유지보수하기 더 쉽다고 판단).
+/// "평과 동일 BT"로 명시되어 있습니다. 공격 상태머신 자체는 종별로 완전히 같아도 이 프로젝트
+/// 규모에서는 상속으로 더 묶기보다 그대로 두는 게 유지보수하기 쉽다고 판단해 복제된 채로
+/// 남겨뒀습니다 — 시야 퍼셉션/넉백/에이전트 세팅 같은 순수 인프라만 [[EnemyBase]]로 뺐습니다.
 ///
 /// 차이는 딱 하나: 처치되면 자기 자신을 복제해서 체력을 절반으로 낮춘 미니언 2마리로
 /// 분열합니다(`isMinor`가 true인 미니언은 다시 분열하지 않음 — 무한 분열 방지).
 /// </summary>
-[RequireComponent(typeof(NavMeshAgent))]
-[RequireComponent(typeof(EnemyHealth))]
-public class EnemyBun : MonoBehaviour, IKnockbackable
+public class EnemyBun : EnemyBase
 {
     [Header("스탯 (14 밸런스 수치 시트 — 분(원본) 기준)")]
     public float attackPower = 7f;
@@ -28,11 +26,9 @@ public class EnemyBun : MonoBehaviour, IKnockbackable
     [Tooltip("미니언의 크기 배율입니다.")]
     public float minorScaleMultiplier = 0.6f;
 
-    [Header("감지/판정 (13 AI 설계, 27 프레임 데이터)")]
-    public float sightRadius = 6f;
+    [Header("판정 (13 AI 설계, 27 프레임 데이터)")]
     public float attackRange = 1.5f;
     public float attackHitRadius = 1f;
-    public float perceptionInterval = 0.2f;
 
     public event System.Action OnAttackWindupStart;
     public event System.Action OnAttackHit;
@@ -40,25 +36,20 @@ public class EnemyBun : MonoBehaviour, IKnockbackable
     private enum State { Idle, Chase, AttackWindup, AttackActive, AttackRecovery }
     private State state = State.Idle;
     private float stateTimer;
-    private float perceptionTimer;
-    private bool isKnockedBack;
-
-    private NavMeshAgent agent;
-    private EnemyHealth health;
-    private Transform player;
     private float distanceToPlayer = float.MaxValue;
+
+    private EnemyHealth health;
 
     // 27 전투 프레임 데이터 - 먹괴음 평과 동일 텔레그래프(분도 "평과 동일 BT")
     private const float WindupSeconds = 15f / 60f;
     private const float ActiveSeconds = 4f / 60f;
     private const float RecoverySeconds = 14f / 60f;
-    private const float KnockbackDuration = 0.25f;
 
-    private void Awake()
+    protected override float MoveSpeed => moveSpeed;
+
+    protected override void Awake()
     {
-        agent = GetComponent<NavMeshAgent>();
-        agent.speed = moveSpeed;
-
+        base.Awake();
         health = GetComponent<EnemyHealth>();
         health.OnDeath += _ => SplitOnDeath();
     }
@@ -67,7 +58,7 @@ public class EnemyBun : MonoBehaviour, IKnockbackable
     {
         if (isKnockedBack) return;
 
-        UpdatePerception();
+        TickPerception();
 
         switch (state)
         {
@@ -96,30 +87,14 @@ public class EnemyBun : MonoBehaviour, IKnockbackable
         }
     }
 
-    private void UpdatePerception()
+    protected override void OnPerceptionUpdated()
     {
-        perceptionTimer += Time.deltaTime;
-        if (perceptionTimer < perceptionInterval) return;
-        perceptionTimer = 0f;
-
-        player = FindPlayerInSight();
         distanceToPlayer = player != null
             ? Vector3.Distance(transform.position, player.position)
             : float.MaxValue;
 
         if (player != null && IsChasingState())
             agent.SetDestination(player.position);
-    }
-
-    private Transform FindPlayerInSight()
-    {
-        Collider[] hits = Physics.OverlapSphere(transform.position, sightRadius);
-        foreach (var hit in hits)
-        {
-            if (hit.CompareTag("Player"))
-                return hit.transform;
-        }
-        return null;
     }
 
     private bool IsChasingState() => state == State.Idle || state == State.Chase;
@@ -215,49 +190,16 @@ public class EnemyBun : MonoBehaviour, IKnockbackable
         }
     }
 
-    /// <summary>IKnockbackable 구현. [[EnemyPyeong]]과 동일한 방식입니다.</summary>
-    public void ApplyKnockback(Vector3 direction, float force)
+    /// <summary>공격 중이었더라도 넉백당하면 리셋.</summary>
+    protected override void OnKnockbackEnd()
     {
-        if (isKnockedBack) return;
-        StartCoroutine(KnockbackRoutine(direction.normalized, force));
-    }
-
-    private System.Collections.IEnumerator KnockbackRoutine(Vector3 direction, float force)
-    {
-        Debug.Log($"[EnemyBun] {name} 넉백당함! 방향: {direction}, 힘: {force}");
-
-        isKnockedBack = true;
-        bool wasAgentEnabled = agent.enabled;
-        if (wasAgentEnabled) agent.enabled = false;
-
-        float elapsed = 0f;
-        while (elapsed < KnockbackDuration)
-        {
-            float dt = Time.deltaTime;
-            elapsed += dt;
-            float speed = force * (1f - elapsed / KnockbackDuration);
-            transform.position += direction * speed * dt;
-            yield return null;
-        }
-
-        if (wasAgentEnabled)
-        {
-            agent.enabled = true;
-            agent.Warp(transform.position);
-            agent.isStopped = false;
-        }
-
         state = player != null ? State.Chase : State.Idle;
         stateTimer = 0f;
-        isKnockedBack = false;
-
-        Debug.Log($"[EnemyBun] {name} 넉백 종료.");
     }
 
-    private void OnDrawGizmosSelected()
+    protected override void OnDrawGizmosSelected()
     {
-        Gizmos.color = Color.yellow;
-        Gizmos.DrawWireSphere(transform.position, sightRadius);
+        base.OnDrawGizmosSelected();
         Gizmos.color = Color.red;
         Gizmos.DrawWireSphere(transform.position, attackRange);
     }

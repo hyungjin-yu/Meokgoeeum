@@ -27,6 +27,7 @@ public class HiddenOrbSpawner : MonoBehaviour
     public Stairs stairsToActivate;
 
     private bool spawned;
+    private ColorOrbPickup spawnedOrb; // OnDestroy에서 구독 해제하기 위해 기억해둠
 
     private void Start()
     {
@@ -53,13 +54,23 @@ public class HiddenOrbSpawner : MonoBehaviour
         }
 
         Debug.Log($"[HiddenOrbSpawner] {name}: 숨겨진 구슬 등장! ({orbColor})");
-        ColorOrbPickup orb = ColorOrbPool.Instance.Get(position, orbColor);
-        orb.OnPickedUp += HandlePickedUp;
+        spawnedOrb = ColorOrbPool.Instance.Get(position, orbColor);
+        spawnedOrb.OnPickedUp += HandlePickedUp;
     }
 
     private void HandlePickedUp()
     {
         Debug.Log($"[HiddenOrbSpawner] {name}: 숨겨진 구슬 획득!");
         stairsToActivate?.Activate();
+    }
+
+    // 2026-09-07: 구슬은 풀링돼서 씬을 넘나들며 살아남는데, 이 스포너는 방/면 전환으로
+    // 먼저 파괴될 수 있습니다. 그 상태로 나중에 구슬이 주워지면 이미 파괴된 스포너의
+    // HandlePickedUp이 그대로 호출돼서 MissingReferenceException이 났습니다 — 구독을
+    // 미리 해제해서 근본적으로 막습니다.
+    private void OnDestroy()
+    {
+        if (spawnedOrb != null)
+            spawnedOrb.OnPickedUp -= HandlePickedUp;
     }
 }

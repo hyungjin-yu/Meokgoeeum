@@ -1,5 +1,4 @@
 using UnityEngine;
-using UnityEngine.AI;
 
 /// <summary>
 /// EnemyPyeong (먹괴음 - 평, 기본형)
@@ -9,27 +8,22 @@ using UnityEngine.AI;
 /// C# 상태머신으로 구현했습니다 — 문서에도 "Unity Behavior 패키지 불안정 시
 /// 상태머신으로 대체 가능하게 설계" 라는 폴백이 이미 명시돼 있어서 그대로 따랐습니다.
 /// 공격 타이밍은 [[27 전투 프레임 데이터]]의 텔레그래프 프레임 수치 기준입니다.
+///
+/// 시야 퍼셉션/넉백/에이전트 세팅은 [[EnemyBase]] 공통 구현을 씁니다 — 여긴 이 종만의
+/// 공격 상태머신(Windup/Active/Recovery)만 남아있습니다.
 /// </summary>
-[RequireComponent(typeof(NavMeshAgent))]
-[RequireComponent(typeof(EnemyHealth))]
-public class EnemyPyeong : MonoBehaviour, IKnockbackable
+public class EnemyPyeong : EnemyBase
 {
     [Header("스탯 (14 밸런스 수치 시트)")]
     public float attackPower = 8f;
     public float moveSpeed = 3f;
 
-    [Header("감지/판정 (13 AI 설계, 27 프레임 데이터)")]
-    [Tooltip("이 반경 안에 들어오면 플레이어를 인지합니다.")]
-    public float sightRadius = 6f;
-
+    [Header("판정 (13 AI 설계, 27 프레임 데이터)")]
     [Tooltip("이 거리 이하면 추격을 멈추고 공격을 시작합니다.")]
     public float attackRange = 1.5f;
 
     [Tooltip("공격이 실제로 맞는 판정 반경입니다.")]
     public float attackHitRadius = 1f;
-
-    [Tooltip("퍼셉션(플레이어 탐지)과 이동 목적지 갱신 주기입니다. 매 프레임 안 하고 이 간격으로 쉬어갑니다 — 적이 여러 마리일 때 부하를 줄이기 위함 (최적화 원칙).")]
-    public float perceptionInterval = 0.2f;
 
     // 텔레그래프 연출 훅 — VFX/애니메이션은 나중에 이 이벤트를 구독해서 붙이면 됩니다. 지금은 로직만.
     public event System.Action OnAttackWindupStart;
@@ -38,30 +32,20 @@ public class EnemyPyeong : MonoBehaviour, IKnockbackable
     private enum State { Idle, Chase, AttackWindup, AttackActive, AttackRecovery }
     private State state = State.Idle;
     private float stateTimer;
-    private float perceptionTimer;
-
-    private NavMeshAgent agent;
-    private Transform player;
     private float distanceToPlayer = float.MaxValue;
-    private bool isKnockedBack; // [[번쩍(노랑) 스킬]] 등 IKnockbackable 호출로 넉백당하는 동안 true
 
     // 27 전투 프레임 데이터 - 먹괴음 평 (60fps 기준 초 단위 환산)
     private const float WindupSeconds = 15f / 60f;
     private const float ActiveSeconds = 4f / 60f;
     private const float RecoverySeconds = 14f / 60f;
-    private const float KnockbackDuration = 0.25f; // 넉백 자체는 프레임 데이터 문서에 없어서 임의값 (v0.2 초안)
 
-    private void Awake()
-    {
-        agent = GetComponent<NavMeshAgent>();
-        agent.speed = moveSpeed;
-    }
+    protected override float MoveSpeed => moveSpeed;
 
     private void Update()
     {
         if (isKnockedBack) return; // 넉백 중엔 AI 로직을 통째로 쉰다 (agent를 꺼둔 상태라 이동 관련 호출이 위험함)
 
-        UpdatePerception();
+        TickPerception();
 
         switch (state)
         {
@@ -91,35 +75,17 @@ public class EnemyPyeong : MonoBehaviour, IKnockbackable
     }
 
     /// <summary>
-    /// 매 프레임이 아니라 perceptionInterval마다 플레이어를 찾고 이동 목적지를 갱신합니다.
-    /// (EnemyPerception 역할. Tag == "Player" 기준으로 찾습니다 — Layer 설정을 따로
-    /// 안 해도 되게 하려고 태그 방식을 선택했습니다.)
+    /// TickPerception이 player를 갱신한 직후 호출됩니다. 거리 갱신 + (공격 중이 아닐 때만)
+    /// 이동 목적지 갱신 — 공격 도중엔 agent가 멈춰있습니다.
     /// </summary>
-    private void UpdatePerception()
+    protected override void OnPerceptionUpdated()
     {
-        perceptionTimer += Time.deltaTime;
-        if (perceptionTimer < perceptionInterval) return;
-        perceptionTimer = 0f;
-
-        player = FindPlayerInSight();
         distanceToPlayer = player != null
             ? Vector3.Distance(transform.position, player.position)
             : float.MaxValue;
 
-        // 공격 중이 아닐 때만 이동 목적지를 갱신합니다 (공격 도중엔 agent가 멈춰있음).
         if (player != null && IsChasingState())
             agent.SetDestination(player.position);
-    }
-
-    private Transform FindPlayerInSight()
-    {
-        Collider[] hits = Physics.OverlapSphere(transform.position, sightRadius);
-        foreach (var hit in hits)
-        {
-            if (hit.CompareTag("Player"))
-                return hit.transform;
-        }
-        return null;
     }
 
     private bool IsChasingState() => state == State.Idle || state == State.Chase;
@@ -186,53 +152,17 @@ public class EnemyPyeong : MonoBehaviour, IKnockbackable
         }
     }
 
-    /// <summary>
-    /// IKnockbackable 구현. [[02 플레이어 시스템]] "번쩍(노랑)" 스킬 등에서 호출합니다.
-    /// </summary>
-    public void ApplyKnockback(Vector3 direction, float force)
+    /// <summary>공격 중이었더라도 넉백당하면 리셋 — 맞고도 태연히 공격을 이어가면 안 맞은 것처럼 느껴짐.</summary>
+    protected override void OnKnockbackEnd()
     {
-        if (isKnockedBack) return; // 이미 넉백 중이면 중첩 무시
-        StartCoroutine(KnockbackRoutine(direction.normalized, force));
-    }
-
-    private System.Collections.IEnumerator KnockbackRoutine(Vector3 direction, float force)
-    {
-        Debug.Log($"[EnemyPyeong] {name} 넉백당함! 방향: {direction}, 힘: {force}");
-
-        isKnockedBack = true;
-        bool wasAgentEnabled = agent.enabled;
-        if (wasAgentEnabled) agent.enabled = false; // 켜진 채로는 매 프레임 경로 이동이 넉백 이동을 덮어씀
-
-        float elapsed = 0f;
-        while (elapsed < KnockbackDuration)
-        {
-            float dt = Time.deltaTime;
-            elapsed += dt;
-            float speed = force * (1f - elapsed / KnockbackDuration); // 선형 감쇠
-            transform.position += direction * speed * dt;
-            yield return null;
-        }
-
-        if (wasAgentEnabled)
-        {
-            agent.enabled = true;
-            agent.Warp(transform.position); // 넉백으로 밀려난 위치를 NavMesh 위로 재동기화
-            agent.isStopped = false;
-        }
-
-        // 공격 중이었더라도 넉백당하면 리셋 — 맞고도 태연히 공격을 이어가면 안 맞은 것처럼 느껴짐
         state = player != null ? State.Chase : State.Idle;
         stateTimer = 0f;
-        isKnockedBack = false;
-
-        Debug.Log($"[EnemyPyeong] {name} 넉백 종료.");
     }
 
     // 에디터에서 감지/공격 범위를 눈으로 확인하기 위한 기즈모입니다.
-    private void OnDrawGizmosSelected()
+    protected override void OnDrawGizmosSelected()
     {
-        Gizmos.color = Color.yellow;
-        Gizmos.DrawWireSphere(transform.position, sightRadius);
+        base.OnDrawGizmosSelected();
         Gizmos.color = Color.red;
         Gizmos.DrawWireSphere(transform.position, attackRange);
     }
