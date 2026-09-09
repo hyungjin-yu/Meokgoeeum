@@ -109,3 +109,7 @@ InitTestScene*.unity*
 # Claude Code skill tooling (auto-installed, not project content)
 /.agents/
 /skills-lock.json
+
+# 서드파티 에셋스토어 패키지 (에디터에서 언제든 재다운로드 가능, 저장소에 안 넣음)
+/Assets/Kevin Iglesias/
+/Assets/Kevin Iglesias.meta
