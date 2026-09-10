@@ -34,8 +34,12 @@ namespace Meokgoeeum
         [Tooltip("락온 상태에서 타겟이 이 거리보다 멀어지면 자동 해제합니다 (lockOnRadius보다 커야 함 — 경계에서 계속 붙었다 떨어지는 걸 방지).")]
         public float releaseRadius = 5f;
 
+        // ⚠️ 2026-09-10: 720(0.25초면 반바퀴)이었다가 300으로 낮춤 — 락온을 거는 순간 이전 방향과
+        // 타겟 방향의 차이가 크면(예: 뒤돌아있다가 락온) 거의 순간 이동처럼 보인다는 리포트로
+        // 실측 확인(40프레임 동안 position은 전혀 안 변하고 rotation만 0→302→244→187→183도로
+        // 수렴 — 즉 "순간 이동"의 정체는 과도하게 빠른 회전이었음, [[changelog/2026-09-10_플레이어-대시중회전스냅-수정]]).
         [Tooltip("락온 중 타겟을 바라보는 회전 속도입니다. (초당 각도)")]
-        public float rotationSpeed = 720f;
+        public float rotationSpeed = 300f;
 
         // 27 전투 프레임 데이터 - 타겟 전환 쿨다운 10f(60fps 환산), 연타 스팸으로 인한 카메라 멀미 방지
         private const float SwitchCooldownSeconds = 10f / 60f;
@@ -44,6 +48,13 @@ namespace Meokgoeeum
         public bool IsLockedOn => CurrentTarget != null;
 
         private float switchCooldownTimer;
+
+        // [[changelog/2026-09-10_플레이어-대시중회전스냅-수정]] 강타(빨강) 대시 중엔 이동/회전 둘 다
+        // ColorSkillController가 전담해야 하는데, 이 스크립트는 그걸 모르고 매 프레임 계속
+        // FaceTarget()을 돌렸음 — 대시로 타겟 근접을 스쳐 지나가면 상대 각도가 급격히 바뀌어서
+        // "방향이 홱 돌아간다"는 리포트로 이어짐. PlayerController가 이미 IsDashing을 참조하는
+        // 것과 같은 패턴으로 여기도 참조해서 대시 중엔 회전을 양보합니다.
+        private ColorSkillController skills;
 
         private void Awake()
         {
@@ -59,6 +70,11 @@ namespace Meokgoeeum
             }
         }
 
+        private void Start()
+        {
+            skills = GetComponent<ColorSkillController>(); // 없어도(색 스킬 미부착) 동작은 그대로 — null 체크로 방어
+        }
+
         private void Update()
         {
             if (switchCooldownTimer > 0f)
@@ -70,7 +86,8 @@ namespace Meokgoeeum
             if (IsLockedOn)
             {
                 ValidateCurrentTarget();
-                if (IsLockedOn) FaceTarget();
+                bool isDashing = skills != null && skills.IsDashing;
+                if (IsLockedOn && !isDashing) FaceTarget();
             }
         }
 

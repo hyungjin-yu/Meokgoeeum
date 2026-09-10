@@ -128,8 +128,16 @@ namespace Meokgoeeum
 
             if (wasAgentEnabled)
             {
+                // ⚠️ 2026-09-10: NavMeshAgent.Warp()이 내부적으로 방향을 즉시 재정렬시킬 수 있어서,
+                // 넉백 중 안 건드린 transform.rotation이 Warp() 호출 직후 한 프레임 만에 확 튀는
+                // 현상이 있었습니다. 캡슐 플레이스홀더일 땐 회전이 안 보여서 몰랐는데, 실제 모델이
+                // 붙은 뒤 "방향이 순간적으로 되돌아간다"는 리포트로 발견됨. Warp 직후 넉백 시작
+                // 시점의 방향을 그대로 복원해서, 그 다음 퍼셉션 틱의 SetDestination이 agent의
+                // angularSpeed로 부드럽게 돌리도록 넘깁니다.
+                Quaternion preKnockbackRotation = transform.rotation;
                 agent.enabled = true;
                 agent.Warp(transform.position); // 넉백으로 밀려난 위치를 NavMesh 위로 재동기화
+                transform.rotation = preKnockbackRotation;
                 agent.isStopped = false;
             }
 

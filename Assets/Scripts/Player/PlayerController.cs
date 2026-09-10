@@ -119,8 +119,13 @@ namespace Meokgoeeum
             // 그대로 둬서 측면 스트레이프가 가능하게 합니다 ([[16 조작 설계]]).
             if (lockOn == null || !lockOn.IsLockedOn)
             {
-                // 이동 방향을 부드럽게 바라보도록 캐릭터를 회전시킵니다.
-                Quaternion targetRotation = Quaternion.LookRotation(moveDir);
+                // ⚠️ 2026-09-10 수정: 예전엔 moveDir(이동 방향)을 바라보게 했는데, [[16 조작 설계]]
+                // "3인칭 숄더뷰"+"카메라 방향 기준 이동"은 캐릭터가 항상 카메라 정면을 바라봐야
+                // 하는 설계입니다. moveDir 기준이면 A/D 스트레이프만 눌러도 카메라 기준 정반대
+                // 방향이라 몸이 거의 180도 순간 회전 — 실제 모델이 붙은 뒤 "방향이 홱홱
+                // 돌아간다"는 리포트로 발견됨. camForward를 바라보게 해서 스트레이프 중엔
+                // 캐릭터가 계속 정면을 유지한 채 옆으로만 이동하도록 수정.
+                Quaternion targetRotation = Quaternion.LookRotation(camForward);
                 transform.rotation = Quaternion.RotateTowards(transform.rotation, targetRotation, rotationSpeed * Time.deltaTime);
             }
         }
