@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using Unity.Cinemachine;
 using UnityEngine;
 using UnityEngine.AddressableAssets;
 using UnityEngine.ResourceManagement.AsyncOperations;
@@ -368,9 +369,17 @@ namespace Meokgoeeum
             CharacterController cc = player.GetComponent<CharacterController>();
             if (cc != null) cc.enabled = false; // 켜진 채로 강제 이동하면 충돌 이슈가 생길 수 있음
 
+            Vector3 oldPos = player.transform.position;
             player.transform.SetPositionAndRotation(spawnPoint.transform.position, spawnPoint.transform.rotation);
 
             if (cc != null) cc.enabled = true;
+
+            // ⚠️ 2026-09-10: 이 순간이동을 Cinemachine에 알려주지 않으면, 팔로우 카메라가 "순간이동"이
+            // 아니라 "엄청 빠르게 이동했다"로 착각해서 평소 감쇠(damping) 속도로 새 위치를 뒤쫓아가려다
+            // 방향을 잃고 계속 멀어지는 버그가 있었습니다(실제 플레이 중 "몹떼에 둘러싸여 죽고 리스폰된
+            // 뒤 카메라가 아주 멀리 날아가 멈춘다"는 영상으로 발견). Cinemachine이 이 프레임만 즉시
+            // 스냅하도록 명시적으로 알려줍니다.
+            CinemachineCore.OnTargetObjectWarped(player.transform, spawnPoint.transform.position - oldPos);
 
             Debug.Log($"[CubeMapManager] 플레이어를 {spawnPoint.transform.position}로 이동.");
         }

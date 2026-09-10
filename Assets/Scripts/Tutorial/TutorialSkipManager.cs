@@ -1,4 +1,5 @@
 using System.Collections;
+using Unity.Cinemachine;
 using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.EventSystems;
@@ -113,8 +114,13 @@ namespace Meokgoeeum
 
             CharacterController cc = player.GetComponent<CharacterController>();
             if (cc != null) cc.enabled = false;
+            Vector3 oldPos = player.transform.position;
             player.transform.position = destination.transform.position;
             if (cc != null) cc.enabled = true;
+
+            // [[changelog/2026-09-10_카메라-순간이동추적버그-수정]] CubeMapManager와 같은 이유 —
+            // Cinemachine에 순간이동을 알려주지 않으면 팔로우 카메라가 천천히 쫓아가려다 길을 잃습니다.
+            CinemachineCore.OnTargetObjectWarped(player.transform, destination.transform.position - oldPos);
 
             if (FadeManager.Instance != null) yield return FadeManager.Instance.FadeIn();
 
