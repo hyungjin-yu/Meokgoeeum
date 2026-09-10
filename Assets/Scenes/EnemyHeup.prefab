@@ -177,6 +177,10 @@ PrefabInstance:
       value: InkGolem_Heup_01
       objectReference: {fileID: 0}
     - target: {fileID: 5866666021909216657, guid: 7f5b2f86420b9bc4f8466adb9a359504, type: 3}
+      propertyPath: m_Controller
+      value: 
+      objectReference: {fileID: 9100000, guid: 06b2d451fe65ba34ca3b1bd1e6c62b48, type: 2}
+    - target: {fileID: 5866666021909216657, guid: 7f5b2f86420b9bc4f8466adb9a359504, type: 3}
       propertyPath: m_ApplyRootMotion
       value: 0
       objectReference: {fileID: 0}

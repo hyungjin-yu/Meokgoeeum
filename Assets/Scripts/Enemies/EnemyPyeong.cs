@@ -114,6 +114,7 @@ namespace Meokgoeeum
             state = State.AttackWindup;
             stateTimer = 0f;
             agent.isStopped = true;
+            animator?.SetTrigger("Attack"); // [[changelog/2026-09-10_먹괴음5종-애니메이터컨트롤러]]
             OnAttackWindupStart?.Invoke();
         }
 

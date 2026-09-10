@@ -98,6 +98,7 @@ namespace Meokgoeeum
                 if (health.CurrentHP >= health.maxHP)
                 {
                     isHealingCommitted = false; // 완전히 다 찼으면 회복 종료, 정상 행동으로 복귀
+                    animator?.SetBool("Special", false); // [[changelog/2026-09-10_먹괴음5종-애니메이터컨트롤러]]
                 }
                 else
                 {
@@ -133,6 +134,7 @@ namespace Meokgoeeum
                 {
                     state = State.Absorbing;
                     agent.isStopped = true;
+                    animator?.SetBool("Special", true); // [[changelog/2026-09-10_먹괴음5종-애니메이터컨트롤러]]
                     OnAbsorbStart?.Invoke();
                 }
             }

@@ -31,6 +31,14 @@ namespace Meokgoeeum
         protected float perceptionTimer;
         protected bool isKnockedBack; // [[번쩍(노랑) 스킬]] 등 IKnockbackable 호출로 넉백당하는 동안 true
 
+        /// <summary>
+        /// 모델 자식 오브젝트(Assets/Models/Characters/Enemies/*)에 붙어있는 Animator입니다.
+        /// [[changelog/2026-09-10_먹괴음5종-프리팹연결]]에서 리깅된 모델을 자식으로 부착하면서
+        /// 이 프로젝트의 몹은 전부 "루트=콜라이더/로직, 자식=시각 모델" 구조가 됐습니다.
+        /// 아트 에셋이 없는 테스트용 프리팹 등에서는 null일 수 있어서 항상 null 체크 후 씁니다.
+        /// </summary>
+        protected Animator animator;
+
         // 27 전투 프레임 데이터 — 넉백 자체는 문서에 값이 없어서 임의값(0.25f), 5종 전부 동일하게 써왔음
         protected const float KnockbackDuration = 0.25f;
 
@@ -41,6 +49,25 @@ namespace Meokgoeeum
         {
             agent = GetComponent<NavMeshAgent>();
             agent.speed = MoveSpeed;
+            animator = GetComponentInChildren<Animator>();
+        }
+
+        /// <summary>
+        /// [[changelog/2026-09-10_먹괴음5종-애니메이터컨트롤러]] Animator의 "Moving" bool을 매 프레임
+        /// 갱신합니다. 각 서브클래스의 상태머신이 아니라 agent의 실제 속도를 기준으로 삼은 이유:
+        /// 서브클래스마다 상태 이름이 달라서(Chase/Retreat/SeekHealArea 등) 상태 enum을 직접
+        /// 참조하는 것보다, "지금 실제로 움직이고 있는가"라는 물리적 사실 하나로 통일하는 게
+        /// 5종 전부에서 안전하게 재사용 가능합니다 — 넉백 중(agent.enabled=false)에도 자동으로 false.
+        ///
+        /// ⚠️ agent.isOnNavMesh 체크 필수: enabled=true라도 NavMesh 위에 아직 안 올라간 상태(스폰
+        /// 직후 워프 전, NavMesh 밖 좌표 등)에서 agent.isStopped/velocity에 접근하면 예외가 납니다.
+        /// 실제로 애니메이터컨트롤러 테스트 중 NavMesh 없는 위치에 스폰해서 이 예외를 직접 재현·발견함.
+        /// </summary>
+        private void LateUpdate()
+        {
+            if (animator == null) return;
+            bool moving = agent.enabled && agent.isOnNavMesh && !agent.isStopped && agent.velocity.sqrMagnitude > 0.01f;
+            animator.SetBool("Moving", moving);
         }
 
         /// <summary>

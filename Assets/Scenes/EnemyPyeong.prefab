@@ -177,6 +177,10 @@ PrefabInstance:
       value: InkGolem_Pyeong_01
       objectReference: {fileID: 0}
     - target: {fileID: 5866666021909216657, guid: b0992556a0157aa4487b246a136acf0f, type: 3}
+      propertyPath: m_Controller
+      value: 
+      objectReference: {fileID: 9100000, guid: 8c2bb77c5f590c24082686fc9f04e636, type: 2}
+    - target: {fileID: 5866666021909216657, guid: b0992556a0157aa4487b246a136acf0f, type: 3}
       propertyPath: m_ApplyRootMotion
       value: 0
       objectReference: {fileID: 0}
