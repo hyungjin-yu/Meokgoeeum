@@ -27,8 +27,10 @@ namespace Meokgoeeum
         private const string ScenePath = "Assets/Scenes/SC_Face_0.unity";
         private const string GeneratedRootName = "Floor1_Corridor_Generated";
 
-        // 기존 Ground(10x10 기본 Plane, 원점 중심)의 +X쪽 경계 — 복도가 여기서부터 바깥으로 붙습니다.
-        private const float RoomEdgeX = 5f;
+        // ⚠️ 2026-09-11: 플레이타임 확장([[changelog/2026-09-11_플레이타임-확장-스코프결정]])으로
+        // 방A를 10x10→30x30(3배)으로 키우면서 5f→15f로 변경. Ground(원래 10x10 기본 Plane, 원점
+        // 중심)도 [[MultiRoomFloor1Builder]]에서 localScale (3,1,3)으로 같이 키웁니다.
+        private const float RoomEdgeX = 15f;
         // 기존 SpawnPoint(3.57, 0.3, 0.47)의 z에 맞춰 복도 중심선을 잡습니다.
         private const float CorridorCenterZ = 0.47f;
 
@@ -173,7 +175,9 @@ namespace Meokgoeeum
             BuildObstacle(root.transform, obstacleSeg.MidX, obstacleSeg.Def.Width);
 
             // 방A 경계벽 — 복도가 붙는 문(장애물 구간과 같은 폭)만 남기고 나머지를 막습니다.
-            BuildRoomABoundaryWalls(root.transform, RoomEdgeX, obstacleSeg.Def.Width);
+            // ⚠️ 2026-09-11: 서쪽에도 문을 냅니다 — [[MultiRoomFloor1Builder]]가 이어붙이는
+            // 멀티룸 던전(방B/C/D)으로 연결되는 통로입니다.
+            BuildRoomABoundaryWalls(root.transform, RoomEdgeX, obstacleSeg.Def.Width, WestDoorWidth);
 
             // 플레이어 시작 위치를 복도 입구로. 방(=-X)을 바라보도록 회전도 같이 맞춥니다.
             GameObject spawnPoint = GameObject.Find("SpawnPoint");
@@ -266,12 +270,16 @@ namespace Meokgoeeum
             mover.period = 4f;
         }
 
+        // 2026-09-11: 서쪽 벽에도 문을 낼 때 쓰는 폭 — 방B로 이어지는 연결 통로(MultiRoomFloor1Builder)와 맞춤.
+        private const float WestDoorWidth = 4f;
+
         /// <summary>
         /// 방A(Ground, 원점 중심 정사각형, half=roomHalfExtent) 둘레에 벽을 두릅니다. +X쪽에는
         /// doorWidth 폭만큼 문(복도 연결부)을 남겨둡니다. Ground의 실제 절반 크기를 그대로
         /// 재사용하므로(RoomEdgeX가 +X 경계이자 정사각형 기준) 별도 인자로 정사각형임을 가정합니다.
+        /// westDoorWidth가 0보다 크면 -X쪽에도 같은 방식으로 문을 냅니다(0이면 기존처럼 통째로 막음).
         /// </summary>
-        private static void BuildRoomABoundaryWalls(Transform parent, float roomHalfExtent, float doorWidth)
+        private static void BuildRoomABoundaryWalls(Transform parent, float roomHalfExtent, float doorWidth, float westDoorWidth = 0f)
         {
             float half = roomHalfExtent;
             float t = RoomWallThickness;
@@ -287,10 +295,37 @@ namespace Meokgoeeum
                 new Vector3(0f, WallHeight * 0.5f, -half - t * 0.5f),
                 new Vector3(half * 2f + t * 2f, WallHeight, t));
 
-            // 서쪽 벽(문 없음, 통째로)
-            BuildBoxWall(parent, "Wall_방A_MinusX",
-                new Vector3(-half - t * 0.5f, WallHeight * 0.5f, 0f),
-                new Vector3(t, WallHeight, half * 2f));
+            // 서쪽 벽 — westDoorWidth가 0이면 기존처럼 통째로, 아니면 동쪽과 같은 패턴으로 문을 냄.
+            if (westDoorWidth <= 0.01f)
+            {
+                BuildBoxWall(parent, "Wall_방A_MinusX",
+                    new Vector3(-half - t * 0.5f, WallHeight * 0.5f, 0f),
+                    new Vector3(t, WallHeight, half * 2f));
+            }
+            else
+            {
+                float wDoorHalf = westDoorWidth * 0.5f;
+                float wDoorMinZ = CorridorCenterZ - wDoorHalf;
+                float wDoorMaxZ = CorridorCenterZ + wDoorHalf;
+
+                float wSouthLen = wDoorMinZ - (-half);
+                if (wSouthLen > 0.01f)
+                {
+                    float wSouthZ = (-half + wDoorMinZ) * 0.5f;
+                    BuildBoxWall(parent, "Wall_방A_MinusX_South",
+                        new Vector3(-half - t * 0.5f, WallHeight * 0.5f, wSouthZ),
+                        new Vector3(t, WallHeight, wSouthLen));
+                }
+
+                float wNorthLen = half - wDoorMaxZ;
+                if (wNorthLen > 0.01f)
+                {
+                    float wNorthZ = (wDoorMaxZ + half) * 0.5f;
+                    BuildBoxWall(parent, "Wall_방A_MinusX_North",
+                        new Vector3(-half - t * 0.5f, WallHeight * 0.5f, wNorthZ),
+                        new Vector3(t, WallHeight, wNorthLen));
+                }
+            }
 
             // 동쪽 벽 — 복도 문(doorMinZ~doorMaxZ)만 남기고 위아래 두 조각으로 막음.
             float southZ = (-half + doorMinZ) * 0.5f;
