@@ -46,15 +46,18 @@ namespace Meokgoeeum
 
         public static void BuildFromCLI()
         {
-            // Ground(방A)를 3배로 키운 뒤, RoomEdgeX=15로 바뀐 Floor1CorridorBuilder를 재실행해서
-            // 복도/방A 경계벽을 새 크기에 맞게 다시 만듭니다(서쪽 문 포함).
-            Scene scene = EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
+            // ⚠️ 2026-09-11 발견 — 실제 플레이 중 "전진하면 바닥으로 떨어진다" 버그 리포트로 발견.
+            // Floor1CorridorBuilder.BuildFromCLI()는 내부에서 씬을 "디스크에서 다시" 엽니다
+            // (EditorSceneManager.OpenScene) — 그래서 여기서 Ground를 먼저 키워놔도 저장 전에
+            // 그 호출이 씬을 새로 열어버리면 방금 한 변경이 통째로 날아갑니다. 벽/복도는 새
+            // 크기(half=15)로 정상 생성되는데 실제 바닥(Ground)만 옛 10x10 그대로 남아서, 벽과
+            // 바닥 사이에 거대한 구멍이 뚫리는 버그였습니다. Ground 리스케일은 반드시
+            // Floor1CorridorBuilder 호출 "이후"에 해야 합니다.
+            Floor1CorridorBuilder.BuildFromCLI(); // 내부에서 씬을 다시 열고 저장함
+            Scene scene = EditorSceneManager.GetActiveScene();
 
             GameObject ground = GameObject.Find("Ground");
             if (ground != null) ground.transform.localScale = new Vector3(3f, 1f, 3f);
-
-            Floor1CorridorBuilder.BuildFromCLI(); // 내부에서 씬을 다시 열고 저장함
-            scene = EditorSceneManager.GetActiveScene();
 
             GameObject prevRoot = GameObject.Find(RootName);
             if (prevRoot != null) Object.DestroyImmediate(prevRoot);
