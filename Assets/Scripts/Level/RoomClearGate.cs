@@ -20,8 +20,13 @@ namespace Meokgoeeum
         [Tooltip("이 범위(중심 = 이 오브젝트 위치) 안의 적을 전부 처치해야 계단이 열립니다.")]
         public Vector3 boundsSize = new Vector3(20f, 5f, 20f);
 
-        [Tooltip("클리어되면 활성화할 계단입니다.")]
+        [Tooltip("클리어되면 활성화할 계단입니다. (면 전환용 — 던전의 마지막 방에만 연결) 비워둬도 됩니다.")]
         public Stairs stairs;
+
+        [Tooltip("클리어되면 비활성화할 오브젝트들입니다. (예: 멀티룸 던전의 문 막음 큐브) " +
+                 "[[changelog/2026-09-11_1층-멀티룸던전-파일럿]]처럼 계단이 아니라 다음 방으로 가는 " +
+                 "문을 여는 중간 방에 씁니다. stairs와 동시에 써도 됩니다.")]
+        public GameObject[] doorsToOpen;
 
         [Tooltip("검사 주기입니다. 매 프레임 안 하고 이 간격으로 확인합니다 (최적화 원칙 — EnemyPyeong의 perceptionInterval과 같은 이유).")]
         public float checkInterval = 0.5f;
@@ -67,11 +72,16 @@ namespace Meokgoeeum
             if (emptyStreakDuration < clearGraceDuration) return;
 
             cleared = true;
-            Debug.Log($"[RoomClearGate] {name} 클리어! 계단 활성화.");
-            if (stairs != null)
-                stairs.Activate();
-            else
-                Debug.LogWarning($"[RoomClearGate] {name}에 Stairs가 연결 안 되어 있습니다.");
+            Debug.Log($"[RoomClearGate] {name} 클리어!");
+
+            if (stairs != null) stairs.Activate();
+
+            if (doorsToOpen != null)
+                foreach (var door in doorsToOpen)
+                    if (door != null) door.SetActive(false);
+
+            if (stairs == null && (doorsToOpen == null || doorsToOpen.Length == 0))
+                Debug.LogWarning($"[RoomClearGate] {name}에 Stairs도 doorsToOpen도 연결 안 되어 있습니다.");
         }
 
         private bool AnyEnemyAlive()

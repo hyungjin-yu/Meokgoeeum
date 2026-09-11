@@ -64,25 +64,52 @@ namespace Meokgoeeum
             var root = new GameObject(RootName);
             SceneManager.MoveGameObjectToScene(root, scene);
 
-            // 방A의 기존 RoomClearGate는 튜토리얼 전투(평×2) 감시만 계속하고, "다음 층" 계단 연결은
-            // 뗍니다(서쪽 문이 이미 열려있어서 따로 안 잠가도 됨) — 실제 계단 연결은 아래에서
-            // 방D로 옮깁니다.
-            var roomAGate = GameObject.Find("RoomClearGate")?.GetComponent<RoomClearGate>();
-            RoomClearGate roomDGate = roomAGate; // 재사용 — 방D로 이동시킴(아래)
+            // ⚠️ 2026-09-11 2차 발견 — 사용자 실측 "방마다 20초도 안 걸림". 원인 두 가지:
+            // ① 방A/C 서쪽 문이 애초에 안 잠겨있어서 전투 없이 그냥 통과 가능했음
+            // ② ColorWaveEffect.maxRadius가 30인데 방이 30x30이라, 몹 하나만 잡아도 파동이 방 안
+            //    벽화를 전부(심지어 옆방까지) 한 번에 칠해버려서 방B "퍼즐"이 사실상 무의미했음
+            // → 모든 방을 전투 클리어 게이트로 강제 잠그고, 벽화/PaintCountGate는 순수 장식으로
+            //   격하(문을 안 엶). RoomClearGate에 doorsToOpen을 추가해서(RoomClearGate.cs 수정)
+            //   "계단 대신 문을 여는" 중간 방 게이트로도 쓸 수 있게 함.
+            // ⚠️ 이름으로 찾으면 재실행할 때 깨집니다 — 이전 실행에서 이미 이 오브젝트를
+            // "RoomClearGate_D"로 개명해서 방D로 옮겨놨을 수 있기 때문입니다(그러면
+            // GameObject.Find("RoomClearGate")가 항상 null). 대신 "부모가 없는(=내가 만든
+            // MultiRoom_Generated 밑이 아닌) RoomClearGate"로 찾아서 몇 번을 재실행해도 항상
+            // 같은 원본 오브젝트를 재사용하도록 합니다.
+            RoomClearGate roomAGate = null;
+            foreach (var g in Object.FindObjectsByType<RoomClearGate>(FindObjectsSortMode.None))
+            {
+                if (g.transform.parent == null) { roomAGate = g; break; }
+            }
 
             BuildRoomASidePath(root.transform);
+
+            // 방A 서쪽 문도 잠금 — 기존 튜토리얼 전투(평×2)를 반드시 끝내야 방B로 갈 수 있음.
+            GameObject doorBlockerA = BuildDoorBlockerAt(root.transform, "A", RoomACenterX - RoomHalf);
+            if (roomAGate != null)
+            {
+                roomAGate.name = "RoomClearGate_A";
+                roomAGate.transform.position = new Vector3(RoomACenterX, roomAGate.transform.position.y, CenterZ);
+                roomAGate.stairs = null; // 이전 실행에서 방D로 옮겨졌을 때 남은 참조가 있으면 제거
+                roomAGate.doorsToOpen = new[] { doorBlockerA };
+                roomAGate.boundsSize = new Vector3(RoomHalf * 2f + 4f, 10f, RoomHalf * 2f + 4f); // 30x30로 커진 방A 전체 커버
+            }
+            else
+            {
+                Debug.LogWarning("[MultiRoomFloor1Builder] 방A 원본 RoomClearGate를 못 찾았습니다 — 방A 문이 안 잠깁니다.");
+            }
 
             BuildConnector(root.transform, "A_B", RoomACenterX - RoomHalf, RoomBCenterX + RoomHalf);
             GameObject doorBlockerB = BuildRoom(root.transform, "B", RoomBCenterX, eastDoorWidth: DoorWidth, westDoorWidth: DoorWidth, lockWestDoor: true);
             PopulateRoomB(root.transform, RoomBCenterX, doorBlockerB);
 
             BuildConnector(root.transform, "B_C", RoomBCenterX - RoomHalf, RoomCCenterX + RoomHalf);
-            BuildRoom(root.transform, "C", RoomCCenterX, eastDoorWidth: DoorWidth, westDoorWidth: DoorWidth, lockWestDoor: false);
-            PopulateRoomC(root.transform, RoomCCenterX);
+            GameObject doorBlockerC = BuildRoom(root.transform, "C", RoomCCenterX, eastDoorWidth: DoorWidth, westDoorWidth: DoorWidth, lockWestDoor: true);
+            PopulateRoomC(root.transform, RoomCCenterX, doorBlockerC);
 
             BuildConnector(root.transform, "C_D", RoomCCenterX - RoomHalf, RoomDCenterX + RoomHalf);
             BuildRoom(root.transform, "D", RoomDCenterX, eastDoorWidth: DoorWidth, westDoorWidth: 0f, lockWestDoor: false);
-            PopulateRoomD(root.transform, RoomDCenterX, roomDGate);
+            PopulateRoomD(root.transform, RoomDCenterX);
 
             RebuildArtDressing(root.transform);
 
@@ -135,12 +162,17 @@ namespace Meokgoeeum
 
             if (!lockWestDoor || westDoorWidth <= 0.01f) return null;
 
-            // 구조적 개구부는 이미 뚫려있고, 그 자리에 딱 맞는 막음 큐브를 세웁니다.
+            return BuildDoorBlockerAt(parent, label, centerX - half);
+        }
+
+        /// <summary>서쪽 문 위치(wallBoundaryX)에 딱 맞는 막음 큐브를 세웁니다 — RoomClearGate.doorsToOpen이 치웁니다.</summary>
+        private static GameObject BuildDoorBlockerAt(Transform parent, string label, float wallBoundaryX)
+        {
             GameObject blocker = GameObject.CreatePrimitive(PrimitiveType.Cube);
             blocker.name = $"DoorBlocker_{label}_West";
             blocker.transform.SetParent(parent, false);
-            blocker.transform.position = new Vector3(centerX - half, WallHeight * 0.5f, CenterZ);
-            blocker.transform.localScale = new Vector3(t + 0.5f, WallHeight, westDoorWidth - 0.2f);
+            blocker.transform.position = new Vector3(wallBoundaryX, WallHeight * 0.5f, CenterZ);
+            blocker.transform.localScale = new Vector3(WallThickness + 0.5f, WallHeight, DoorWidth - 0.2f);
             return blocker;
         }
 
@@ -213,10 +245,13 @@ namespace Meokgoeeum
             spawner.orbColor = OrbColor.Red;
         }
 
-        /// <summary>방B — 벽화 3개를 전부 복원해야 서쪽 문이 열리는 라이트 퍼즐 + 매복 평 2마리.</summary>
+        /// <summary>
+        /// 방B — 벽화 3개(순수 장식 — ColorWaveEffect 반경 문제로 진짜 게이트로는 못 씀, 아래
+        /// "2차 발견" 참고)는 색 복원 분위기만 내고, 실제 서쪽 문은 웨이브 전투(평 1+1)를
+        /// 전부 클리어해야 열립니다.
+        /// </summary>
         private static void PopulateRoomB(Transform parent, float centerX, GameObject doorBlocker)
         {
-            var triggers = new PaintableObject[3];
             Vector3[] muralPositions =
             {
                 new Vector3(centerX + 8f, 1f, 8f),
@@ -225,11 +260,10 @@ namespace Meokgoeeum
             };
             Color[] colors =
             {
-                new Color(0.6f, 0.2f, 0.8f), // 뒷골목=보라 톤과 어울리게(다음 면과의 시각적 구분용, 여기선 장식일 뿐)
+                new Color(0.6f, 0.2f, 0.8f),
                 new Color(0.9f, 0.2f, 0.2f),
                 new Color(0.9f, 0.7f, 0.2f),
             };
-
             for (int i = 0; i < muralPositions.Length; i++)
             {
                 GameObject mural = GameObject.CreatePrimitive(PrimitiveType.Cube);
@@ -240,38 +274,26 @@ namespace Meokgoeeum
                 var paintable = mural.AddComponent<PaintableObject>();
                 paintable.trueColor = colors[i];
                 paintable.startGray = true;
-                triggers[i] = paintable;
             }
 
-            GameObject gateGo = new GameObject("PaintCountGate_RoomB");
-            gateGo.transform.SetParent(parent, false);
-            gateGo.transform.position = new Vector3(centerX, 0f, CenterZ);
-            var gate = gateGo.AddComponent<PaintCountGate>();
-            gate.triggers = triggers;
-            gate.doorsToOpen = doorBlocker != null ? new[] { doorBlocker } : new GameObject[0];
-
-            SpawnPyeong(parent, "EnemyAmbush_RoomB_0", new Vector3(centerX + 3f, 0f, 3f));
-            SpawnPyeong(parent, "EnemyAmbush_RoomB_1", new Vector3(centerX - 3f, 0f, -3f));
+            BuildWaveSpawner(parent, "EncounterSpawner_RoomB", new Vector3(centerX, 0f, CenterZ), new[] { 1, 1 });
+            BuildRoomGate(parent, "RoomClearGate_B", centerX, doorBlocker);
         }
 
-        /// <summary>방C — 평×3 전투 + 이동 장애물 2개(엄폐/회피용).</summary>
-        private static void PopulateRoomC(Transform parent, float centerX)
+        /// <summary>방C — 평×3 전투(2웨이브) + 이동 장애물 2개(엄폐/회피용). 서쪽 문은 전투 클리어 시 열림.</summary>
+        private static void PopulateRoomC(Transform parent, float centerX, GameObject doorBlocker)
         {
-            SpawnPyeong(parent, "EnemyFight_RoomC_0", new Vector3(centerX + 6f, 0f, 6f));
-            SpawnPyeong(parent, "EnemyFight_RoomC_1", new Vector3(centerX, 0f, -8f));
-            SpawnPyeong(parent, "EnemyFight_RoomC_2", new Vector3(centerX - 6f, 0f, 6f));
+            BuildWaveSpawner(parent, "EncounterSpawner_RoomC", new Vector3(centerX, 0f, CenterZ), new[] { 2, 1 });
+            BuildRoomGate(parent, "RoomClearGate_C", centerX, doorBlocker);
 
             BuildMovingObstacle(parent, "MovingObstacle_RoomC_0", new Vector3(centerX + 4f, 0.8f, -2f));
             BuildMovingObstacle(parent, "MovingObstacle_RoomC_1", new Vector3(centerX - 4f, 0.8f, 2f));
         }
 
-        /// <summary>방D — 클라이맥스 웨이브(평×4) + 색 복원 연출용 벽화 2개 + 실제 계단(방A에서 옮겨옴).</summary>
-        private static void PopulateRoomD(Transform parent, float centerX, RoomClearGate movedGate)
+        /// <summary>방D — 클라이맥스 웨이브(평×4, 2웨이브) + 색 복원 연출용 벽화 2개 + 실제 계단(방A에서 옮겨옴).</summary>
+        private static void PopulateRoomD(Transform parent, float centerX)
         {
-            SpawnPyeong(parent, "EnemyFinal_RoomD_0", new Vector3(centerX + 8f, 0f, 8f));
-            SpawnPyeong(parent, "EnemyFinal_RoomD_1", new Vector3(centerX + 8f, 0f, -8f));
-            SpawnPyeong(parent, "EnemyFinal_RoomD_2", new Vector3(centerX - 8f, 0f, 8f));
-            SpawnPyeong(parent, "EnemyFinal_RoomD_3", new Vector3(centerX - 8f, 0f, -8f));
+            BuildWaveSpawner(parent, "EncounterSpawner_RoomD", new Vector3(centerX, 0f, CenterZ), new[] { 2, 2 });
 
             for (int i = 0; i < 2; i++)
             {
@@ -285,38 +307,76 @@ namespace Meokgoeeum
                 paintable.startGray = true;
             }
 
-            var stairs = GameObject.Find("Stairs");
-            if (stairs != null)
+            var stairsGo = GameObject.Find("Stairs");
+            Stairs stairs = stairsGo != null ? stairsGo.GetComponent<Stairs>() : null;
+            if (stairsGo != null)
             {
-                stairs.transform.position = new Vector3(centerX - RoomHalf + 3f, stairs.transform.position.y, CenterZ);
-                Debug.Log($"[MultiRoomFloor1Builder] 기존 Stairs를 방D({stairs.transform.position})로 이동 — 실제 '다음 층' 트리거는 이제 여기입니다.");
+                stairsGo.transform.position = new Vector3(centerX - RoomHalf + 3f, stairsGo.transform.position.y, CenterZ);
+                Debug.Log($"[MultiRoomFloor1Builder] 기존 Stairs를 방D({stairsGo.transform.position})로 이동 — 실제 '다음 층' 트리거는 이제 여기입니다.");
             }
             else
             {
                 Debug.LogWarning("[MultiRoomFloor1Builder] 기존 Stairs를 못 찾아 방D로 옮기지 못했습니다.");
             }
 
-            if (movedGate != null)
-            {
-                movedGate.name = "RoomClearGate_D";
-                movedGate.transform.position = new Vector3(centerX, movedGate.transform.position.y, CenterZ);
-                movedGate.boundsSize = new Vector3(RoomHalf * 2f + 4f, 10f, RoomHalf * 2f + 4f);
-                movedGate.stairs = stairs != null ? stairs.GetComponent<Stairs>() : null;
-                Debug.Log("[MultiRoomFloor1Builder] RoomClearGate를 방D로 옮기고 재사용 — 클리어 시 위 Stairs가 열립니다.");
-            }
-            else
-            {
-                Debug.LogWarning("[MultiRoomFloor1Builder] 기존 RoomClearGate를 못 찾아 방D 클리어 판정이 없습니다.");
-            }
+            GameObject gateGo = new GameObject("RoomClearGate_D");
+            gateGo.transform.SetParent(parent, false);
+            gateGo.transform.position = new Vector3(centerX, 0f, CenterZ);
+            var gate = gateGo.AddComponent<RoomClearGate>();
+            gate.boundsSize = new Vector3(RoomHalf * 2f + 4f, 10f, RoomHalf * 2f + 4f);
+            gate.stairs = stairs;
+            Debug.Log("[MultiRoomFloor1Builder] 방D 신규 RoomClearGate — 클리어 시 Stairs가 열립니다.");
         }
 
-        private static void SpawnPyeong(Transform parent, string name, Vector3 position)
+        /// <summary>centerX 방 하나를 감시하는 RoomClearGate를 만들어 doorBlocker를 연결합니다.</summary>
+        private static void BuildRoomGate(Transform parent, string name, float centerX, GameObject doorBlocker)
         {
-            var prefab = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Scenes/EnemyPyeong.prefab");
-            if (prefab == null) { Debug.LogError("[MultiRoomFloor1Builder] EnemyPyeong.prefab을 못 찾았습니다."); return; }
-            GameObject go = (GameObject)PrefabUtility.InstantiatePrefab(prefab, parent);
-            go.name = name;
-            go.transform.position = position;
+            GameObject gateGo = new GameObject(name);
+            gateGo.transform.SetParent(parent, false);
+            gateGo.transform.position = new Vector3(centerX, 0f, CenterZ);
+            var gate = gateGo.AddComponent<RoomClearGate>();
+            gate.boundsSize = new Vector3(RoomHalf * 2f + 4f, 10f, RoomHalf * 2f + 4f);
+            gate.doorsToOpen = doorBlocker != null ? new[] { doorBlocker } : new GameObject[0];
+        }
+
+        /// <summary>
+        /// position을 중심으로 원형으로 흩어진 스폰 지점을 가진 EncounterSpawner를 만듭니다.
+        /// enemiesPerWave = {1,1}이면 1마리씩 2웨이브, {2,1}이면 2마리→1마리 순으로 등장합니다
+        /// (기존 튜토리얼 웨이브 패턴과 같은 이유 — 한꺼번에 다 나오는 것보다 순차 전투가 실제
+        /// 소요 시간을 벌어줌).
+        /// </summary>
+        private static EncounterSpawner BuildWaveSpawner(Transform parent, string name, Vector3 position, int[] enemiesPerWave)
+        {
+            var pyeongPrefab = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Scenes/EnemyPyeong.prefab");
+            if (pyeongPrefab == null) { Debug.LogError("[MultiRoomFloor1Builder] EnemyPyeong.prefab을 못 찾았습니다."); return null; }
+
+            GameObject spawnerGo = new GameObject(name);
+            spawnerGo.transform.SetParent(parent, false);
+            spawnerGo.transform.position = position;
+            var spawner = spawnerGo.AddComponent<EncounterSpawner>();
+            spawner.waveInterval = 2.5f;
+            spawner.autoStart = true;
+
+            var waves = new EncounterSpawner.Wave[enemiesPerWave.Length];
+            for (int w = 0; w < enemiesPerWave.Length; w++)
+            {
+                int count = enemiesPerWave[w];
+                var prefabs = new GameObject[count];
+                var points = new Transform[count];
+                for (int i = 0; i < count; i++)
+                {
+                    prefabs[i] = pyeongPrefab;
+                    float angle = count > 0 ? (360f / count) * i + w * 45f : 0f;
+                    Vector3 offset = Quaternion.Euler(0f, angle, 0f) * Vector3.forward * 6f;
+                    GameObject spGo = new GameObject($"{name}_W{w}_{i}");
+                    spGo.transform.SetParent(spawnerGo.transform, false);
+                    spGo.transform.position = position + offset;
+                    points[i] = spGo.transform;
+                }
+                waves[w] = new EncounterSpawner.Wave { waveName = $"웨이브{w + 1}", enemyPrefabs = prefabs, spawnPoints = points, hpMultiplier = 1f };
+            }
+            spawner.waves = waves;
+            return spawner;
         }
 
         private static void BuildMovingObstacle(Transform parent, string name, Vector3 position)
