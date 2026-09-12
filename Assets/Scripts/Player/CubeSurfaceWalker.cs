@@ -40,6 +40,14 @@ namespace Meokgoeeum
         [Tooltip("큐브 한 변 길이의 절반입니다. 콜라이더 충돌 없이 표면에 붙어있게 하는 데 씁니다.")]
         public float cubeHalfExtent = 5f;
 
+        [Tooltip("캐릭터 피벗이 수학적 표면(cubeHalfExtent)에서 법선 방향으로 얼마나 더 떠있어야 하는지입니다. " +
+                 "캡슐 피벗은 중심에 있으므로, 보통 캡슐 높이의 절반을 넣어야 발이 표면에 닿습니다. " +
+                 "⚠️ 2026-09-12 발견 — 이 값 없이 그냥 cubeHalfExtent로 클램프했더니 캐릭터 피벗이 수학적 " +
+                 "표면(도로 메쉬가 놓인 실제 위치)에 그대로 박혀서, 캡슐 절반이 큐브 속에 파묻힌 반구 모양으로만 " +
+                 "보였음(\"플레이어 키가 작아서 나무가 안 보인다\" 리포트의 진짜 원인 — 스케일 문제가 아니라 매 " +
+                 "프레임 파묻히는 클램프 버그였음).")]
+        public float surfaceOffset = 1f;
+
         [Tooltip("이동 속도입니다.")]
         public float moveSpeed = 6f;
 
@@ -130,7 +138,7 @@ namespace Meokgoeeum
             // "표면까지 남은 거리"를 직접 계산해서 판정합니다.
             Vector3 localPos = transform.position - CubeCenterPos();
             int axis = Mathf.Abs(normal.x) > 0.5f ? 0 : (Mathf.Abs(normal.y) > 0.5f ? 1 : 2);
-            float distanceFromSurface = localPos[axis] * Mathf.Sign(normal[axis]) - cubeHalfExtent;
+            float distanceFromSurface = localPos[axis] * Mathf.Sign(normal[axis]) - (cubeHalfExtent + surfaceOffset);
             bool grounded = distanceFromSurface <= 0.05f;
 
             if (grounded && verticalSpeed < 0f)
@@ -152,7 +160,7 @@ namespace Meokgoeeum
                 if (a == axis) continue;
                 afterLocal[a] = Mathf.Clamp(afterLocal[a], -cubeHalfExtent, cubeHalfExtent);
             }
-            afterLocal[axis] = cubeHalfExtent * Mathf.Sign(normal[axis]);
+            afterLocal[axis] = (cubeHalfExtent + surfaceOffset) * Mathf.Sign(normal[axis]);
             transform.position = CubeCenterPos() + afterLocal;
 
             // 5. 캐릭터의 실제 시각적 회전 — 항상 facingForward를 보도록(입력 여부와 무관하게,
