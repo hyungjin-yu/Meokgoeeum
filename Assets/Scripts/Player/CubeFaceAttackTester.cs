@@ -20,6 +20,9 @@ namespace Meokgoeeum
         [Tooltip("공격 사거리(월드 거리 기준)입니다.")]
         public float attackRange = 3f;
 
+        [Tooltip("한 대당 피해량입니다.")]
+        public float attackDamage = 15f;
+
         [Tooltip("공격에 쓰는 CubeSurfaceWalker입니다(비워두면 자기 자신에서 찾음).")]
         public CubeSurfaceWalker walker;
 
@@ -53,7 +56,8 @@ namespace Meokgoeeum
                     continue;
                 }
 
-                Debug.Log($"[CubeFaceAttackTester] {mob.name} 명중! (거리={dist:F2})");
+                mob.TakeDamage(attackDamage);
+                Debug.Log($"[CubeFaceAttackTester] {mob.name} 명중! (거리={dist:F2}, 남은 HP={mob.currentHP:F0}/{mob.maxHP:F0})");
             }
         }
     }
