@@ -62,11 +62,13 @@ namespace Meokgoeeum
         private Vector2 moveInput;
         private float verticalSpeed; // 표면 법선 방향 기준 속도(음수=표면 쪽으로 떨어지는 중)
         private Vector3 facingForward; // 캐릭터가 실제로 바라보는 접선 방향 — 마우스로 회전시킴
+        private Vector3 lastNormal; // 면이 바뀌었는지 감지하기 위한 직전 프레임 법선
         private float smoothedMouseX;
 
         private void Start()
         {
             CurrentSurfaceNormal = EstimateSurfaceNormalFromPosition();
+            lastNormal = CurrentSurfaceNormal;
             facingForward = Vector3.ProjectOnPlane(transform.forward, CurrentSurfaceNormal).normalized;
             if (facingForward.sqrMagnitude < 0.0001f)
                 facingForward = Vector3.ProjectOnPlane(Vector3.forward, CurrentSurfaceNormal).normalized;
@@ -97,9 +99,21 @@ namespace Meokgoeeum
 
             Vector3 normal = CurrentSurfaceNormal; // 트리거로만 바뀜 — 여기서 재계산하지 않음
 
-            // 1. 캐릭터가 보는 방향(facingForward)을 지금 면의 접선 평면에 다시 투영해서
-            // 정합성을 유지(면이 바뀌었으면 이전 면 기준 방향을 새 면에 맞게 갈아탐).
-            facingForward = Vector3.ProjectOnPlane(facingForward, normal);
+            // 1. 면이 바뀐 순간엔 facingForward를 "평면에 납작하게 투영"하지 않고, 옛 법선에서
+            // 새 법선으로 가는 회전을 facingForward에도 똑같이 적용해서 옮깁니다(parallel
+            // transport) — 이렇게 해야 모서리를 곧장 가로질러 걸을 때 방향이 왜곡되지 않고
+            // "쭉 걸어온 방향 그대로" 이어집니다.
+            // ⚠️ 2026-09-12 발견 — 처음엔 매 프레임 ProjectOnPlane으로 재투영했는데, 이건 벡터를
+            // 새 평면에 납작하게 눌러버리는 것뿐이라 모서리에서 걷는 방향이 은근히 틀어질 수 있음
+            // (사용자 리포트: "카메라를 다시 돌려줘야 한다" — 실제로는 재설계 전/후 둘 다 이
+            // 문제가 있었음, 방향을 소유하는 주체를 바꾼 것만으론 안 고쳐졌던 것).
+            if (Vector3.Dot(normal, lastNormal) < 0.999f)
+            {
+                Quaternion transport = Quaternion.FromToRotation(lastNormal, normal);
+                facingForward = transport * facingForward;
+                lastNormal = normal;
+            }
+            facingForward = Vector3.ProjectOnPlane(facingForward, normal); // 부동소수점 오차만 가볍게 보정
             if (facingForward.sqrMagnitude < 0.0001f)
                 facingForward = Vector3.ProjectOnPlane(Vector3.forward, normal);
             facingForward.Normalize();
