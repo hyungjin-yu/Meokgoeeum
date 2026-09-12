@@ -131,13 +131,21 @@ namespace Meokgoeeum
             // 콜라이더가 없으므로, 표면 밑으로 파고들면 직접 표면 위치로 되돌려 고정합니다
             // (실측 결과: 속도를 0으로만 맞추면 그 프레임에 이미 파고든 만큼은 안 돌아와서
             // 누적되면 결국 큐브를 뚫고 지나가버림 — 위치 자체를 매 프레임 clamp해야 함).
+            //
+            // ⚠️ 2026-09-12 발견 — 면과 면 사이를 빠르게 왔다갔다하면 캐릭터가 큐브에서 붕
+            // 떨어져 나가는 버그를 사용자가 재현(스크린샷 확인). 원인은 여기서 "지금 서있는
+            // 면의 법선 축"만 표면에 고정하고, 접선 방향 나머지 두 축은 전혀 제한하지 않았기
+            // 때문 — 코너 근처에서 빠르게 방향을 바꾸면 트리거가 아직 안 지났는데 접선 이동으로
+            // 그 축이 이미 면 경계(±cubeHalfExtent)를 넘어버려서, 어느 면에도 붙어있지 않은
+            // 좌표가 되어버림. 접선 두 축도 항상 면 범위 안으로 같이 clamp해서 해결.
             Vector3 afterLocal = transform.position - CubeCenterPos();
-            float afterDist = afterLocal[axis] * Mathf.Sign(normal[axis]);
-            if (afterDist < cubeHalfExtent)
+            for (int a = 0; a < 3; a++)
             {
-                afterLocal[axis] = cubeHalfExtent * Mathf.Sign(normal[axis]);
-                transform.position = CubeCenterPos() + afterLocal;
+                if (a == axis) continue; // 법선 축은 아래에서 따로 표면에 고정
+                afterLocal[a] = Mathf.Clamp(afterLocal[a], -cubeHalfExtent, cubeHalfExtent);
             }
+            afterLocal[axis] = cubeHalfExtent * Mathf.Sign(normal[axis]);
+            transform.position = CubeCenterPos() + afterLocal;
 
             // 4. 이동 방향을 바라보도록 회전(입력이 있을 때만) — 표면에 붙은 상태를 유지하며 yaw만 갱신
             if (moveDir.sqrMagnitude > 0.0001f)
