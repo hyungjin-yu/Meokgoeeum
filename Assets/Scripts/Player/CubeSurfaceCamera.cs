@@ -20,10 +20,10 @@ namespace Meokgoeeum
         [Tooltip("따라갈 대상입니다.")]
         public CubeSurfaceWalker target;
 
-        [Tooltip("대상 뒤쪽으로 얼마나 떨어질지입니다.")]
+        [Tooltip("대상 뒤쪽으로 얼마나 떨어질지입니다(줌 1배 기준값).")]
         public float distance = 6f;
 
-        [Tooltip("대상 표면 법선(up) 방향으로 얼마나 띄울지입니다.")]
+        [Tooltip("대상 표면 법선(up) 방향으로 얼마나 띄울지입니다(줌 1배 기준값).")]
         public float height = 3f;
 
         [Tooltip("카메라가 목표 위치/회전으로 따라가는 속도입니다.")]
@@ -35,7 +35,19 @@ namespace Meokgoeeum
         [Tooltip("시작할 때 마우스 커서를 잠글지 여부입니다. Esc로 잠금을 풀 수 있습니다.")]
         public bool lockCursor = true;
 
+        [Header("줌")]
+        [Tooltip("마우스 휠 1틱당 줌 배율이 얼마나 변하는지입니다.")]
+        public float zoomSpeed = 0.15f;
+
+        [Tooltip("가장 가까이 줌인했을 때의 배율입니다(distance/height에 곱해짐). 1보다 작아야 줌인이 됩니다 — " +
+                 "사용자 리포트(\"플레이어 키가 작아서 나무가 안 보인다\")처럼 캐릭터를 크게 당겨봐야 할 때를 대비.")]
+        public float minZoom = 0.4f;
+
+        [Tooltip("가장 멀리 줌아웃했을 때의 배율입니다 — 주변 가로수처럼 화면 밖으로 벗어나는 오브젝트를 보려면 키웁니다.")]
+        public float maxZoom = 3f;
+
         private Vector3 smoothedUp = Vector3.up;
+        private float zoom = 1f; // distance/height에 곱해지는 배율. 마우스 휠로 조절.
 
         private void Start()
         {
@@ -65,8 +77,15 @@ namespace Meokgoeeum
             else if (lockCursor && Mouse.current != null && Mouse.current.leftButton.wasPressedThisFrame && Cursor.lockState != CursorLockMode.Locked)
                 Cursor.lockState = CursorLockMode.Locked;
 
+            // 마우스 휠 줌 — 사용자 리포트("플레이어 키가 작아서 나무가 안 보인다")에 대한 대응.
+            // distance/height에 곱해지는 배율만 바꿔서, 줌아웃하면 캐릭터 주변(가로수 등)까지
+            // 넓게 보이고 줌인하면 캐릭터를 크게 당겨볼 수 있게 함.
+            float scroll = Mouse.current != null ? Mouse.current.scroll.ReadValue().y : 0f;
+            if (Mathf.Abs(scroll) > 0.01f)
+                zoom = Mathf.Clamp(zoom - Mathf.Sign(scroll) * zoomSpeed, minZoom, maxZoom);
+
             // 캐릭터 forward를 그대로 따라감 — 카메라는 독자적인 방향이 없음.
-            Vector3 desiredPos = target.transform.position + smoothedUp * height - target.transform.forward * distance;
+            Vector3 desiredPos = target.transform.position + smoothedUp * (height * zoom) - target.transform.forward * (distance * zoom);
             transform.position = Vector3.Lerp(transform.position, desiredPos, followSpeed * Time.deltaTime);
 
             Quaternion desiredRot = Quaternion.LookRotation(target.transform.position - transform.position, smoothedUp);
