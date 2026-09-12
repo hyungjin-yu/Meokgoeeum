@@ -46,6 +46,11 @@ namespace Meokgoeeum
                  "낮을수록 천천히 돌아서 '뚝' 끊기는 느낌이 줄어듭니다(대신 잠깐 기울어진 채로 이동함).")]
         public float normalSmoothSpeed = 2.5f;
 
+        [Tooltip("면이 바뀔 때 카메라를 캐릭터 정면으로 재정렬하는 기능을, 마우스를 직접 움직인 지 " +
+                 "이 시간(초) 안이면 건너뜁니다 — 몬스터를 옆에서 조준 중일 때 시야를 뺏기지 않게 하기 위함.")]
+        public float faceResyncSuppressAfterMouseInput = 0.6f;
+
+        private float timeSinceMouseInput = 999f;
         private float smoothedMouseX;
         private Vector3 smoothedUp = Vector3.up; // 카메라 위치/회전 계산에만 씀 — 궤도 방향(orbitForward) 투영은 실제 순간 법선을 그대로 씀
 
@@ -83,27 +88,6 @@ namespace Meokgoeeum
             // 실제(raw) 법선을 그대로 씁니다.
             smoothedUp = Vector3.Slerp(smoothedUp, up, normalSmoothSpeed * Time.deltaTime).normalized;
 
-            // ⚠️ 2026-09-12 추가 — "면에서 면으로 넘어가면 카메라가 캐릭터가 보고 있는 방향을
-            // 같이 봤으면 좋겠다"는 요청 반영. 평소(같은 면 위)엔 orbitForward를 그대로 유지해서
-            // 마우스로 자유롭게 돈 방향을 지켜주지만, 면이 실제로 바뀐 그 프레임에는 캐릭터의
-            // 현재 forward로 다시 맞춥니다 — 새로 걸어 들어간 면에서는 "지금 걷는 방향"을 카메라가
-            // 자연스럽게 비춰주는 게 방향감각상 더 낫기 때문입니다.
-            bool faceChanged = Vector3.Dot(up, lastNormal) < 0.999f;
-            if (faceChanged)
-            {
-                orbitForward = Vector3.ProjectOnPlane(target.transform.forward, up).normalized;
-                lastNormal = up;
-            }
-            else
-            {
-                // 같은 면 위 — 궤도 방향을 접선 평면에 다시 투영만 해서 정합성 유지(부동소수점 오차 방지).
-                orbitForward = Vector3.ProjectOnPlane(orbitForward, up);
-            }
-
-            if (orbitForward.sqrMagnitude < 0.0001f) // 투영 결과가 거의 0이면(방향이 법선과 거의 평행했던 경우) 임시로 아무 접선 방향이나 잡음
-                orbitForward = Vector3.ProjectOnPlane(Vector3.forward, up);
-            orbitForward.Normalize();
-
             // Esc로 커서 잠금을 풀 수 있게 함(에디터 Game 뷰에서 자동으로 안 풀리는 경우가 있어서 안전장치로 추가).
             if (Keyboard.current != null && Keyboard.current.escapeKey.wasPressedThisFrame)
                 Cursor.lockState = CursorLockMode.None;
@@ -111,6 +95,31 @@ namespace Meokgoeeum
                 Cursor.lockState = CursorLockMode.Locked; // 게임 뷰 클릭하면 다시 잠금
 
             float rawMouseX = Mouse.current != null ? Mouse.current.delta.x.ReadValue() : 0f;
+            timeSinceMouseInput = Mathf.Abs(rawMouseX) > 0.01f ? 0f : timeSinceMouseInput + Time.deltaTime;
+
+            // ⚠️ 2026-09-12 추가 — "면에서 면으로 넘어가면 카메라가 캐릭터가 보고 있는 방향을
+            // 같이 봤으면 좋겠다"는 요청 반영. 단, 그대로 뒀더니 몬스터를 옆에서 조준하며 걷다가
+            // 면을 넘는 순간 시야가 강제로 정면을 향해버려서 오히려 불편하다는 재리포트가 있었음
+            // — 그래서 "최근에 마우스를 직접 움직이고 있었으면"(=지금 뭔가를 조준/관찰 중일 가능성이
+            // 높음) 자동 재정렬을 건너뛰고, 가만히 이동만 하고 있을 때만 정면으로 맞춥니다.
+            bool faceChanged = Vector3.Dot(up, lastNormal) < 0.999f;
+            bool recentlySteering = timeSinceMouseInput < faceResyncSuppressAfterMouseInput;
+            if (faceChanged && !recentlySteering)
+            {
+                orbitForward = Vector3.ProjectOnPlane(target.transform.forward, up).normalized;
+            }
+            else
+            {
+                // 같은 면 위(또는 최근에 마우스를 조작 중) — 궤도 방향을 접선 평면에 다시 투영만
+                // 해서 정합성 유지(부동소수점 오차 방지), 사용자가 보고 있던 방향은 그대로 지킴.
+                orbitForward = Vector3.ProjectOnPlane(orbitForward, up);
+            }
+            if (faceChanged) lastNormal = up;
+
+            if (orbitForward.sqrMagnitude < 0.0001f) // 투영 결과가 거의 0이면(방향이 법선과 거의 평행했던 경우) 임시로 아무 접선 방향이나 잡음
+                orbitForward = Vector3.ProjectOnPlane(Vector3.forward, up);
+            orbitForward.Normalize();
+
             smoothedMouseX = Mathf.Lerp(smoothedMouseX, rawMouseX, mouseSmoothing * Time.deltaTime);
             orbitForward = Quaternion.AngleAxis(smoothedMouseX * mouseSensitivity, up) * orbitForward;
 
