@@ -16,7 +16,7 @@ namespace Meokgoeeum
     public static class CubePrototypeBuilder
     {
         private const string ScenePath = "Assets/Scenes/SC_CubePrototype.unity";
-        private const float CubeHalfExtent = 5f;
+        private const float CubeHalfExtent = 10f; // 2026-09-12: 카메라 움직임 체감 확인을 위해 5→10(2배)로 변경
 
         [MenuItem("MG/큐브 표면 보행 프로토타입 생성")]
         public static void BuildFromCLI()
