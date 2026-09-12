@@ -52,8 +52,9 @@ namespace Meokgoeeum
         [Tooltip("시작할 때 마우스 커서를 잠글지 여부입니다. 프로토타입이라 잠금 해제 키는 아직 없습니다 — 필요하면 Esc로 Play 모드를 끝내세요.")]
         public bool lockCursor = true;
 
-        // 궤도 방향 — 플레이어 몸 방향과 무관하게 카메라가 독립적으로 소유합니다.
+        // 궤도 방향 — 평소엔 플레이어 몸 방향과 무관하게 카메라가 독립적으로 소유합니다(마우스로 자유 회전).
         private Vector3 orbitForward;
+        private Vector3 lastNormal; // 면이 바뀌었는지 감지하기 위한 직전 프레임 법선
 
         private void Start()
         {
@@ -64,7 +65,10 @@ namespace Meokgoeeum
             }
 
             if (target != null)
-                orbitForward = Vector3.ProjectOnPlane(target.transform.forward, target.CurrentSurfaceNormal).normalized;
+            {
+                lastNormal = target.CurrentSurfaceNormal;
+                orbitForward = Vector3.ProjectOnPlane(target.transform.forward, lastNormal).normalized;
+            }
         }
 
         private void LateUpdate()
@@ -79,8 +83,23 @@ namespace Meokgoeeum
             // 실제(raw) 법선을 그대로 씁니다.
             smoothedUp = Vector3.Slerp(smoothedUp, up, normalSmoothSpeed * Time.deltaTime).normalized;
 
-            // 면이 바뀌었을 수 있으니, 궤도 방향을 지금 표면의 접선 평면에 다시 투영해서 정합성을 유지.
-            orbitForward = Vector3.ProjectOnPlane(orbitForward, up);
+            // ⚠️ 2026-09-12 추가 — "면에서 면으로 넘어가면 카메라가 캐릭터가 보고 있는 방향을
+            // 같이 봤으면 좋겠다"는 요청 반영. 평소(같은 면 위)엔 orbitForward를 그대로 유지해서
+            // 마우스로 자유롭게 돈 방향을 지켜주지만, 면이 실제로 바뀐 그 프레임에는 캐릭터의
+            // 현재 forward로 다시 맞춥니다 — 새로 걸어 들어간 면에서는 "지금 걷는 방향"을 카메라가
+            // 자연스럽게 비춰주는 게 방향감각상 더 낫기 때문입니다.
+            bool faceChanged = Vector3.Dot(up, lastNormal) < 0.999f;
+            if (faceChanged)
+            {
+                orbitForward = Vector3.ProjectOnPlane(target.transform.forward, up).normalized;
+                lastNormal = up;
+            }
+            else
+            {
+                // 같은 면 위 — 궤도 방향을 접선 평면에 다시 투영만 해서 정합성 유지(부동소수점 오차 방지).
+                orbitForward = Vector3.ProjectOnPlane(orbitForward, up);
+            }
+
             if (orbitForward.sqrMagnitude < 0.0001f) // 투영 결과가 거의 0이면(방향이 법선과 거의 평행했던 경우) 임시로 아무 접선 방향이나 잡음
                 orbitForward = Vector3.ProjectOnPlane(Vector3.forward, up);
             orbitForward.Normalize();
