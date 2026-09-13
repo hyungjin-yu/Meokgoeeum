@@ -6,7 +6,9 @@
         "Unity.Cinemachine",
         "Unity.Addressables",
         "Unity.Addressables.Editor",
-        "Unity.ResourceManager"
+        "Unity.ResourceManager",
+        "Unity.AI.Navigation",
+        "Unity.AI.Navigation.Editor"
     ],
     "includePlatforms": [
         "Editor"
