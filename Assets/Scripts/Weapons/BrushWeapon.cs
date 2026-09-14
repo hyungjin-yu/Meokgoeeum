@@ -92,7 +92,14 @@ namespace Meokgoeeum
 
         private void OnDestroy()
         {
-            if (ownsInputActions) inputActions?.Dispose();
+            // PlayerController.OnDestroy()와 동일하게, Enable()과 반드시 짝을 맞춰 Disable()을
+            // 먼저 호출해야 합니다 — Disable() 없이 바로 Dispose()만 하면 "This will cause a leak
+            // and performance issues" 경고가 뜹니다.
+            if (ownsInputActions)
+            {
+                inputActions?.Disable();
+                inputActions?.Dispose();
+            }
         }
 
         private void Update()
