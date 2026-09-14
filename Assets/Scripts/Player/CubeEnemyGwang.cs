@@ -120,6 +120,12 @@ namespace Meokgoeeum
             warningIndicator.name = "GwangWarningIndicator";
             Destroy(warningIndicator.GetComponent<Collider>());
             warningIndicator.transform.position = transform.position;
+            // ⚠️ 2026-09-14 발견 — 원본 EnemyGwang은 항상 평평한 바닥(월드 Y-up)에서만 쓰여서
+            // 회전을 안 줘도 원판이 자연히 바닥에 눕지만, 큐브 옆면(faceNormal이 월드 Y가 아닌
+            // 면)에서는 실린더의 기본 자세(로컬 up=월드 Y)가 그 면과 안 맞아서 경고 범위가
+            // 바닥과 수직으로 튀어나와 보임(사용자 리포트: "공격 범위가 땅에 수직으로 나온다") —
+            // faceNormal을 up으로 삼아 면에 눕도록 회전을 맞춰줍니다.
+            warningIndicator.transform.rotation = Quaternion.FromToRotation(Vector3.up, faceNormal);
             warningIndicator.transform.localScale = new Vector3(aoeRadius * 2f, 0.05f, aoeRadius * 2f);
             SceneManager.MoveGameObjectToScene(warningIndicator, gameObject.scene);
 
