@@ -94,6 +94,12 @@ namespace Meokgoeeum
             PerformAttack();
         }
 
+        /// <summary>플레이어가 면을 벗어나 Busy(공격 준비)가 강제 중단될 때도 경고 인디케이터를 지웁니다.</summary>
+        protected override void OnBusyInterrupted()
+        {
+            DespawnWarningIndicator();
+        }
+
         private void EnterAttackRecovery()
         {
             phase = AttackPhase.Recovery;

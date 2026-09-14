@@ -161,7 +161,12 @@ namespace Meokgoeeum
 
                 case MacroState.Busy:
                     // 공격 등 서브클래스 전용 상태 — 면을 벗어나면 그 즉시 수색으로 강제 전환(공격 캔슬).
-                    if (!sameFace) { EnterSearching(); break; }
+                    // ⚠️ 2026-09-14 발견 — 이 강제 전환이 OnBusyTick()을 완전히 건너뛰기 때문에,
+                    // [[CubeEnemyGwang]]의 경고 인디케이터처럼 "Busy 도중에만 존재하는 임시 오브젝트"를
+                    // 정상적인 EnterAttackActive() 경로 없이는 못 지우는 채로 버려짐 — 42개까지 쌓인
+                    // 실제 사례로 발견([[changelog/2026-09-14_광경고인디케이터-누수]]). 강제 전환 시엔
+                    // 반드시 OnBusyInterrupted()로 서브클래스에게 정리할 기회를 줍니다.
+                    if (!sameFace) { OnBusyInterrupted(); EnterSearching(); break; }
                     OnBusyTick();
                     break;
             }
@@ -191,6 +196,13 @@ namespace Meokgoeeum
 
         /// <summary>Busy 상태(공격 등) 동안 매 프레임 호출됩니다. 끝나면 <see cref="EnterChasing"/> 등을 호출하세요.</summary>
         protected virtual void OnBusyTick() { }
+
+        /// <summary>
+        /// Busy 상태가 정상 종료(EnterAttackActive 등)가 아니라 면 이탈로 강제 중단될 때 호출됩니다.
+        /// [[CubeEnemyGwang]]의 경고 인디케이터처럼 Busy 도중에만 떠있는 임시 오브젝트를 정리할
+        /// 기회입니다 — 안 그러면 정상 경로(예: EnterAttackActive)를 거치지 못해 영원히 남습니다.
+        /// </summary>
+        protected virtual void OnBusyInterrupted() { }
 
         protected void EnterChasing() => state = MacroState.Chasing;
         protected void EnterBusy() => state = MacroState.Busy;
