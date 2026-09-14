@@ -55,6 +55,19 @@ namespace Meokgoeeum
         [Tooltip("복귀 중(및 원위치 대기 중) 초당 회복량입니다.")]
         public float returnRegenPerSecond = 25f;
 
+        [Header("겹침 방지 ([[changelog/2026-09-14_몹겹침-최소거리분리]])")]
+        [Tooltip("공격 판정이 없거나 사거리 체크를 안 하는 몹(흡/광 등)이 플레이어에게 이보다 " +
+                 "가까이 다가가지 않도록 막는 기본 정지 거리입니다. 사거리 체크가 있는 몹(평/분/원)은 " +
+                 "이미 각자 attackRange에서 멈추므로 이 값보다 attackRange가 크면 이 값은 실질적으로 안 씀.")]
+        public float minApproachToPlayer = 1.2f;
+
+        [Tooltip("다른 몹(플레이어 제외)과 이보다 가까워지면 서로 밀어냅니다 — 여러 몹이 플레이어 " +
+                 "한 점으로 몰릴 때 겹쳐 보이는 것 방지.")]
+        public float mobSeparationDistance = 1.2f;
+
+        [Tooltip("몹 사이 분리 힘의 세기입니다.")]
+        public float separationStrength = 4f;
+
         /// <summary>종마다 다른 이동속도를 서브클래스가 제공합니다(원본 EnemyBase.MoveSpeed와 동일한 패턴).</summary>
         protected abstract float MoveSpeed { get; }
 
@@ -153,19 +166,27 @@ namespace Meokgoeeum
                     break;
             }
 
+            // ⚠️ 2026-09-14 발견 — 사용자가 실제 Play 중 여러 몹이 플레이어 한 점으로 몰려서
+            // 겹치는 것을 스크린샷으로 리포트("몹들간의 겹침은 있으면 안돼"). 상태와 무관하게
+            // 매 프레임 다른 몹과의 최소 거리를 확보합니다.
+            Vector3 separation = CubeFaceMobUtils.ComputeSeparation(this, faceNormal, mobSeparationDistance, separationStrength);
+            if (separation.sqrMagnitude > 0.0001f)
+                transform.position = ClampToFace(transform.position + separation * Time.deltaTime);
+
             // 원본 [[EnemyBase]].LateUpdate()와 같은 이유 — 상태 이름이 아니라 "지금 실제로
             // 움직이고 있는가"라는 사실 하나로 통일해서 Animator의 "Moving" bool을 갱신합니다.
             if (animator != null) animator.SetBool("Moving", movedThisFrame);
         }
 
         /// <summary>
-        /// Chasing 상태에서 매 프레임 호출됩니다. 기본 구현은 그냥 플레이어에게 접근만 합니다 —
-        /// 사거리 안에 들어왔을 때 공격 등으로 전환하고 싶은 서브클래스는 이걸 오버라이드해서
-        /// <see cref="EnterBusy"/>를 호출하세요(원본 EnemyPyeong.UpdateChase()와 같은 역할).
+        /// Chasing 상태에서 매 프레임 호출됩니다. 기본 구현은 플레이어에게 접근하되
+        /// <see cref="minApproachToPlayer"/> 안으로는 안 들어갑니다 — 사거리 안에 들어왔을 때
+        /// 공격 등으로 전환하고 싶은 서브클래스는 이걸 오버라이드해서 <see cref="EnterBusy"/>를
+        /// 호출하세요(원본 EnemyPyeong.UpdateChase()와 같은 역할).
         /// </summary>
         protected virtual void OnChasingTick()
         {
-            MoveToward(target.transform.position);
+            MoveToward(target.transform.position, arriveThreshold: minApproachToPlayer);
         }
 
         /// <summary>Busy 상태(공격 등) 동안 매 프레임 호출됩니다. 끝나면 <see cref="EnterChasing"/> 등을 호출하세요.</summary>
@@ -206,15 +227,28 @@ namespace Meokgoeeum
                 movedThisFrame = true;
             }
 
+            transform.position = ClampToFace(center + myLocal);
+            return arrived;
+        }
+
+        /// <summary>
+        /// 접선 두 축은 면 범위 안으로 clamp, 법선 축은 표면 값으로 고정합니다 — 면 밖으로
+        /// 못 나가게 하는 로직을 <see cref="MoveToward"/>와 겹침 방지 로직이 공유합니다.
+        /// </summary>
+        protected Vector3 ClampToFace(Vector3 worldPos)
+        {
+            Vector3 center = cubeCenter != null ? cubeCenter.position : Vector3.zero;
+            Vector3 local = worldPos - center;
+            int axis = Mathf.Abs(faceNormal.x) > 0.5f ? 0 : (Mathf.Abs(faceNormal.y) > 0.5f ? 1 : 2);
+
             for (int a = 0; a < 3; a++)
             {
                 if (a == axis) continue;
-                myLocal[a] = Mathf.Clamp(myLocal[a], -cubeHalfExtent, cubeHalfExtent);
+                local[a] = Mathf.Clamp(local[a], -cubeHalfExtent, cubeHalfExtent);
             }
-            myLocal[axis] = (cubeHalfExtent + surfaceOffset) * Mathf.Sign(faceNormal[axis]);
+            local[axis] = (cubeHalfExtent + surfaceOffset) * Mathf.Sign(faceNormal[axis]);
 
-            transform.position = center + myLocal;
-            return arrived;
+            return center + local;
         }
 
         /// <summary>제자리에서 faceNormal 축을 기준으로 좌우로 두리번거립니다(당황한 느낌의 시각 피드백).</summary>

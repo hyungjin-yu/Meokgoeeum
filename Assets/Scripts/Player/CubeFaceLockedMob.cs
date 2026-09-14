@@ -57,6 +57,16 @@ namespace Meokgoeeum
         [Tooltip("복귀 중(및 원위치 대기 중) 초당 회복량입니다.")]
         public float returnRegenPerSecond = 25f;
 
+        [Header("겹침 방지 ([[changelog/2026-09-14_몹겹침-최소거리분리]])")]
+        [Tooltip("공격 판정이 없어서 플레이어에게 완전히 파고들지 않도록 막는 최소 접근 거리입니다.")]
+        public float minApproachToPlayer = 1.2f;
+
+        [Tooltip("다른 몹(플레이어 제외)과 이보다 가까워지면 서로 밀어냅니다.")]
+        public float mobSeparationDistance = 1.2f;
+
+        [Tooltip("몹 사이 분리 힘의 세기입니다.")]
+        public float separationStrength = 4f;
+
         /// <summary>다른 스크립트(공격 판정 등)가 "같은 면인지"를 물을 때 씁니다.</summary>
         public bool IsSameFaceAs(Vector3 otherNormal) => Vector3.Dot(faceNormal, otherNormal) > 0.999f;
 
@@ -107,7 +117,7 @@ namespace Meokgoeeum
                         searchTimer = 0f;
                         break;
                     }
-                    MoveToward(target.transform.position);
+                    MoveToward(target.transform.position, arriveThreshold: minApproachToPlayer);
                     break;
 
                 case MobState.Searching:
@@ -135,6 +145,12 @@ namespace Meokgoeeum
                     if (arrived) state = MobState.Idle;
                     break;
             }
+
+            // 다른 몹과 겹치지 않도록 매 프레임 최소 거리를 확보합니다(상태 무관 —
+            // [[changelog/2026-09-14_몹겹침-최소거리분리]]).
+            Vector3 separation = CubeFaceMobUtils.ComputeSeparation(this, faceNormal, mobSeparationDistance, separationStrength);
+            if (separation.sqrMagnitude > 0.0001f)
+                transform.position = ClampToFace(transform.position + separation * Time.deltaTime);
         }
 
         /// <summary>월드 좌표 목표를 향해 면 위에서 이동합니다. 도착하면 true를 반환합니다.</summary>
@@ -157,17 +173,28 @@ namespace Meokgoeeum
                 transform.rotation = Quaternion.LookRotation(moveDir, faceNormal);
             }
 
-            // 접선 두 축은 면 범위 안으로 clamp, 법선 축은 표면 값으로 고정
-            // ([[CubeSurfaceWalker]]와 동일한 clamp 패턴 — 면 밖으로 못 나가게).
+            transform.position = ClampToFace(center + myLocal);
+            return arrived;
+        }
+
+        /// <summary>
+        /// 접선 두 축은 면 범위 안으로 clamp, 법선 축은 표면 값으로 고정합니다
+        /// ([[CubeSurfaceWalker]]와 동일한 clamp 패턴 — 면 밖으로 못 나가게).
+        /// </summary>
+        private Vector3 ClampToFace(Vector3 worldPos)
+        {
+            Vector3 center = cubeCenter != null ? cubeCenter.position : Vector3.zero;
+            Vector3 local = worldPos - center;
+            int axis = Mathf.Abs(faceNormal.x) > 0.5f ? 0 : (Mathf.Abs(faceNormal.y) > 0.5f ? 1 : 2);
+
             for (int a = 0; a < 3; a++)
             {
                 if (a == axis) continue;
-                myLocal[a] = Mathf.Clamp(myLocal[a], -cubeHalfExtent, cubeHalfExtent);
+                local[a] = Mathf.Clamp(local[a], -cubeHalfExtent, cubeHalfExtent);
             }
-            myLocal[axis] = (cubeHalfExtent + surfaceOffset) * Mathf.Sign(faceNormal[axis]);
+            local[axis] = (cubeHalfExtent + surfaceOffset) * Mathf.Sign(faceNormal[axis]);
 
-            transform.position = center + myLocal;
-            return arrived;
+            return center + local;
         }
 
         /// <summary>제자리에서 faceNormal 축을 기준으로 좌우로 두리번거립니다(당황한 느낌의 시각 피드백).</summary>

@@ -55,7 +55,9 @@ namespace Meokgoeeum
                 EnterAttackWindup();
                 return;
             }
-            MoveToward(target.transform.position);
+            // 광은 사거리 조건 없이 쿨다운으로만 공격하므로, 추격 자체는 minApproachToPlayer로
+            // 플레이어에게 완전히 파고들지 않게 막습니다([[changelog/2026-09-14_몹겹침-최소거리분리]]).
+            MoveToward(target.transform.position, arriveThreshold: minApproachToPlayer);
         }
 
         protected override void OnBusyTick()

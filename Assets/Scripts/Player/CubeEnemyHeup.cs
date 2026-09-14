@@ -61,7 +61,9 @@ namespace Meokgoeeum
             }
 
             hasHealTarget = false; // 회복 완전히 끝났으면 다음에 다시 낮아졌을 때 새로 탐색
-            MoveToward(target.transform.position);
+            // 흡은 공격 판정이 없어서 사거리로 자연히 멈추질 않으므로, minApproachToPlayer로
+            // 플레이어에게 완전히 파고들지 않게 막습니다([[changelog/2026-09-14_몹겹침-최소거리분리]]).
+            MoveToward(target.transform.position, arriveThreshold: minApproachToPlayer);
         }
 
         private void UpdateSeekHealArea()
