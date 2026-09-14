@@ -240,8 +240,8 @@ Deoccluder 붙이니 좁은 방에서 과확대) 끝에 **보류 결정** — `L
 
 ## Obsidian 연동 규칙
 
-- **Vault 경로:** `C:\Users\user\Documents\Game_Dev`
-- **프로젝트 노트 루트:** `C:\Users\user\Documents\Game_Dev\03_프로젝트\먹괴음 게임 기획\`
+- **Vault 경로:** `C:\Users\user\Documents\Personal_Note` (⚠️ 2026-09-14 수정 — 예전엔 `Game_Dev`였는데 폴더명이 바뀜/이동함, `.obsidian` 폴더로 실제 위치 재확인함)
+- **프로젝트 노트 루트:** `C:\Users\user\Documents\Personal_Note\03_프로젝트\먹괴음 게임 기획\`
 
 ### 노트 추가 전 필수 절차
 1. 같은 내용의 노트가 이미 있는지 Glob/Grep으로 먼저 확인
