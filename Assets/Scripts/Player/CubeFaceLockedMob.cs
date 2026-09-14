@@ -17,7 +17,7 @@ namespace Meokgoeeum
     /// Returning(원위치 복귀 + HP 회복) → 원위치 도착 시 Idle(대기, 계속 회복). 어느 상태에서든
     /// 플레이어가 자기 면에 다시 나타나면 즉시 Chasing으로 복귀합니다.
     /// </summary>
-    public class CubeFaceLockedMob : MonoBehaviour
+    public class CubeFaceLockedMob : MonoBehaviour, ICubeFaceMob
     {
         private enum MobState { Idle, Chasing, Searching, Returning }
 
@@ -82,6 +82,9 @@ namespace Meokgoeeum
         {
             currentHP = Mathf.Min(maxHP, currentHP + amount);
         }
+
+        float ICubeFaceMob.CurrentHP => currentHP;
+        float ICubeFaceMob.MaxHP => maxHP;
 
         private void Update()
         {

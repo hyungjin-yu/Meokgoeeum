@@ -37,27 +37,35 @@ namespace Meokgoeeum
             TryAttack();
         }
 
-        /// <summary>리플렉션 테스트에서 직접 호출하기 쉽도록 public으로 노출합니다.</summary>
+        /// <summary>
+        /// 리플렉션 테스트에서 직접 호출하기 쉽도록 public으로 노출합니다.
+        /// ⚠️ 2026-09-14 발견 — [[ICubeFaceMob]] 도입 전엔 `CubeFaceLockedMob`만 찾아서
+        /// [[CubeEnemyBase]] 계열(Pyeong/Won/Bun/Heup/Gwang)은 F키로 아예 못 때리고 있었음.
+        /// `MonoBehaviour`를 인터페이스로 찾을 땐 `FindObjectsByType&lt;MonoBehaviour&gt;` 후
+        /// `as` 캐스팅해야 합니다(`FindObjectsByType`은 인터페이스 타입 자체론 못 씀).
+        /// </summary>
         public void TryAttack()
         {
             if (walker == null) return;
 
-            var mobs = FindObjectsByType<CubeFaceLockedMob>(FindObjectsSortMode.None);
-            foreach (var mob in mobs)
+            var candidates = FindObjectsByType<MonoBehaviour>(FindObjectsSortMode.None);
+            foreach (var candidate in candidates)
             {
-                float dist = Vector3.Distance(transform.position, mob.transform.position);
+                if (candidate is not ICubeFaceMob mob) continue;
+
+                float dist = Vector3.Distance(transform.position, candidate.transform.position);
                 bool sameFace = mob.IsSameFaceAs(walker.CurrentSurfaceNormal);
 
                 if (dist > attackRange) continue;
 
                 if (!sameFace)
                 {
-                    Debug.Log($"[CubeFaceAttackTester] {mob.name} — 사거리 안이지만 다른 면이라 공격 무시 (거리={dist:F2})");
+                    Debug.Log($"[CubeFaceAttackTester] {candidate.name} — 사거리 안이지만 다른 면이라 공격 무시 (거리={dist:F2})");
                     continue;
                 }
 
                 mob.TakeDamage(attackDamage);
-                Debug.Log($"[CubeFaceAttackTester] {mob.name} 명중! (거리={dist:F2}, 남은 HP={mob.currentHP:F0}/{mob.maxHP:F0})");
+                Debug.Log($"[CubeFaceAttackTester] {candidate.name} 명중! (거리={dist:F2}, 남은 HP={mob.CurrentHP:F0}/{mob.MaxHP:F0})");
             }
         }
     }
