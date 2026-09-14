@@ -233,16 +233,29 @@ namespace Meokgoeeum
                 StartCoroutine(HitStop());
         }
 
+        // HitStop이 겹칠 때(연속 타격이 0.05초 안에 또 들어오는 등) 몇 개나 진행 중인지 셉니다.
+        // 이게 없으면 두 번째 코루틴이 "복귀할 값"으로 이미 0이 된 timeScale을 캡처해버려서,
+        // 먼저 시작한 코루틴이 끝나 1로 되돌려놔도 나중 코루틴이 다시 0으로 덮어써버리고
+        // 그대로 영원히 멈추는 사고가 남 (2026-09-14, 실전 플레이 중 화면이 안 움직이는 버그로 발견).
+        private static int hitStopDepth;
+
         /// <summary>
         /// 히트스탑: 타격 확정 순간 0.05초(3프레임@60fps) 정지해서 타격감을 냅니다.
         /// [[27 전투 프레임 데이터]] 기준. 자주 일어나는 일이 아니라서(적중 시에만) 코루틴 사용.
+        /// "복귀할 값"을 개별 코루틴이 캡처하는 대신, 진행 중인 히트스탑 개수가 0이 될 때만
+        /// 1로 되돌립니다 — 이 게임에 히트스탑을 거는 곳은 여기 하나뿐이라 항상 1이 기본값입니다.
         /// </summary>
         private System.Collections.IEnumerator HitStop()
         {
-            float original = Time.timeScale;
+            hitStopDepth++;
             Time.timeScale = 0f;
             yield return new WaitForSecondsRealtime(0.05f);
-            Time.timeScale = original;
+            hitStopDepth--;
+            if (hitStopDepth <= 0)
+            {
+                hitStopDepth = 0;
+                Time.timeScale = 1f;
+            }
         }
 
         // 에디터에서 판정 범위를 눈으로 확인하기 위한 기즈모입니다.
