@@ -14,8 +14,16 @@ namespace Meokgoeeum
     /// 타이머로 각 단계를 구현했습니다. 나중에 실제 모델이 생기면 이 타이머 값을
     /// Animation Event 호출로 교체하면 되고, 바깥에서 보이는 동작(콤보 흐름, 판정
     /// 타이밍)은 그대로 유지되도록 상태머신 구조를 잡아뒀습니다.
+    ///
+    /// ⚠️ 2026-09-14 추가 — 큐브 면 프로토타입([[CubeSurfaceWalker]])에도 이 무기를 그대로
+    /// 쓸 수 있도록 `[RequireComponent(typeof(PlayerController))]`를 뗐습니다. 원래 평지
+    /// 던전 플레이어(`PlayerController`)에 붙어있으면 그 인스턴스의 `InputActions`를
+    /// 공유해서 쓰고(기존과 동일), 없으면(`CubeSurfaceWalker`만 있는 경우) 자기 것을
+    /// 새로 만들어 씁니다. 또한 `CubeSurfaceWalker`가 있으면(=큐브 면 위에 있으면)
+    /// [[ICubeFaceMob]] 대상에 한해 "같은 면인지"를 추가로 검사합니다 —
+    /// [[changelog/2026-09-14_브러시웨폰-면검사]] 참고. 평지 던전에서는 이 검사 자체가
+    /// 스킵되므로 기존 동작에 전혀 영향 없습니다.
     /// </summary>
-    [RequireComponent(typeof(PlayerController))] // Start()에서 PlayerController.InputActions를 공유해서 씀
     public class BrushWeapon : MonoBehaviour
     {
         [Header("공격력 (14 밸런스 수치 시트)")]
@@ -43,7 +51,9 @@ namespace Meokgoeeum
         private bool attackQueued;      // 클릭 입력을 여기 담아뒀다가 매 프레임 소비
         private bool nextComboBuffered; // Recovery 버퍼 구간에서 다음 콤보 확정 여부
 
-        private PlayerInputActions inputActions; // PlayerController가 소유 — 여기선 구독만 함
+        private PlayerInputActions inputActions; // PlayerController가 있으면 그걸 공유, 없으면 자체 소유
+        private bool ownsInputActions; // 자체 소유일 때만 true — OnDestroy에서 직접 정리해야 함
+        private CubeSurfaceWalker cubeWalker; // 있으면 "큐브 면 위" — 같은 면 검사를 켜는 신호
 
         // 프레임 데이터 (60fps 기준 초 단위로 미리 환산 — 매 프레임 나눗셈 피함)
         // 인덱스: 0 = 1타, 1 = 2타, 2 = 3타
@@ -61,9 +71,28 @@ namespace Meokgoeeum
 
         private void Start()
         {
-            // PlayerController가 Awake()에서 만들어 Enable()까지 해둔 인스턴스를 공유해서 씁니다.
-            inputActions = GetComponent<PlayerController>().InputActions;
+            cubeWalker = GetComponent<CubeSurfaceWalker>();
+
+            var playerController = GetComponent<PlayerController>();
+            if (playerController != null)
+            {
+                // PlayerController가 Awake()에서 만들어 Enable()까지 해둔 인스턴스를 공유해서 씁니다.
+                inputActions = playerController.InputActions;
+            }
+            else
+            {
+                // 큐브 면 프로토타입처럼 PlayerController가 없는 경우 — 자체 인스턴스를 만들어 씁니다.
+                inputActions = new PlayerInputActions();
+                inputActions.Enable();
+                ownsInputActions = true;
+            }
+
             inputActions.Player.Attack.performed += _ => attackQueued = true;
+        }
+
+        private void OnDestroy()
+        {
+            if (ownsInputActions) inputActions?.Dispose();
         }
 
         private void Update()
@@ -182,6 +211,12 @@ namespace Meokgoeeum
 
                 var damageable = hit.GetComponent<IDamageable>();
                 if (damageable == null) continue;
+
+                // 큐브 면 위(cubeWalker != null)에서만 검사 — 평지 던전에서는 이 블록 자체가
+                // 안 돌아서 기존 동작에 전혀 영향 없습니다. ICubeFaceMob이 아닌 대상(평지 몹 등)도
+                // 마찬가지로 그냥 통과시킵니다 — 면 개념이 없는 대상에게 "다른 면"을 물을 수 없으므로.
+                if (cubeWalker != null && damageable is ICubeFaceMob mob && !mob.IsSameFaceAs(cubeWalker.CurrentSurfaceNormal))
+                    continue;
 
                 damageable.TakeDamage(damage);
                 didHit = true;

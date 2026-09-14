@@ -18,7 +18,7 @@ namespace Meokgoeeum
     /// ⚠️ 기존 [[EnemyBase]](NavMeshAgent 기반, 평지 던전 SC_Face_0 등에서 씀)는 전혀 안 건드렸습니다
     /// — 이건 완전히 별도의 "큐브 면 전용" 베이스입니다. 기존 5종 몹/평지 던전엔 영향 없음.
     /// </summary>
-    public abstract class CubeEnemyBase : MonoBehaviour, ICubeFaceMob
+    public abstract class CubeEnemyBase : MonoBehaviour, ICubeFaceMob, IDamageable
     {
         protected enum MacroState { Idle, Chasing, Searching, Returning, Busy }
 
