@@ -83,11 +83,27 @@ namespace Meokgoeeum
             animator = GetComponentInChildren<Animator>();
         }
 
-        /// <summary>피격 시 호출합니다. 죽음 처리는 서브클래스/후속 작업 범위입니다.</summary>
+        private bool isDead;
+
+        /// <summary>피격 시 호출합니다. HP가 0이 되면 <see cref="OnDeath"/>를 정확히 한 번 호출합니다.</summary>
         public void TakeDamage(float amount)
         {
+            if (isDead) return;
             currentHP = Mathf.Max(0f, currentHP - amount);
+            if (currentHP <= 0f)
+            {
+                isDead = true;
+                OnDeath();
+            }
         }
+
+        /// <summary>
+        /// HP가 0이 됐을 때 정확히 한 번 호출됩니다. 기본 구현은 아무것도 안 합니다 —
+        /// [[CubeEnemyBun]]의 분열처럼 종별로 다른 사망 처리가 필요하면 오버라이드하세요.
+        /// (원본 [[EnemyHealth]].OnDeath 이벤트와 같은 역할이지만, 여긴 별도 컴포넌트 없이
+        /// CubeEnemyBase 자체가 체력을 들고 있어서 훅으로 뺐습니다.)
+        /// </summary>
+        protected virtual void OnDeath() { }
 
         protected void Heal(float amount)
         {
