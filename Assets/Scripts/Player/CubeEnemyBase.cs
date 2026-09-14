@@ -64,6 +64,14 @@ namespace Meokgoeeum
         private Vector3 spawnPosition;
         private Quaternion baseRotation;
         private float searchTimer;
+        private bool movedThisFrame;
+
+        /// <summary>
+        /// 모델 자식 오브젝트에 붙어있는 Animator입니다("루트=로직, 자식=시각 모델" 구조 —
+        /// 원본 [[EnemyBase]]와 동일한 관례). 아트 에셋이 없는 테스트용 오브젝트에서는 null일 수
+        /// 있습니다.
+        /// </summary>
+        protected Animator animator;
 
         public bool IsSameFaceAs(Vector3 otherNormal) => Vector3.Dot(faceNormal, otherNormal) > 0.999f;
 
@@ -72,6 +80,7 @@ namespace Meokgoeeum
             spawnPosition = transform.position;
             baseRotation = transform.rotation;
             currentHP = maxHP;
+            animator = GetComponentInChildren<Animator>();
         }
 
         /// <summary>피격 시 호출합니다. 죽음 처리는 서브클래스/후속 작업 범위입니다.</summary>
@@ -89,6 +98,7 @@ namespace Meokgoeeum
         {
             if (target == null) return;
 
+            movedThisFrame = false;
             bool sameFace = IsSameFaceAs(target.CurrentSurfaceNormal);
             distanceToPlayer = sameFace ? Vector3.Distance(transform.position, target.transform.position) : float.MaxValue;
 
@@ -123,6 +133,10 @@ namespace Meokgoeeum
                     OnBusyTick();
                     break;
             }
+
+            // 원본 [[EnemyBase]].LateUpdate()와 같은 이유 — 상태 이름이 아니라 "지금 실제로
+            // 움직이고 있는가"라는 사실 하나로 통일해서 Animator의 "Moving" bool을 갱신합니다.
+            if (animator != null) animator.SetBool("Moving", movedThisFrame);
         }
 
         /// <summary>
@@ -165,6 +179,7 @@ namespace Meokgoeeum
                 Vector3 moveDir = toTarget.normalized;
                 myLocal += moveDir * MoveSpeed * Time.deltaTime;
                 transform.rotation = Quaternion.LookRotation(moveDir, faceNormal);
+                movedThisFrame = true;
             }
 
             for (int a = 0; a < 3; a++)

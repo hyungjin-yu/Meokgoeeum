@@ -79,7 +79,25 @@ namespace Meokgoeeum
             lastNormal = CurrentSurfaceNormal;
             facingForward = Vector3.ProjectOnPlane(transform.forward, CurrentSurfaceNormal).normalized;
             if (facingForward.sqrMagnitude < 0.0001f)
-                facingForward = Vector3.ProjectOnPlane(Vector3.forward, CurrentSurfaceNormal).normalized;
+                facingForward = AnyTangentTo(CurrentSurfaceNormal);
+        }
+
+        /// <summary>
+        /// ⚠️ 2026-09-14 발견 — "면이 +Z(=Vector3.forward)일 때 facingForward가 제자리에서 굳어서
+        /// 캐릭터가 아예 회전/이동을 못 하는" 버그. 원인: 비상 대체 벡터로 항상 Vector3.forward를
+        /// 쓰고 있었는데, 하필 큐브 면 법선이 정확히 forward인 면(+Z 면)에서는
+        /// ProjectOnPlane(Vector3.forward, normal)이 정확히 0벡터가 됨(자기 자신을 자기 자신의
+        /// 법선에 투영하니 완전히 상쇄됨) — 그 뒤로 facingForward가 계속 0벡터에 갇혀서 회전도
+        /// 이동도 전부 죽어버림(moveDir/facingRight 둘 다 0이 됨). 두 후보(up, right) 중 normal과
+        /// 평행하지 않은 쪽을 골라 안전하게 접선 벡터를 만듭니다 — 축 정렬된 법선은 up/right
+        /// 둘 다에 동시에 평행할 수 없으므로 항상 성공합니다.
+        /// </summary>
+        private static Vector3 AnyTangentTo(Vector3 normal)
+        {
+            Vector3 candidate = Vector3.ProjectOnPlane(Vector3.up, normal);
+            if (candidate.sqrMagnitude < 0.0001f)
+                candidate = Vector3.ProjectOnPlane(Vector3.right, normal);
+            return candidate.normalized;
         }
 
         /// <summary>[[CubeFaceZone]]이 플레이어가 자기 존에 들어왔을 때 호출합니다.</summary>
@@ -123,8 +141,9 @@ namespace Meokgoeeum
             }
             facingForward = Vector3.ProjectOnPlane(facingForward, normal); // 부동소수점 오차만 가볍게 보정
             if (facingForward.sqrMagnitude < 0.0001f)
-                facingForward = Vector3.ProjectOnPlane(Vector3.forward, normal);
-            facingForward.Normalize();
+                facingForward = AnyTangentTo(normal);
+            else
+                facingForward.Normalize();
 
             // 2. 마우스 좌우로 캐릭터 자체를 돌림 — 카메라가 아니라 캐릭터가 도는 거라서,
             // W를 누르면 항상 "지금 보고 있는 방향"으로 전진하고, 카메라는 그냥 뒤따라오기만 하면 됨.
