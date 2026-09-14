@@ -20,15 +20,22 @@ namespace Meokgoeeum
         public float moveSpeed = 2f;
 
         [Header("판정 (13 AI 설계, 27 프레임 데이터)")]
-        [Tooltip("이 거리 범위 안이면 투척 공격을 합니다.")]
-        public float attackMinRange = 2f;
+        [Tooltip("이 거리 범위 안이면 투척 공격을 합니다. ⚠️ retreatTriggerRange보다 크거나 같게 " +
+                 "유지하세요 — 사이에 틈이 생기면 그 구간에서 후퇴도 공격도 안 하고 다시 다가가는 " +
+                 "버그가 생깁니다([[changelog/2026-09-14_원거리몹-후퇴버그수정]]).")]
+        public float attackMinRange = 1.5f;
         public float attackMaxRange = 5f;
 
-        [Tooltip("이 거리 이하로 붙으면 후퇴합니다.")]
+        [Tooltip("이 거리 이하로 붙으면 후퇴합니다. attackMinRange와 같거나 그보다 커야 틈이 안 생깁니다.")]
         public float retreatTriggerRange = 1.5f;
 
         [Tooltip("후퇴할 때 확보하려는 거리입니다.")]
         public float retreatTargetDistance = 2f;
+
+        [Tooltip("후퇴 중에만 적용되는 이동속도 배율입니다. 플레이어가 원(Won)보다 훨씬 빠르면 " +
+                 "일반 이동속도로는 아예 거리를 못 벌리므로(2026-09-14 실측: 플레이어 6 vs 원 2), " +
+                 "후퇴할 때만 순간적으로 더 빨리 움직이게 합니다.")]
+        public float retreatSpeedMultiplier = 1.5f;
 
         [Header("투사체")]
         public float projectileSpeed = 12f;
@@ -52,7 +59,7 @@ namespace Meokgoeeum
             if (distanceToPlayer <= retreatTriggerRange)
             {
                 Vector3 away = (transform.position - target.transform.position).normalized;
-                MoveToward(transform.position + away * retreatTargetDistance);
+                MoveToward(transform.position + away * retreatTargetDistance, speedOverride: moveSpeed * retreatSpeedMultiplier);
                 return;
             }
 

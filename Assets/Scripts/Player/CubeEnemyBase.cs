@@ -180,8 +180,12 @@ namespace Meokgoeeum
             searchTimer = 0f;
         }
 
-        /// <summary>월드 좌표 목표를 향해 면 위에서 이동합니다. 도착하면 true를 반환합니다.</summary>
-        protected bool MoveToward(Vector3 worldTarget, float arriveThreshold = 0f)
+        /// <summary>
+        /// 월드 좌표 목표를 향해 면 위에서 이동합니다. 도착하면 true를 반환합니다.
+        /// `speedOverride`를 주면 <see cref="MoveSpeed"/> 대신 그 속도를 씁니다 — [[CubeEnemyWon]]이
+        /// 후퇴할 때만 순간적으로 더 빨리 움직이게 하는 용도([[changelog/2026-09-14_원거리몹-후퇴버그수정]]).
+        /// </summary>
+        protected bool MoveToward(Vector3 worldTarget, float arriveThreshold = 0f, float? speedOverride = null)
         {
             Vector3 center = cubeCenter != null ? cubeCenter.position : Vector3.zero;
             Vector3 myLocal = transform.position - center;
@@ -196,7 +200,8 @@ namespace Meokgoeeum
             if (toTarget.sqrMagnitude > 0.0001f && !arrived)
             {
                 Vector3 moveDir = toTarget.normalized;
-                myLocal += moveDir * MoveSpeed * Time.deltaTime;
+                float speed = speedOverride ?? MoveSpeed;
+                myLocal += moveDir * speed * Time.deltaTime;
                 transform.rotation = Quaternion.LookRotation(moveDir, faceNormal);
                 movedThisFrame = true;
             }
