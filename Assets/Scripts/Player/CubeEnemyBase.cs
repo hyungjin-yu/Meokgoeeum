@@ -111,12 +111,21 @@ namespace Meokgoeeum
         }
 
         /// <summary>
-        /// HP가 0이 됐을 때 정확히 한 번 호출됩니다. 기본 구현은 아무것도 안 합니다 —
-        /// [[CubeEnemyBun]]의 분열처럼 종별로 다른 사망 처리가 필요하면 오버라이드하세요.
+        /// HP가 0이 됐을 때 정확히 한 번 호출됩니다. 기본 구현은 오브젝트를 파괴합니다.
+        /// [[CubeEnemyBun]]의 분열처럼 파괴 전에 종별로 다른 처리가 필요하면 오버라이드해서
+        /// 그 처리를 한 뒤 `base.OnDeath()`를 마지막에 호출하세요.
         /// (원본 [[EnemyHealth]].OnDeath 이벤트와 같은 역할이지만, 여긴 별도 컴포넌트 없이
         /// CubeEnemyBase 자체가 체력을 들고 있어서 훅으로 뺐습니다.)
+        ///
+        /// ⚠️ 2026-09-14 발견 — 원래 기본 구현이 빈 채였음. `Bun`(분열 시 자기 파괴)만 죽음 처리를
+        /// 오버라이드해서 실제로 사라졌고, 나머지 4종(평/원/흡/광)은 HP가 0이 돼도 안 죽고
+        /// 그 자리에 계속 남아 AI를 계속 돌리는 "유령" 상태가 됐음 — 사용자가 "공격하다가
+        /// 이동하면 몹 하나가 가만히 서있기만 한다"고 리포트한 원인으로 추정.
         /// </summary>
-        protected virtual void OnDeath() { }
+        protected virtual void OnDeath()
+        {
+            Destroy(gameObject);
+        }
 
         float ICubeFaceMob.CurrentHP => currentHP;
         float ICubeFaceMob.MaxHP => maxHP;
@@ -128,7 +137,7 @@ namespace Meokgoeeum
 
         protected virtual void Update()
         {
-            if (target == null) return;
+            if (target == null || isDead) return; // Destroy()는 다음 프레임에 실제 반영되므로, 그 사이 계속 움직이지 않게 방어
 
             movedThisFrame = false;
             bool sameFace = IsSameFaceAs(target.CurrentSurfaceNormal);

@@ -113,27 +113,32 @@ namespace Meokgoeeum
         /// </summary>
         protected override void OnDeath()
         {
-            if (isMinor) return; // 미니언은 또 분열하지 않음 (무한 분열 방지)
-
-            for (int i = 0; i < 2; i++)
+            // ⚠️ 2026-09-14 발견 — 예전엔 여기서 `if (isMinor) return;`으로 조기 종료했는데, 그러면
+            // 맨 아래 파괴 처리(지금은 base.OnDeath())까지 건너뛰어서 미니언이 죽어도 안 사라지는
+            // "유령" 버그가 있었음(원본도 이 종류의 파괴는 [[Bun]]에서만 있어서 발견이 늦었음).
+            // 이제 분열 여부만 조건으로 걸고, 파괴는 항상 마지막에 실행되도록 함.
+            if (!isMinor) // 미니언은 또 분열하지 않음 (무한 분열 방지)
             {
-                Vector3 offset = Random.insideUnitSphere * 1f;
-                int axis = Mathf.Abs(faceNormal.x) > 0.5f ? 0 : (Mathf.Abs(faceNormal.y) > 0.5f ? 1 : 2);
-                offset[axis] = 0f; // 면 접선 방향으로만 흩어짐
-                Vector3 spawnPos = transform.position + offset;
+                for (int i = 0; i < 2; i++)
+                {
+                    Vector3 offset = Random.insideUnitSphere * 1f;
+                    int axis = Mathf.Abs(faceNormal.x) > 0.5f ? 0 : (Mathf.Abs(faceNormal.y) > 0.5f ? 1 : 2);
+                    offset[axis] = 0f; // 면 접선 방향으로만 흩어짐
+                    Vector3 spawnPos = transform.position + offset;
 
-                GameObject clone = Instantiate(gameObject, spawnPos, transform.rotation, transform.parent);
-                clone.transform.localScale = transform.localScale * minorScaleMultiplier;
+                    GameObject clone = Instantiate(gameObject, spawnPos, transform.rotation, transform.parent);
+                    clone.transform.localScale = transform.localScale * minorScaleMultiplier;
 
-                var cloneBun = clone.GetComponent<CubeEnemyBun>();
-                cloneBun.isMinor = true;
-                cloneBun.maxHP = maxHP * minorHpMultiplier;
-                cloneBun.currentHP = cloneBun.maxHP;
+                    var cloneBun = clone.GetComponent<CubeEnemyBun>();
+                    cloneBun.isMinor = true;
+                    cloneBun.maxHP = maxHP * minorHpMultiplier;
+                    cloneBun.currentHP = cloneBun.maxHP;
 
-                Debug.Log($"[CubeEnemyBun] 분열! {clone.name} 생성 (미니언, HP {cloneBun.currentHP})");
+                    Debug.Log($"[CubeEnemyBun] 분열! {clone.name} 생성 (미니언, HP {cloneBun.currentHP})");
+                }
             }
 
-            Destroy(gameObject);
+            base.OnDeath(); // 항상 파괴 — 미니언이든 아니든
         }
 
         private void OnDrawGizmosSelected()
