@@ -104,6 +104,15 @@ namespace Meokgoeeum
 
         private void Update()
         {
+            // 히트스탑 중엔 콤보 상태머신을 건드리지 않습니다. Time.unscaledDeltaTime으로
+            // 직접 카운트다운하는 이유는 아래 HitStop 관련 필드 설명 참고.
+            if (hitStopTimer > 0f)
+            {
+                hitStopTimer -= Time.unscaledDeltaTime;
+                if (hitStopTimer <= 0f) EndHitStop();
+                return;
+            }
+
             switch (phase)
             {
                 case ComboPhase.Idle:
@@ -230,32 +239,46 @@ namespace Meokgoeeum
             }
 
             if (didHit)
-                StartCoroutine(HitStop());
+                StartHitStop();
         }
 
-        // HitStop이 겹칠 때(연속 타격이 0.05초 안에 또 들어오는 등) 몇 개나 진행 중인지 셉니다.
-        // 이게 없으면 두 번째 코루틴이 "복귀할 값"으로 이미 0이 된 timeScale을 캡처해버려서,
-        // 먼저 시작한 코루틴이 끝나 1로 되돌려놔도 나중 코루틴이 다시 0으로 덮어써버리고
-        // 그대로 영원히 멈추는 사고가 남 (2026-09-14, 실전 플레이 중 화면이 안 움직이는 버그로 발견).
+        // 히트스탑: 타격 확정 순간 0.05초(3프레임@60fps) 정지해서 타격감을 냅니다.
+        // [[27 전투 프레임 데이터]] 기준.
+        //
+        // ⚠️ 2026-09-14 — 원래 코루틴(WaitForSecondsRealtime)으로 구현했다가 실전 플레이 중
+        // "화면이 아예 안 움직인다"는 버그로 이어졌음. 코루틴은 이 GameObject/컴포넌트가 도중에
+        // 비활성화되거나 파괴되면(예: 사망 → 면 리로드) 재개 기회를 영영 잃어서, `Time.timeScale`을
+        // 0으로 내린 채 복구를 못 하고 게임 전체가 멈춰버림 — 실제로 재현까지 확인함. 그래서
+        // 코루틴을 버리고 Update()에서 매 프레임 `Time.unscaledDeltaTime`으로 직접 카운트다운하는
+        // 방식으로 교체 — Update()는 timeScale과 무관하게 매 프레임 호출되고, OnDisable()에서
+        // 안전망까지 걸어둬서 중간에 꺼지거나 파괴돼도 timeScale이 0에 갇히지 않습니다.
+        // 여러 히트스탑이 겹칠 때를 대비해 depth 카운터도 유지(0이 될 때만 실제로 1로 복구).
         private static int hitStopDepth;
+        private float hitStopTimer;
+        private const float HitStopDuration = 0.05f;
 
-        /// <summary>
-        /// 히트스탑: 타격 확정 순간 0.05초(3프레임@60fps) 정지해서 타격감을 냅니다.
-        /// [[27 전투 프레임 데이터]] 기준. 자주 일어나는 일이 아니라서(적중 시에만) 코루틴 사용.
-        /// "복귀할 값"을 개별 코루틴이 캡처하는 대신, 진행 중인 히트스탑 개수가 0이 될 때만
-        /// 1로 되돌립니다 — 이 게임에 히트스탑을 거는 곳은 여기 하나뿐이라 항상 1이 기본값입니다.
-        /// </summary>
-        private System.Collections.IEnumerator HitStop()
+        private void StartHitStop()
         {
-            hitStopDepth++;
-            Time.timeScale = 0f;
-            yield return new WaitForSecondsRealtime(0.05f);
-            hitStopDepth--;
-            if (hitStopDepth <= 0)
+            if (hitStopTimer <= 0f)
             {
-                hitStopDepth = 0;
-                Time.timeScale = 1f;
+                hitStopDepth++;
+                Time.timeScale = 0f;
             }
+            hitStopTimer = HitStopDuration;
+        }
+
+        private void EndHitStop()
+        {
+            hitStopTimer = 0f;
+            hitStopDepth = Mathf.Max(0, hitStopDepth - 1);
+            if (hitStopDepth == 0) Time.timeScale = 1f;
+        }
+
+        private void OnDisable()
+        {
+            // 히트스탑 도중 비활성화/파괴되면 Update()가 더 이상 안 돌아서 EndHitStop()이 영영
+            // 안 불릴 수 있음 — 여기서 강제로 마무리해서 timeScale이 0에 갇히는 걸 막습니다.
+            if (hitStopTimer > 0f) EndHitStop();
         }
 
         // 에디터에서 판정 범위를 눈으로 확인하기 위한 기즈모입니다.
