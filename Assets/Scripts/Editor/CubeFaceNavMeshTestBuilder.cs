@@ -71,10 +71,32 @@ namespace Meokgoeeum
             surface.collectObjects = CollectObjects.Children;
             surface.BuildNavMesh();
 
+            // 실제 프로덕션 몹(EnemyPyeong)을 이 면 위에 세워서, NavMesh뿐 아니라 실제 AI 클래스도
+            // 배치 가능한지 확인 — [[EnemyBase.SetFaceUp]] 신규 API를 여기서 사용합니다.
+            GameObject old2 = GameObject.Find("TestRealEnemy_Pyeong");
+            if (old2 != null) Object.DestroyImmediate(old2);
+
+            var enemyPrefab = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Scenes/EnemyPyeong.prefab");
+            if (enemyPrefab != null)
+            {
+                var enemyGo = (GameObject)PrefabUtility.InstantiatePrefab(enemyPrefab, faceRoot.transform);
+                enemyGo.name = "TestRealEnemy_Pyeong";
+                enemyGo.transform.localPosition = new Vector3(4f, 0.5f, 0f); // 장애물 반대쪽
+                enemyGo.transform.localRotation = Quaternion.identity;
+                enemyGo.GetComponent<EnemyBase>()?.SetFaceUp(faceNormal);
+            }
+            else
+            {
+                Debug.LogWarning("[CubeFaceNavMeshTestBuilder] EnemyPyeong.prefab을 못 찾아서 실제 몹 배치는 건너뜀.");
+            }
+
+            GameObject playerGo = GameObject.Find("CubeWalker_Player");
+            if (playerGo != null) playerGo.tag = "Player"; // EnemyBase.FindPlayerInSight()가 태그로 찾음
+
             EditorSceneManager.MarkSceneDirty(scene);
             EditorSceneManager.SaveScene(scene, ScenePath);
 
-            Debug.Log("[CubeFaceNavMeshTestBuilder] 완료 — FaceNavRoot_PlusZ에 4x4 장애물 포함 NavMesh 베이크함.");
+            Debug.Log("[CubeFaceNavMeshTestBuilder] 완료 — FaceNavRoot_PlusZ에 4x4 장애물 포함 NavMesh 베이크 + 실제 EnemyPyeong 배치함.");
         }
     }
 }

@@ -31,6 +31,32 @@ namespace Meokgoeeum
         protected float perceptionTimer;
         protected bool isKnockedBack; // [[번쩍(노랑) 스킬]] 등 IKnockbackable 호출로 넉백당하는 동안 true
 
+        // ⚠️ 2026-09-14 추가 — 큐브 면 위 배치 대비. [[changelog/2026-09-14_NavMesh-면단위-장애물회피검증]]에서
+        // NavMesh 자체는 비Y업 면에도 잘 구워지는 걸 확인했지만, NavMeshAgent.updateRotation(기본 true)은
+        // 내부적으로 월드 Y축 기준 LookRotation을 쓰는 것으로 보여서, 면 법선이 Y가 아닌 곳에 세워두면
+        // [[CubeSurfaceWalker]]가 겪었던 것과 같은 "up이 월드 Y가 아니면 자동 정렬이 깨지는" 문제가
+        // 재현될 가능성이 높습니다(이 환경 특성상 NavMeshAgent 실제 회전은 자동 검증 불가 — 예방 차원의
+        // 대응입니다). SetFaceUp()을 호출하지 않으면 기존 5종 몹은 지금까지와 완전히 동일하게 동작합니다
+        // (opt-in) — 평지 던전에 아무 영향 없음.
+        private Vector3 faceUp = Vector3.up;
+        private bool manualRotation;
+
+        /// <summary>
+        /// 이 몹을 큐브 면(법선이 월드 Y가 아닌 면) 위에 배치할 때 호출하세요. NavMeshAgent의
+        /// 자동 회전을 끄고, 그 대신 이 축을 up으로 삼아 이동 방향을 바라보도록 직접 회전시킵니다.
+        /// 평지 던전(기존 방식)에서는 절대 호출하지 마세요 — 기본 동작 그대로가 맞습니다.
+        /// </summary>
+        public void SetFaceUp(Vector3 up)
+        {
+            faceUp = up.normalized;
+            manualRotation = true;
+            // Awake()가 아직 안 돈 시점(예: 에디터에서 Instantiate 직후)에 호출될 수도 있으므로,
+            // 캐시된 agent가 비어있으면 직접 가져와서 즉시 반영합니다. Awake()에서도 한 번 더
+            // 확인하니 어느 순서로 호출되든 안전합니다.
+            var a = agent != null ? agent : GetComponent<NavMeshAgent>();
+            if (a != null) a.updateRotation = false;
+        }
+
         /// <summary>
         /// 모델 자식 오브젝트(Assets/Models/Characters/Enemies/*)에 붙어있는 Animator입니다.
         /// [[changelog/2026-09-10_먹괴음5종-프리팹연결]]에서 리깅된 모델을 자식으로 부착하면서
@@ -50,6 +76,7 @@ namespace Meokgoeeum
             agent = GetComponent<NavMeshAgent>();
             agent.speed = MoveSpeed;
             animator = GetComponentInChildren<Animator>();
+            if (manualRotation) agent.updateRotation = false; // SetFaceUp()이 Awake보다 먼저 불렸을 경우 대비
         }
 
         /// <summary>
@@ -65,9 +92,27 @@ namespace Meokgoeeum
         /// </summary>
         private void LateUpdate()
         {
+            if (manualRotation && agent.enabled && agent.isOnNavMesh)
+                ApplyManualFaceRotation();
+
             if (animator == null) return;
             bool moving = agent.enabled && agent.isOnNavMesh && !agent.isStopped && agent.velocity.sqrMagnitude > 0.01f;
             animator.SetBool("Moving", moving);
+        }
+
+        /// <summary>
+        /// agent.updateRotation=false일 때 대신 호출됩니다. desiredVelocity를 면(faceUp에 수직인 평면)에
+        /// 투영해서 부동소수 오차를 지우고, faceUp을 up으로 삼아 LookRotation — [[CubeSurfaceWalker]]가
+        /// 모서리를 넘을 때 쓰는 것과 같은 발상입니다.
+        /// </summary>
+        private void ApplyManualFaceRotation()
+        {
+            Vector3 vel = Vector3.ProjectOnPlane(agent.desiredVelocity, faceUp);
+            if (vel.sqrMagnitude < 0.0001f) return;
+
+            Quaternion targetRot = Quaternion.LookRotation(vel.normalized, faceUp);
+            // agent.angularSpeed는 도(degree)/초 단위 — RotateTowards의 maxDegreesDelta와 단위가 그대로 맞음.
+            transform.rotation = Quaternion.RotateTowards(transform.rotation, targetRot, agent.angularSpeed * Time.deltaTime);
         }
 
         /// <summary>
