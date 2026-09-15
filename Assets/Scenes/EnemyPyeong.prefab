@@ -13,6 +13,7 @@ GameObject:
   - component: {fileID: 1105351048623333734}
   - component: {fileID: 8608948772558946839}
   - component: {fileID: 6769017820913056913}
+  - component: {fileID: 1700662973411899301}
   m_Layer: 0
   m_Name: EnemyPyeong
   m_TagString: Untagged
@@ -112,6 +113,19 @@ MonoBehaviour:
   moveSpeed: 3
   attackRange: 1.5
   attackHitRadius: 1
+--- !u!114 &1700662973411899301
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2035348967774861881}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: aca9565ee00c670479dd9263bee12466, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Meokgoeeum.Runtime::Meokgoeeum.MonsterPaintParts
+  fadeDuration: 0.25
 --- !u!1001 &6823276757732498568
 PrefabInstance:
   m_ObjectHideFlags: 0

@@ -1,0 +1,157 @@
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+
+namespace Meokgoeeum
+{
+    /// <summary>
+    /// MonsterPaintParts (몹 부위 색칠 처치 시스템)
+    /// 2026-09-16, 사용자 요청으로 몬스터 HP를 재해석 — "몹이 플레이어에게 맞을 때마다 랜덤한
+    /// 부위가 색이 부여되고, 모든 부위의 색이 부여되면 몹은 처치되는거야." 숫자 체력 대신
+    /// 몸을 7개 부위(머리/가슴/허리/좌우팔/좌우다리)로 나눠서, 맞을 때마다(콤보 타수/공격력과
+    /// 무관하게 항상 딱 1부위) 아직 안 칠해진 부위 중 하나를 무작위로 골라 색칠합니다. 7부위가
+    /// 전부 칠해지면 처치 — [[EnemyHealth]]/[[CubeEnemyBase]]가 이 컴포넌트가 있으면 그쪽으로
+    /// 위임하고, 없으면(아직 이 컴포넌트를 안 붙인 다른 종) 기존 숫자 체력 그대로 동작합니다.
+    ///
+    /// 먹괴음은 "색을 먹어치운 먹물 괴물"이라 원래 어둡고 무채색인 게 자연스러운 기본 상태입니다
+    /// — 그래서 이 컴포넌트는 시작할 때 억지로 회색으로 만들지 않고, 각 부위의 "원래(칠해지기
+    /// 전) 색"을 그대로 캡처해뒀다가 맞을 때마다 무작위 색 구슬 색([[OrbColorPalette]])으로
+    /// 서서히 물들입니다 — "때릴 때마다 빼앗겼던 색을 되찾아온다"는 [[24 디자인 필러]] 필러 1
+    /// ("색은 감정의 증거다")과 정확히 맞아떨어지는 연출.
+    ///
+    /// `Renderer` 오브젝트 이름을 보고 7부위로 자동 분류합니다(예: "InkGolem_Pyeong_L_UpperArm"
+    /// → 왼팔) — 종 이름 접두사와 무관하게 접미사 패턴만 보므로, 같은 파이프라인으로 만든 다른
+    /// 종에도 그대로 재사용될 가능성이 높습니다(단, 실제로는 아직 평/Pyeong에만 검증·적용함).
+    /// </summary>
+    public class MonsterPaintParts : MonoBehaviour
+    {
+        public enum Region { Head, Chest, Waist, LeftArm, RightArm, LeftLeg, RightLeg }
+
+        [Tooltip("한 부위가 완전히 칠해지는 데 걸리는 시간입니다.")]
+        public float fadeDuration = 0.25f;
+
+        /// <summary>7부위가 전부 칠해지는 순간 정확히 한 번 호출됩니다.</summary>
+        public event System.Action OnAllPainted;
+
+        public int TotalParts { get; private set; }
+
+        // 2026-09-16 — PaintedCount를 별도 int로 따로 세지 않고 paintedRegions.Count에서 그때그때
+        // 계산합니다. 굳이 분리했다가 도메인 리로드로 paintedRegions(HashSet, 못 되살아남)만
+        // 비워지고 별도 int는 살아남는 식으로 둘이 어긋나는 사고를 원천 차단하기 위함 — 데이터
+        // 원본이 하나면애초에 불일치가 생길 수가 없습니다.
+        public int PaintedCount => paintedRegions.Count;
+        public bool AllPainted => TotalParts > 0 && PaintedCount >= TotalParts;
+
+        private readonly Dictionary<Region, List<Renderer>> regionRenderers = new Dictionary<Region, List<Renderer>>();
+        private readonly Dictionary<Region, List<Color>> regionOriginalColors = new Dictionary<Region, List<Color>>();
+        private readonly HashSet<Region> paintedRegions = new HashSet<Region>();
+
+        private void Awake() => EnsureBuilt();
+
+        /// <summary>
+        /// 렌더러를 이름으로 7부위에 분류합니다. `EnemyHealth`/`CubeEnemyBase`가 아직 `Awake()`
+        /// 순서를 보장 안 해줄 수 있어서, 실제로 쓰기 직전에 항상 이걸 먼저 부르면 안전합니다
+        /// (이미 됐으면 그냥 반환).
+        ///
+        /// ⚠️ 2026-09-16 발견 — 처음엔 `private bool built`만으로 "이미 했는지"를 판단했는데,
+        /// Play 모드 도중 스크립트가 재컴파일되면(도메인 리로드) Unity가 `Dictionary`/`HashSet`
+        /// 필드는 못 되살리면서(네이티브 직렬화 대상이 아님) `bool`/`int` 같은 단순 필드는 그대로
+        /// 되살려서, `built=true`인데 `regionRenderers`는 텅 빈 상태로 불일치가 생기는 걸
+        /// 리플렉션 테스트로 실제 재현함 — 그 뒤로 `PaintRandomPart()`가 후보 0개로 조용히
+        /// 아무 일도 안 하는 채로 고정됨(맞아도 영원히 안 죽는 버그). `built` 플래그 대신
+        /// "실제로 데이터가 들어있는가"를 직접 확인하도록 바꿔서, 도메인 리로드로 비워졌으면
+        /// 자동으로 다시 채웁니다.
+        /// </summary>
+        private void EnsureBuilt()
+        {
+            if (regionRenderers.Count > 0) return;
+
+            foreach (var renderer in GetComponentsInChildren<Renderer>(true))
+            {
+                var region = ClassifyByName(renderer.gameObject.name);
+                if (region == null) continue;
+
+                if (!regionRenderers.TryGetValue(region.Value, out var list))
+                {
+                    list = new List<Renderer>();
+                    regionRenderers[region.Value] = list;
+                    regionOriginalColors[region.Value] = new List<Color>();
+                }
+                list.Add(renderer);
+                regionOriginalColors[region.Value].Add(renderer.material.color);
+            }
+
+            TotalParts = regionRenderers.Count;
+            if (TotalParts == 0)
+                Debug.LogWarning($"[MonsterPaintParts] {name}: 이름으로 분류된 부위가 하나도 없습니다 — 모델 렌더러 이름 규칙을 확인하세요.");
+        }
+
+        /// <summary>
+        /// 아직 안 칠해진 부위 중 하나를 무작위로 골라 칠합니다. 이미 전부 칠해졌으면 아무 일도
+        /// 안 합니다(호출하는 쪽이 `AllPainted`를 매번 확인할 필요 없이 안전하게 반복 호출 가능).
+        /// </summary>
+        public void PaintRandomPart()
+        {
+            EnsureBuilt();
+            if (AllPainted || TotalParts == 0) return;
+
+            var candidates = new List<Region>();
+            foreach (var region in regionRenderers.Keys)
+                if (!paintedRegions.Contains(region))
+                    candidates.Add(region);
+
+            if (candidates.Count == 0) return; // 방어적 — AllPainted 체크와 논리상 겹치지만 혹시 몰라서
+
+            Region chosen = candidates[Random.Range(0, candidates.Count)];
+            paintedRegions.Add(chosen);
+
+            Color paintColor = OrbColorPalette.GetRandomColor();
+            StartCoroutine(FadeRegionToColor(chosen, paintColor));
+
+            if (AllPainted)
+                OnAllPainted?.Invoke();
+        }
+
+        private IEnumerator FadeRegionToColor(Region region, Color target)
+        {
+            var renderers = regionRenderers[region];
+            var originals = regionOriginalColors[region];
+            float elapsed = 0f;
+
+            while (elapsed < fadeDuration)
+            {
+                elapsed += Time.deltaTime;
+                float t = elapsed / fadeDuration;
+                for (int i = 0; i < renderers.Count; i++)
+                {
+                    if (renderers[i] == null) continue; // 페이드 도중 파괴될 수 있음(예: 사망 처리와 겹침)
+                    renderers[i].material.color = Color.Lerp(originals[i], target, t);
+                }
+                yield return null;
+            }
+
+            for (int i = 0; i < renderers.Count; i++)
+                if (renderers[i] != null)
+                    renderers[i].material.color = target;
+        }
+
+        /// <summary>
+        /// 렌더러 오브젝트 이름으로 7부위 중 하나를 판정합니다. 종 접두사(예: "Pyeong")와
+        /// 무관하게 접미사 패턴만 봅니다 — 눈/턱드립처럼 부위라기보단 장식인 것들은 가장 가까운
+        /// 구조적 부위(머리)로 편입시킵니다.
+        /// </summary>
+        private static Region? ClassifyByName(string name)
+        {
+            if (name.Contains("Chest")) return Region.Chest;
+            if (name.Contains("Waist") || name.Contains("Pelvis")) return Region.Waist;
+            if (name.Contains("Head") || name.Contains("Neck") || name.Contains("Eye") || name.Contains("ChinDrip")) return Region.Head;
+
+            if (name.Contains("L_Thigh") || name.Contains("L_Calf") || name.Contains("L_Foot")) return Region.LeftLeg;
+            if (name.Contains("R_Thigh") || name.Contains("R_Calf") || name.Contains("R_Foot")) return Region.RightLeg;
+            if (name.Contains("L_UpperArm") || name.Contains("L_Forearm") || name.Contains("L_Hand") || name.Contains("L_Drip")) return Region.LeftArm;
+            if (name.Contains("R_UpperArm") || name.Contains("R_Forearm") || name.Contains("R_Hand") || name.Contains("R_Drip")) return Region.RightArm;
+
+            return null; // 분류 실패 — 이 렌더러는 색칠 대상에서 빠짐(안전한 기본값)
+        }
+    }
+}

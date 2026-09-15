@@ -22,17 +22,6 @@ namespace Meokgoeeum
         /// </summary>
         public event System.Action OnPickedUp;
 
-        // 23 UI 디자인 기획서의 색 구슬 팔레트 HEX를 그대로 사용
-        private static readonly Color[] DisplayColors =
-        {
-            new Color(0.898f, 0.224f, 0.208f), // 빨강 #E53935
-            new Color(0.118f, 0.533f, 0.898f), // 파랑 #1E88E5
-            new Color(0.992f, 0.847f, 0.208f), // 노랑 #FDD835
-            new Color(0.263f, 0.627f, 0.278f), // 초록 #43A047
-            new Color(0.557f, 0.141f, 0.667f), // 보라 #8E24AA
-            new Color(0.129f, 0.129f, 0.129f), // 검정 #212121
-        };
-
         /// <summary>
         /// 풀에서 꺼내질 때마다 호출됩니다. 색을 다시 칠하고 소유 풀을 기억해둡니다.
         /// </summary>
@@ -48,7 +37,7 @@ namespace Meokgoeeum
             // 풀링되는 오브젝트라 material 인스턴스가 재사용 개체당 1번만 생기고,
             // 이후로는 색만 덮어씁니다 (풀 크기만큼만 인스턴스가 생기므로 배칭 부담이 적음).
             if (cachedRenderer != null)
-                cachedRenderer.material.color = DisplayColors[(int)color];
+                cachedRenderer.material.color = OrbColorPalette.GetColor(color); // 2026-09-16: 팔레트를 OrbColorPalette로 공용화(값은 그대로)
         }
 
         private void OnTriggerEnter(Collider other)

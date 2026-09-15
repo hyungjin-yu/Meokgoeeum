@@ -88,20 +88,44 @@ namespace Meokgoeeum
 
         public bool IsSameFaceAs(Vector3 otherNormal) => Vector3.Dot(faceNormal, otherNormal) > 0.999f;
 
+        /// <summary>
+        /// 2026-09-16 추가 — [[MonsterPaintParts]](부위 색칠 처치 시스템)가 붙어있으면 숫자
+        /// 체력 대신 그쪽으로 위임합니다. 없으면(아직 이 시스템을 안 붙인 종) 기존 숫자 체력
+        /// 그대로 동작 — 두 방식이 종별로 섞여 있어도 안전합니다.
+        /// </summary>
+        private MonsterPaintParts paintParts;
+
         protected virtual void Start()
         {
             spawnPosition = transform.position;
             baseRotation = transform.rotation;
             currentHP = maxHP;
             animator = GetComponentInChildren<Animator>();
+            paintParts = GetComponent<MonsterPaintParts>();
         }
 
         private bool isDead;
 
-        /// <summary>피격 시 호출합니다. HP가 0이 되면 <see cref="OnDeath"/>를 정확히 한 번 호출합니다.</summary>
+        /// <summary>
+        /// 피격 시 호출합니다. [[MonsterPaintParts]]가 있으면 데미지 수치와 무관하게 매번 딱
+        /// 1부위를 무작위로 칠하고, 7부위가 전부 칠해지면 <see cref="OnDeath"/>를 호출합니다.
+        /// 없으면 기존처럼 숫자 체력을 깎다가 0 이하가 되면 호출합니다.
+        /// </summary>
         public void TakeDamage(float amount)
         {
             if (isDead) return;
+
+            if (paintParts != null)
+            {
+                paintParts.PaintRandomPart();
+                if (paintParts.AllPainted)
+                {
+                    isDead = true;
+                    OnDeath();
+                }
+                return;
+            }
+
             currentHP = Mathf.Max(0f, currentHP - amount);
             if (currentHP <= 0f)
             {
@@ -127,8 +151,11 @@ namespace Meokgoeeum
             Destroy(gameObject);
         }
 
-        float ICubeFaceMob.CurrentHP => currentHP;
-        float ICubeFaceMob.MaxHP => maxHP;
+        // 2026-09-16 — MonsterPaintParts가 있으면 "남은 칠 안 된 부위 수"를 HP처럼 노출합니다.
+        // [[RoomClearGate]].AnyEnemyAlive()가 "CurrentHP > 0 = 아직 살아있음"으로 그대로
+        // 판정하므로, 이렇게만 해두면 그쪽 코드를 전혀 안 건드려도 새 체계와 맞물립니다.
+        float ICubeFaceMob.CurrentHP => paintParts != null ? paintParts.TotalParts - paintParts.PaintedCount : currentHP;
+        float ICubeFaceMob.MaxHP => paintParts != null && paintParts.TotalParts > 0 ? paintParts.TotalParts : maxHP;
 
         protected void Heal(float amount)
         {
