@@ -1,4 +1,5 @@
 using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -216,6 +217,10 @@ namespace Meokgoeeum
             float damage = BaseAttackPower * flashDamageMultiplier;
             Collider[] hits = Physics.OverlapSphere(transform.position, flashRadius);
 
+            // 2026-09-16 — BrushWeapon.PerformHit()과 같은 이유로 중복 방어([[MonsterPaintParts]]
+            // 도입 이후 "한 번의 판정으로 부위가 2개씩 칠해지는" 형태로 드러날 수 있음).
+            var alreadyHit = new HashSet<GameObject>();
+
             int hitCount = 0;
             foreach (var hit in hits)
             {
@@ -223,6 +228,8 @@ namespace Meokgoeeum
 
                 var damageable = hit.GetComponent<IDamageable>();
                 if (damageable == null) continue;
+
+                if (!alreadyHit.Add(hit.gameObject)) continue;
 
                 damageable.TakeDamage(damage);
                 hitCount++;
@@ -245,6 +252,9 @@ namespace Meokgoeeum
         /// </summary>
         private int DamageAll(Collider[] hits, float damage)
         {
+            // 2026-09-16 — BrushWeapon.PerformHit()과 같은 이유로 중복 방어([[MonsterPaintParts]]
+            // 도입 이후 "한 번의 판정으로 부위가 2개씩 칠해지는" 형태로 드러날 수 있음).
+            var alreadyHit = new HashSet<GameObject>();
             int count = 0;
             foreach (var hit in hits)
             {
@@ -252,6 +262,8 @@ namespace Meokgoeeum
 
                 var damageable = hit.GetComponent<IDamageable>();
                 if (damageable == null) continue;
+
+                if (!alreadyHit.Add(hit.gameObject)) continue;
 
                 damageable.TakeDamage(damage);
                 count++;

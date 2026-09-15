@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -214,6 +215,15 @@ namespace Meokgoeeum
             Collider[] hits = Physics.OverlapSphere(center, attackRange, hittableLayers);
             bool didHit = false;
 
+            // 2026-09-16 발견 — Physics.OverlapSphere가 Rigidbody 없는(정적) 콜라이더를 같은
+            // 호출 안에서 두 번 반환하는 경우가 실제로 확인됨(몹이 매 프레임 transform.position을
+            // 직접 옮기는 CubeEnemyBase 계열처럼 Rigidbody 없이 자주 움직이는 콜라이더에서 특히
+            // 나타날 수 있음). 중복 반환되면 이 foreach가 같은 대상에게 TakeDamage()를 두 번
+            // 불러서 "한 번의 휘두르기로 여러 번 맞는" 문제가 재발함 — [[MonsterPaintParts]] 도입
+            // 이후로는 이게 "한 클릭에 부위가 2개씩 칠해져서 예상보다 일찍 처치되는" 형태로 겉으로
+            // 드러남. 같은 GameObject는 이 스윙에서 한 번만 맞도록 여기서 직접 막습니다.
+            var alreadyHit = new HashSet<GameObject>();
+
             foreach (var hit in hits)
             {
                 // 2026-08-21: 자기 자신 무시 판정이 Rigidbody 기준이었는데, 플레이어는 Rigidbody가
@@ -227,6 +237,8 @@ namespace Meokgoeeum
 
                 var damageable = hit.GetComponent<IDamageable>();
                 if (damageable == null) continue;
+
+                if (!alreadyHit.Add(hit.gameObject)) continue; // 이번 스윙에서 이미 맞은 대상 — 중복 반환 방어
 
                 // 큐브 면 위(cubeWalker != null)에서만 검사 — 평지 던전에서는 이 블록 자체가
                 // 안 돌아서 기존 동작에 전혀 영향 없습니다. ICubeFaceMob이 아닌 대상(평지 몹 등)도
