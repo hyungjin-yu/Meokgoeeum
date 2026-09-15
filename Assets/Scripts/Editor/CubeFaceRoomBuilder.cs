@@ -291,36 +291,90 @@ namespace Meokgoeeum
         }
 
         /// <summary>
-        /// 면 위 (uOffset, vOffset) 지점에 CubeEnemyPyeong 한 마리를 배치합니다. 실제
-        /// EnemyPyeong.prefab을 인스턴스화한 뒤 NavMesh 기반 컴포넌트를 떼어내고
-        /// CubeEnemyPyeong을 붙이는, [[CubeEnemyPyeongTestBuilder]]와 동일한 패턴입니다.
+        /// 방 중앙에 [[EncounterSpawner]]를 큐브 면 모드로 세웁니다. `enemyPrefabs`는 평소처럼
+        /// `EnemyPyeong.prefab`(NavMesh 버전)을 그대로 참조해도 됩니다 — `EncounterSpawner`가
+        /// `cubeCenter`가 설정돼 있으면 스폰 시점에 자동으로 [[CubeEnemyPyeong]]으로 교체합니다.
+        /// `enemiesPerWave = {1,1}`이면 1마리씩 2웨이브(원본 [[MultiRoomFloor1Builder]].BuildWaveSpawner와 동일 패턴).
         /// </summary>
-        private static GameObject SpawnRoomPyeong(Transform parent, string name, Vector3 normal, Vector3 u, Vector3 v,
-            float uOffset, float vOffset, CubeSurfaceWalker target)
+        private static EncounterSpawner BuildWaveSpawner(Transform parent, string name, Vector3 normal,
+            Vector3 u, Vector3 v, CubeSurfaceWalker target, int[] enemiesPerWave)
         {
             var prefab = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Scenes/EnemyPyeong.prefab");
             if (prefab == null) { Debug.LogError("[CubeFaceRoomBuilder] EnemyPyeong.prefab을 못 찾았습니다."); return null; }
 
-            var enemyGo = (GameObject)PrefabUtility.InstantiatePrefab(prefab, parent);
-            enemyGo.name = name;
+            Vector3 spawnerPos = CubeCenterPos() + normal * (CubeHalfExtent + 1f);
+            GameObject spawnerGo = new GameObject(name);
+            spawnerGo.transform.SetParent(parent, false);
+            spawnerGo.transform.position = spawnerPos;
 
-            var oldAgentScript = enemyGo.GetComponent<EnemyPyeong>();
-            if (oldAgentScript != null) Object.DestroyImmediate(oldAgentScript);
-            var oldHealth = enemyGo.GetComponent<EnemyHealth>();
-            if (oldHealth != null) Object.DestroyImmediate(oldHealth);
-            var oldAgent = enemyGo.GetComponent<NavMeshAgent>();
-            if (oldAgent != null) Object.DestroyImmediate(oldAgent);
+            var spawner = spawnerGo.AddComponent<EncounterSpawner>();
+            spawner.waveInterval = 2.5f;
+            spawner.autoStart = true;
+            spawner.cubeCenter = GameObject.Find("CubePlanet")?.transform;
+            spawner.cubeFaceNormal = normal;
+            spawner.cubeHalfExtent = CubeHalfExtent;
+            spawner.cubeTarget = target;
 
-            var cubeEnemy = enemyGo.AddComponent<CubeEnemyPyeong>();
-            cubeEnemy.faceNormal = normal;
-            cubeEnemy.cubeCenter = GameObject.Find("CubePlanet")?.transform;
-            cubeEnemy.cubeHalfExtent = CubeHalfExtent;
-            cubeEnemy.target = target;
+            var waves = new EncounterSpawner.Wave[enemiesPerWave.Length];
+            for (int w = 0; w < enemiesPerWave.Length; w++)
+            {
+                int count = enemiesPerWave[w];
+                var prefabs = new GameObject[count];
+                var points = new Transform[count];
+                for (int i = 0; i < count; i++)
+                {
+                    prefabs[i] = prefab;
+                    float angleDeg = count > 0 ? (360f / count) * i + w * 45f : 0f;
+                    float rad = angleDeg * Mathf.Deg2Rad;
+                    Vector3 tangentOffset = (Mathf.Cos(rad) * u + Mathf.Sin(rad) * v) * 6f;
 
-            enemyGo.transform.position = CubeCenterPos() + normal * (CubeHalfExtent + cubeEnemy.surfaceOffset) + u * uOffset + v * vOffset;
-            enemyGo.transform.rotation = Quaternion.LookRotation(Vector3.Cross(normal, u) * -1f, normal);
+                    GameObject spGo = new GameObject($"{name}_W{w}_{i}");
+                    spGo.transform.SetParent(spawnerGo.transform, false);
+                    spGo.transform.position = spawnerPos + tangentOffset;
+                    spGo.transform.rotation = Quaternion.LookRotation(v, normal);
+                    points[i] = spGo.transform;
+                }
+                waves[w] = new EncounterSpawner.Wave { waveName = $"웨이브{w + 1}", enemyPrefabs = prefabs, spawnPoints = points, hpMultiplier = 1f };
+            }
+            spawner.waves = waves;
+            return spawner;
+        }
 
-            return enemyGo;
+        /// <summary>
+        /// 면 위 (uOffset, vOffset) 지점에 얇은 벽화(장식용, 문 게이트 아님)를 바닥에 박아 넣습니다.
+        /// 원본([[MultiRoomFloor1Builder]] PopulateRoomB 등)은 세워진 그림이지만, 여기선 면 위에
+        /// 눕혀서 "바닥 문양"으로 단순화했습니다.
+        /// </summary>
+        private static PaintableObject BuildMural(Transform parent, string name, Vector3 normal, Vector3 u, Vector3 v,
+            float uOffset, float vOffset, Color color)
+        {
+            GameObject go = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            go.name = name;
+            go.transform.SetParent(parent, false);
+            go.transform.position = CubeCenterPos() + normal * (CubeHalfExtent + 0.1f) + u * uOffset + v * vOffset;
+            go.transform.rotation = Quaternion.LookRotation(v, normal);
+            go.transform.localScale = new Vector3(2.5f, 0.2f, 2.5f);
+
+            var paintable = go.AddComponent<PaintableObject>();
+            paintable.trueColor = color;
+            paintable.startGray = true;
+            return paintable;
+        }
+
+        /// <summary>면 위 (uOffset, vOffset)에 좌우(u축)로 왕복하는 [[MovingObstacle]]을 세웁니다.</summary>
+        private static void BuildRoomObstacle(Transform parent, string name, Vector3 normal, Vector3 u, Vector3 v,
+            float uOffset, float vOffset)
+        {
+            GameObject go = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            go.name = name;
+            go.transform.SetParent(parent, false);
+            go.transform.position = CubeCenterPos() + normal * (CubeHalfExtent + 0.9f) + u * uOffset + v * vOffset;
+            go.transform.rotation = Quaternion.LookRotation(v, normal); // 로컬 X→u라서 MovingObstacle의 transform.right 왕복이 u축을 따라감
+            go.transform.localScale = new Vector3(1.5f, 1.8f, 1.2f);
+
+            var mover = go.AddComponent<MovingObstacle>();
+            mover.travelDistance = 3f;
+            mover.period = 4f;
         }
 
         private static RoomClearGate BuildRoomGate(Transform parent, string name, Vector3 normal, GameObject doorBlocker)
@@ -337,53 +391,65 @@ namespace Meokgoeeum
             return gate;
         }
 
-        /// <summary>방A — 원본 튜토리얼 전투(평×2) 그대로.</summary>
+        /// <summary>방A — 원본 튜토리얼 전투(평×1+1, 2웨이브) + 벽화/숨겨진 구슬 곁가지.</summary>
         private static void PopulateRoomA(Transform parent, Vector3 normal, GameObject doorBlocker)
         {
             GetFaceBasis(normal, out Vector3 u, out Vector3 v);
             var walker = GameObject.Find("CubeWalker_Player")?.GetComponent<CubeSurfaceWalker>();
 
-            SpawnRoomPyeong(parent, "RoomA_Pyeong_0", normal, u, v, 5f, -3f, walker);
-            SpawnRoomPyeong(parent, "RoomA_Pyeong_1", normal, u, v, -5f, -3f, walker);
+            var spawner = BuildWaveSpawner(parent, "EncounterSpawner_RoomA", normal, u, v, walker, new[] { 1, 1 });
+            spawner.showFirstAttackHint = true; // 첫 방이니 원본처럼 좌클릭 공격 힌트를 여기서 띄움
+
+            var mural = BuildMural(parent, "Mural_RoomA_Side", normal, u, v, 10f, 8f, new Color(0.9f, 0.2f, 0.2f));
+            GameObject orbGo = new GameObject("HiddenOrbSpawner_RoomA_Side");
+            orbGo.transform.SetParent(parent, false);
+            orbGo.transform.position = CubeCenterPos() + normal * (CubeHalfExtent + 0.5f) + u * 10f + v * 7f;
+            var orbSpawner = orbGo.AddComponent<HiddenOrbSpawner>();
+            orbSpawner.trigger = mural;
+            orbSpawner.orbColor = OrbColor.Red;
 
             BuildRoomGate(parent, "RoomClearGate_A", normal, doorBlocker);
         }
 
-        /// <summary>방B — 원본 평×1+1(2웨이브)을 동시 배치 2마리로 단순화.</summary>
+        /// <summary>방B — 원본 평×1+1(2웨이브) + 장식 벽화 3개(게이트 아님, 순수 장식).</summary>
         private static void PopulateRoomB(Transform parent, Vector3 normal, GameObject doorBlocker)
         {
             GetFaceBasis(normal, out Vector3 u, out Vector3 v);
             var walker = GameObject.Find("CubeWalker_Player")?.GetComponent<CubeSurfaceWalker>();
 
-            SpawnRoomPyeong(parent, "RoomB_Pyeong_0", normal, u, v, 4f, 0f, walker);
-            SpawnRoomPyeong(parent, "RoomB_Pyeong_1", normal, u, v, -4f, 4f, walker);
+            BuildWaveSpawner(parent, "EncounterSpawner_RoomB", normal, u, v, walker, new[] { 1, 1 });
+
+            BuildMural(parent, "Mural_RoomB_0", normal, u, v, 8f, 8f, new Color(0.6f, 0.2f, 0.8f));
+            BuildMural(parent, "Mural_RoomB_1", normal, u, v, 0f, -10f, new Color(0.9f, 0.2f, 0.2f));
+            BuildMural(parent, "Mural_RoomB_2", normal, u, v, -8f, 8f, new Color(0.9f, 0.7f, 0.2f));
 
             BuildRoomGate(parent, "RoomClearGate_B", normal, doorBlocker);
         }
 
-        /// <summary>방C — 원본 평×2+1(2웨이브)을 동시 배치 3마리로 단순화.</summary>
+        /// <summary>방C — 원본 평×2+1(2웨이브) + 왕복 장애물 2개.</summary>
         private static void PopulateRoomC(Transform parent, Vector3 normal, GameObject doorBlocker)
         {
             GetFaceBasis(normal, out Vector3 u, out Vector3 v);
             var walker = GameObject.Find("CubeWalker_Player")?.GetComponent<CubeSurfaceWalker>();
 
-            SpawnRoomPyeong(parent, "RoomC_Pyeong_0", normal, u, v, 5f, 5f, walker);
-            SpawnRoomPyeong(parent, "RoomC_Pyeong_1", normal, u, v, -5f, 5f, walker);
-            SpawnRoomPyeong(parent, "RoomC_Pyeong_2", normal, u, v, 0f, -5f, walker);
+            BuildWaveSpawner(parent, "EncounterSpawner_RoomC", normal, u, v, walker, new[] { 2, 1 });
+
+            BuildRoomObstacle(parent, "MovingObstacle_RoomC_0", normal, u, v, 4f, -2f);
+            BuildRoomObstacle(parent, "MovingObstacle_RoomC_1", normal, u, v, -4f, 2f);
 
             BuildRoomGate(parent, "RoomClearGate_C", normal, doorBlocker);
         }
 
-        /// <summary>방D — 원본 평×2+2(2웨이브, 클라이맥스)를 동시 배치 4마리로 단순화. 다음 층 미연결.</summary>
+        /// <summary>방D — 원본 평×2+2(2웨이브, 클라이맥스) + 벽화 2개. 다음 층 미연결.</summary>
         private static void PopulateRoomD(Transform parent, Vector3 normal)
         {
             GetFaceBasis(normal, out Vector3 u, out Vector3 v);
             var walker = GameObject.Find("CubeWalker_Player")?.GetComponent<CubeSurfaceWalker>();
 
-            SpawnRoomPyeong(parent, "RoomD_Pyeong_0", normal, u, v, 6f, 6f, walker);
-            SpawnRoomPyeong(parent, "RoomD_Pyeong_1", normal, u, v, -6f, 6f, walker);
-            SpawnRoomPyeong(parent, "RoomD_Pyeong_2", normal, u, v, 6f, -6f, walker);
-            SpawnRoomPyeong(parent, "RoomD_Pyeong_3", normal, u, v, -6f, -6f, walker);
+            BuildWaveSpawner(parent, "EncounterSpawner_RoomD", normal, u, v, walker, new[] { 2, 2 });
+
+            BuildMural(parent, "Mural_RoomD_Climax_0", normal, u, v, 0f, 12f, new Color(0.9f, 0.2f, 0.2f));
+            BuildMural(parent, "Mural_RoomD_Climax_1", normal, u, v, 0f, -12f, new Color(0.9f, 0.2f, 0.2f));
 
             // stairs/doorsToOpen 둘 다 비움 — 다음 층이 아직 없는 종착점이라 의도적으로 비워둠
             // (RoomClearGate가 경고 로그를 남기지만 정상입니다).

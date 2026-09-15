@@ -43,10 +43,24 @@ namespace Meokgoeeum
         [Tooltip("[[15 튜토리얼 설계]] \"마우스 좌클릭 — 공격\" 힌트(첫 먹괴음 감지 시)를 이 스포너의 1웨이브 시작 시 띄울지 여부입니다. 이 스크립트는 여러 층에서 재사용되므로 기본은 꺼짐 — 1층 튜토리얼 스포너에서만 켭니다.")]
         public bool showFirstAttackHint = false;
 
+        [Header("큐브 면 모드 (선택 — 2026-09-15 추가)")]
+        [Tooltip("설정하면(null이 아니면) 스폰된 적을 NavMesh 기반 대신 큐브 면 고정 버전(CubeEnemyPyeong)으로 " +
+            "즉석에서 교체합니다. enemyPrefabs는 그대로 평지용 EnemyPyeong.prefab을 참조해도 됩니다 — " +
+            "[[CubeEnemyPyeongTestBuilder]]와 같은 패턴(NavMeshAgent/EnemyPyeong/EnemyHealth 제거 후 " +
+            "CubeEnemyPyeong 부착)을 스폰 시점에 적용하는 것뿐입니다. 평지 던전에서는 비워두면(null) " +
+            "기존 동작 그대로입니다.")]
+        public Transform cubeCenter;
+        public Vector3 cubeFaceNormal;
+        public float cubeHalfExtent;
+        public CubeSurfaceWalker cubeTarget;
+
         // 세션 전체에서 한 번만 뜨면 되는 힌트라 static — 여러 층을 오가도 두 번 안 뜸.
         private static bool hasShownFirstAttackHint;
 
-        private readonly List<EnemyHealth> aliveInCurrentWave = new List<EnemyHealth>();
+        // ⚠️ 2026-09-15: 원래 List<EnemyHealth>였는데, 큐브 면 모드에서는 EnemyHealth가 없는
+        // CubeEnemyPyeong을 스폰하므로 GameObject로 일반화 — "Destroy()되면 null"이라는 판정
+        // 자체는 평지/큐브 둘 다 똑같이 성립합니다.
+        private readonly List<GameObject> aliveInCurrentWave = new List<GameObject>();
 
         private void Start()
         {
@@ -134,17 +148,42 @@ namespace Meokgoeeum
                 // 나가도 이 적들이 안 없어지고 계속 쌓입니다([[RandomEncounterSpawner]] 테스트 중 발견).
                 GameObject instance = Instantiate(wave.enemyPrefabs[i], spawnPoint.position, spawnPoint.rotation, transform);
 
-                var health = instance.GetComponent<EnemyHealth>();
-                if (health == null)
+                if (cubeCenter != null)
                 {
-                    Debug.LogWarning($"[EncounterSpawner] {name}: \"{wave.waveName}\"에서 생성한 {instance.name}에 EnemyHealth가 없어 웨이브 클리어 판정에서 제외됩니다.");
-                    continue;
+                    // 큐브 면 모드 — NavMesh 기반 컴포넌트를 떼고 CubeEnemyPyeong으로 교체.
+                    // Instantiate() 이 프레임 안에서 곧바로 처리하므로 아직 Start()가 한 번도
+                    // 안 돌았음 — EnemyPyeong/NavMeshAgent가 실제로 동작을 시작하기 전에 안전하게 제거됨.
+                    var oldScript = instance.GetComponent<EnemyPyeong>();
+                    if (oldScript != null) Destroy(oldScript);
+                    var oldHealth = instance.GetComponent<EnemyHealth>();
+                    if (oldHealth != null) Destroy(oldHealth);
+                    var oldAgent = instance.GetComponent<UnityEngine.AI.NavMeshAgent>();
+                    if (oldAgent != null) Destroy(oldAgent);
+
+                    var cubeEnemy = instance.AddComponent<CubeEnemyPyeong>();
+                    cubeEnemy.cubeCenter = cubeCenter;
+                    cubeEnemy.faceNormal = cubeFaceNormal;
+                    cubeEnemy.cubeHalfExtent = cubeHalfExtent;
+                    cubeEnemy.target = cubeTarget;
+                    if (!Mathf.Approximately(wave.hpMultiplier, 1f))
+                        cubeEnemy.maxHP *= wave.hpMultiplier;
+
+                    aliveInCurrentWave.Add(instance);
                 }
+                else
+                {
+                    var health = instance.GetComponent<EnemyHealth>();
+                    if (health == null)
+                    {
+                        Debug.LogWarning($"[EncounterSpawner] {name}: \"{wave.waveName}\"에서 생성한 {instance.name}에 EnemyHealth가 없어 웨이브 클리어 판정에서 제외됩니다.");
+                        continue;
+                    }
 
-                if (!Mathf.Approximately(wave.hpMultiplier, 1f))
-                    health.ConfigureMaxHP(health.maxHP * wave.hpMultiplier);
+                    if (!Mathf.Approximately(wave.hpMultiplier, 1f))
+                        health.ConfigureMaxHP(health.maxHP * wave.hpMultiplier);
 
-                aliveInCurrentWave.Add(health);
+                    aliveInCurrentWave.Add(instance);
+                }
             }
 
             if (aliveInCurrentWave.Count == 0)
