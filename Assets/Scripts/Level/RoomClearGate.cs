@@ -38,6 +38,15 @@ namespace Meokgoeeum
                  "EncounterSpawner.waveInterval 기본값 2초보다 여유 있게 잡음).")]
         public float clearGraceDuration = 3f;
 
+        /// <summary>
+        /// 클리어되는 순간 정확히 한 번 호출됩니다. stairs/doorsToOpen과 달리 "무엇을 열지"를
+        /// 미리 정해두지 않아도 되는 범용 훅입니다 — 2026-09-15, [[CubeDungeonProgressionManager]]가
+        /// 방D 클리어를 감지해 다음 층을 재생성할 때 코드로 구독해서 씁니다(런타임에 매번 새로
+        /// 생성되는 게이트라 Inspector로 미리 못 연결해두는 경우에 적합). 평소처럼
+        /// stairs/doorsToOpen만 써도 되고 같이 써도 됩니다.
+        /// </summary>
+        public event System.Action OnCleared;
+
         private bool cleared;
         private float timer;
 
@@ -79,6 +88,8 @@ namespace Meokgoeeum
             if (doorsToOpen != null)
                 foreach (var door in doorsToOpen)
                     if (door != null) door.SetActive(false);
+
+            OnCleared?.Invoke();
 
             if (stairs == null && (doorsToOpen == null || doorsToOpen.Length == 0))
                 Debug.LogWarning($"[RoomClearGate] {name}에 Stairs도 doorsToOpen도 연결 안 되어 있습니다.");
