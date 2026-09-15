@@ -24,5 +24,20 @@ namespace Meokgoeeum
 
         /// <summary>6색 중 무작위 하나를 돌려줍니다.</summary>
         public static Color GetRandomColor() => Colors[Random.Range(0, Colors.Length)];
+
+        /// <summary>
+        /// 검정을 뺀 5색 중 무작위 하나를 돌려줍니다. [[MonsterPaintParts]] 전용 — 먹괴음의
+        /// 기본(칠해지기 전) 상태가 이미 어두운 무채색이라, 검정으로 "칠해봤자" 눈에 안 보여서
+        /// 맞았는데도 아무 변화가 없는 것처럼 느껴짐(2026-09-16, 사용자 피드백: "색을 부여할 때,
+        /// 검은색은 없애야지"). 인덱스로 하드코딩하지 않고 <see cref="OrbColor.Black"/>의 실제
+        /// 위치를 건너뛰는 방식이라 나중에 팔레트 순서가 바뀌어도 안전합니다.
+        /// </summary>
+        public static Color GetRandomVividColor()
+        {
+            int blackIndex = (int)OrbColor.Black;
+            int index = Random.Range(0, Colors.Length - 1);
+            if (index >= blackIndex) index++; // 검정 인덱스를 건너뜀
+            return Colors[index];
+        }
     }
 }

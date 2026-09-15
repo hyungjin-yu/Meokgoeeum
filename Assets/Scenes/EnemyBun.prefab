@@ -13,6 +13,7 @@ GameObject:
   - component: {fileID: 4475058229376836640}
   - component: {fileID: 3739831048105531002}
   - component: {fileID: 9003577932068935991}
+  - component: {fileID: 2798086337680602009}
   m_Layer: 0
   m_Name: EnemyBun
   m_TagString: Untagged
@@ -115,6 +116,19 @@ MonoBehaviour:
   minorScaleMultiplier: 0.6
   attackRange: 1.5
   attackHitRadius: 1
+--- !u!114 &2798086337680602009
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4998171028398206162}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: aca9565ee00c670479dd9263bee12466, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Meokgoeeum.Runtime::Meokgoeeum.MonsterPaintParts
+  fadeDuration: 0.25
 --- !u!1001 &2554032878797838898
 PrefabInstance:
   m_ObjectHideFlags: 0

@@ -105,7 +105,7 @@ namespace Meokgoeeum
             Region chosen = candidates[Random.Range(0, candidates.Count)];
             paintedRegions.Add(chosen);
 
-            Color paintColor = OrbColorPalette.GetRandomColor();
+            Color paintColor = OrbColorPalette.GetRandomVividColor(); // 2026-09-16: 검정은 제외(칠해도 안 보임)
             StartCoroutine(FadeRegionToColor(chosen, paintColor));
 
             if (AllPainted)
