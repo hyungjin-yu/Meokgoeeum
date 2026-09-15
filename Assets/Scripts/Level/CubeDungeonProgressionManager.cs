@@ -90,7 +90,7 @@ namespace Meokgoeeum
             Vector3 oldPos = player.transform.position;
             Vector3 newPos = cubePlanet.position + Vector3.forward * (cubeHalfExtent + 1f);
             player.transform.SetPositionAndRotation(newPos, Quaternion.identity);
-            player.SetCurrentFaceNormal(Vector3.forward);
+            player.WarpToFace(Vector3.forward); // SetCurrentFaceNormal이 아니라 WarpToFace — 이유는 그쪽 주석 참고
             CinemachineCore.OnTargetObjectWarped(player.transform, newPos - oldPos);
 
             if (FadeManager.Instance != null)

@@ -107,6 +107,23 @@ namespace Meokgoeeum
         /// <summary>[[CubeFaceZone]]이 플레이어가 자기 존에 들어왔을 때 호출합니다.</summary>
         public void SetCurrentFaceNormal(Vector3 normal) => CurrentSurfaceNormal = normal;
 
+        /// <summary>
+        /// 모서리를 자연스럽게 넘어가는 게 아니라(그건 [[CubeFaceZone]]이 SetCurrentFaceNormal로
+        /// 처리) 완전히 다른 위치/면으로 순간이동시킬 때 씁니다 — 예: 층 전환
+        /// ([[CubeDungeonProgressionManager]]). 2026-09-15 추가 — SetCurrentFaceNormal만 부르면
+        /// facingForward/lastNormal은 옛 면 기준 그대로 남아있어서, 바로 다음 프레임에 Update()의
+        /// parallel-transport 로직이 "옛 면 → 새 면으로 갑자기 확 꺾인 것"으로 오인해 그 차이만큼
+        /// facingForward를 한 프레임 만에 억지로 돌려버림 — 클리어 순간 보고 있던 방향에 따라
+        /// 카메라가 크게 홱 도는 걸로 체감됨(사용자 리포트: "화면이 흔들리더니"). 여기서
+        /// facingForward/lastNormal을 새 면 기준으로 바로 맞춰두면 그 보정 자체가 필요 없어짐.
+        /// </summary>
+        public void WarpToFace(Vector3 normal)
+        {
+            CurrentSurfaceNormal = normal;
+            lastNormal = normal;
+            facingForward = AnyTangentTo(normal);
+        }
+
         /// <summary>리플렉션 스텝 테스트에서 값을 직접 주입할 때 씁니다.</summary>
         public void SetMoveInput(Vector2 input) => moveInput = input;
 
