@@ -5,42 +5,34 @@ namespace Meokgoeeum
     /// <summary>
     /// CubeDungeonRoomKit (큐브 면 던전 방 빌드 — 런타임/에디터 공유 순수 로직)
     /// [[CubeFaceRoomBuilder]](에디터, 최초 씬 세팅)와 [[CubeDungeonProgressionManager]](런타임,
-    /// 방F 클리어 시 다음 층 재생성)가 똑같은 코드를 쓰도록 뽑아낸 것입니다. `UnityEditor` API를
-    /// 전혀 안 써서 실제 빌드에도 그대로 포함되고 런타임에서 안전하게 호출할 수 있습니다.
+    /// 6개 방 전부 클리어 시 다음 층 재생성)가 똑같은 코드를 쓰도록 뽑아낸 것입니다. `UnityEditor`
+    /// API를 전혀 안 써서 실제 빌드에도 그대로 포함되고 런타임에서 안전하게 호출할 수 있습니다.
     ///
     /// [[changelog/2026-09-15_실제던전-큐브면포팅-1차]]/[[changelog/2026-09-15_큐브던전-웨이브스포너와장식]]에서
     /// `CubeFaceRoomBuilder` 안에 직접 있던 벽/스폰/장식 빌더들을 그대로 옮긴 것 — 로직 자체는
     /// 안 바뀌었고, `cubeCenter`/`cubeHalfExtent`/`enemyPrefab`을 (전엔 `GameObject.Find`나
     /// `AssetDatabase`로 안에서 직접 구했던 것을) 전부 매개변수로 받도록만 바꿨습니다.
     ///
-    /// ⚠️ 2026-09-16 — 방 6개(A~F)로 확장, 큐브 6면 전부 사용
+    /// ⚠️ 2026-09-16 (1차) — 방 6개(A~F)로 확장, 큐브 6면 전부 사용
     /// 기존엔 방 4개(A~D)만 큐브 4개 면(+Z/+Y/-Z/-Y)에 돌아가며 배치되고 ±X 2개 면은 AI
-    /// 테스트용으로 안 쓰였는데, 사용자 요청으로 그 두 면도 실제 던전 방(E=+X, F=-X)으로
-    /// 편입시켜 **한 층이 큐브 6면 전부를 쓰는** 구조로 확장했습니다 — "이 세계는 큐브 1개"
-    /// 기획 의도([[05 맵 시스템 - 큐브 구조]])에 더 가까움. 정육면체의 면-인접 그래프는
-    /// 팔면체 그래프(각 면이 반대편 면 1개만 빼고 나머지 4개와 인접)라서 6면을 한붓그리기로
-    /// 도는 고리(Hamiltonian cycle)가 항상 존재합니다 — 순서는 A(+Z)→B(+Y)→E(+X)→C(-Z)→D(-Y)→F(-X).
-    /// 이동/면 전환 수학([[CubeSurfaceWalker]], [[CubeEnemyBase]], `GetFaceBasis`/`BuildFaceWall`)은
-    /// 전혀 안 바뀌었습니다 — 축이 정렬된 정육면체 면은 원래도 6개 다 똑같은 방식으로 다뤄지므로,
-    /// 방 개수/문 배선만 확장하면 됩니다.
+    /// 테스트용으로 안 쓰였는데, 그 두 면도 실제 던전 방(E=+X, F=-X)으로 편입시켜 **한 층이
+    /// 큐브 6면 전부를 쓰는** 구조로 확장했습니다 — "이 세계는 큐브 1개" 기획 의도
+    /// ([[05 맵 시스템 - 큐브 구조]])에 더 가까움. 이동/면 전환 수학([[CubeSurfaceWalker]],
+    /// [[CubeEnemyBase]], `GetFaceBasis`/`BuildFaceWall`)은 전혀 안 바뀌었습니다 — 축이 정렬된
+    /// 정육면체 면은 원래도 6개 다 똑같은 방식으로 다뤄지므로, 방 개수/문 배선만 확장하면 됩니다.
     ///
-    /// **문 배선을 4방향으로 일반화**: 기존엔 방마다 v±(RoomHalf) 벽에만 문을 낼 수 있었고
-    /// (u±는 항상 막힘 — "링에 안 쓰는 면과 맞닿는 쪽"이라 막아뒀던 것), 이제 6면을 전부 쓰면서
-    /// u±에도 이웃 방이 생기므로 `BuildRoom()`이 4방향(±U/±V) 전부를 `WallMode`로 받도록 확장했고
-    /// `BuildDoorWall()`도 축 하나만 처리하던 걸 U/V 어느 쪽이든 처리하도록 일반화했습니다.
-    ///
-    /// **각 방의 문 배선표** (직접 손으로 유도 — 각 면의 u,v축이 항상 월드 좌표축 중 하나와
-    /// 정확히 일치한다는 사실을 이용해, "면 법선 n의 +u/-u/+v/-v 방향에 있는 이웃 면의 법선은
-    /// 각각 정확히 u/-u/v/-v 그 자체"라는 규칙으로 계산함):
-    /// - A(+Z): -U(→E)닫힘, +U(→F)닫힘, -V(→D)닫힘, +V(→B)열림(진행 방향)
-    /// - B(+Y): -U(→F)닫힘, +U(→E)열림(진행 방향), -V(→C)닫힘, +V(→A)열림(입장, 게이트 없음)
-    /// - E(+X): -U(→C)열림(진행 방향), +U(→A)닫힘, -V(→D)닫힘, +V(→B)열림(입장, 게이트 없음)
-    /// - C(-Z): -U(→F)닫힘, +U(→E)열림(입장, 게이트 없음), -V(→D)열림(진행 방향), +V(→B)닫힘
-    /// - D(-Y): -U(→E)닫힘, +U(→F)열림(진행 방향), -V(→C)열림(입장, 게이트 없음), +V(→A)닫힘
-    /// - F(-X): -U(→A)닫힘(다음 층 전환은 물리적 문이 아니라 재생성+텔레포트로 처리), +U(→C)닫힘,
-    ///   -V(→D)열림(입장, 게이트 없음), +V(→B)닫힘
-    /// A→F로 돌아가는 6번째 간선은 일부러 물리적 문을 안 냄(F 클리어 시 [[CubeDungeonProgressionManager]]가
-    /// 기존 방을 통째로 지우고 새 A를 지어 텔레포트하므로, 그 순간엔 이미 옛 A가 없어서 걸어서 갈 방법도 없음).
+    /// ⚠️ 2026-09-16 (2차) — 순서대로 잠기는 선형 경로(A→B→E→C→D→F) 폐기, 6면 전부 상시 개방
+    /// 사용자 요청: "꼭 A~F가 아니라 각 면마다 문을 추가해서 층 클리어 조건을 모든 면의 몹
+    /// 처치로 해." 1차 확장에서는 방마다 딱 2개 면(진입 1 + 진출 1 GatedExit)만 열고 나머지
+    /// 2면은 막아서 정해진 순서로만 진행하게 했는데, 이제 **모든 방의 4면 전부를 상시 개방
+    /// (`WallMode.Open`, 잠금 없음)**해서 인접한 어느 면으로든 자유롭게 오갈 수 있게 바꿨습니다.
+    /// 정육면체 각 면은 정확히 4개의 이웃(반대편 면 1개만 빼고)을 가지므로, 방의 4면(±U/±V)이
+    /// 그 4개 이웃과 정확히 1:1 대응 — 남는 면도 부족한 면도 없습니다. 층 클리어 조건도
+    /// "정해진 마지막 방(F) 클리어"에서 **"6개 방 전부 클리어"**로 바뀌었습니다 —
+    /// [[CubeDungeonProgressionManager]]가 6개 [[RoomClearGate]]를 전부 구독해서 전원 클리어된
+    /// 순간에만 다음 층으로 넘어갑니다. `doorBlocker`/`GatedExit` 개념 자체가 이제 안 쓰이지만,
+    /// 나중에 "특정 방을 잠그고 싶다" 같은 요구가 생기면 재사용할 수 있게 `WallMode`/`BuildRoom`의
+    /// 4방향 인터페이스는 그대로 남겨뒀습니다.
     /// </summary>
     public static class CubeDungeonRoomKit
     {
@@ -100,8 +92,8 @@ namespace Meokgoeeum
         /// 방의 네 변 중 하나(±U 또는 ±V, RoomHalf만큼 떨어진 위치)에 벽을 세웁니다. Closed면
         /// 통짜, Open/GatedExit면 가운데 DoorWidth만큼 틈을 내고 양옆만 세웁니다. GatedExit면
         /// 그 틈을 막는 블로커도 하나 더 세워서 반환합니다([[RoomClearGate]].doorsToOpen이 나중에
-        /// 비활성화). U변이든 V변이든 "고정 축"과 "따라가는 축"만 바뀔 뿐 로직은 동일해서 하나로
-        /// 통합했습니다(2026-09-16 — 기존엔 V변 전용이었고 U변은 항상 통짜로 하드코딩돼 있었음).
+        /// 비활성화 — 2026-09-16 2차 개편으로 지금은 안 쓰지만 인터페이스는 유지). U변이든 V변이든
+        /// "고정 축"과 "따라가는 축"만 바뀔 뿐 로직은 동일해서 하나로 통합했습니다.
         /// </summary>
         private static GameObject BuildDoorWall(Transform parent, string label, Vector3 cubeCenter, float cubeHalfExtent,
             Vector3 normal, Vector3 u, Vector3 v, WallSide side, WallMode mode)
@@ -139,11 +131,7 @@ namespace Meokgoeeum
             return null; // Open — 틈만 내고 막음 없음(항상 통과 가능)
         }
 
-        /// <summary>
-        /// 면 하나에 방 하나(사방 벽)를 짓습니다. 2026-09-16 — 예전엔 v±만 문을 낼 수 있었는데
-        /// (u±는 항상 막힘, "링에 안 쓰는 면과 맞닿는 쪽"이라서), 이제 6면을 전부 써서 u±에도
-        /// 실제 이웃 방이 생기므로 4방향 전부 WallMode를 받도록 확장했습니다.
-        /// </summary>
+        /// <summary>면 하나에 방 하나(사방 벽)를 짓습니다. 4방향(±U/±V) 전부 각각 `WallMode`를 받습니다.</summary>
         public static RoomDoors BuildRoom(Transform parent, string label, Vector3 cubeCenter, float cubeHalfExtent,
             Vector3 normal, WallMode minusU, WallMode plusU, WallMode minusV, WallMode plusV)
         {
@@ -156,6 +144,10 @@ namespace Meokgoeeum
                 plusV = BuildDoorWall(parent, label, cubeCenter, cubeHalfExtent, normal, u, v, WallSide.PlusV, plusV),
             };
         }
+
+        /// <summary>모든 방에 공통으로 쓰는 "4면 전부 상시 개방" — 2026-09-16 2차 개편 이후의 기본 형태.</summary>
+        public static RoomDoors BuildOpenRoom(Transform parent, string label, Vector3 cubeCenter, float cubeHalfExtent, Vector3 normal)
+            => BuildRoom(parent, label, cubeCenter, cubeHalfExtent, normal, WallMode.Open, WallMode.Open, WallMode.Open, WallMode.Open);
 
         // ------------------------------------------------------------------
         // 콘텐츠 (스폰/장식)
@@ -254,8 +246,12 @@ namespace Meokgoeeum
             mover.period = 4f;
         }
 
-        public static RoomClearGate BuildRoomGate(Transform parent, string name, Vector3 cubeCenter, float cubeHalfExtent,
-            Vector3 normal, GameObject doorBlocker)
+        /// <summary>
+        /// 2026-09-16 2차 개편 — `doorBlocker` 매개변수 제거(모든 문이 상시 개방이라 게이트가 더는
+        /// 문을 잠그지 않음). 게이트는 이제 순수하게 "이 방의 적을 다 잡았는가"만 보고받고
+        /// [[CubeDungeonProgressionManager]]가 6개 전부의 `OnCleared`를 취합해서 층 전환을 판단합니다.
+        /// </summary>
+        public static RoomClearGate BuildRoomGate(Transform parent, string name, Vector3 cubeCenter, float cubeHalfExtent, Vector3 normal)
         {
             GetFaceBasis(normal, out Vector3 u, out Vector3 v);
             GameObject gateGo = new GameObject(name);
@@ -265,17 +261,18 @@ namespace Meokgoeeum
 
             var gate = gateGo.AddComponent<RoomClearGate>();
             gate.boundsSize = new Vector3(RoomHalf * 2f + 4f, 10f, RoomHalf * 2f + 4f);
-            gate.doorsToOpen = doorBlocker != null ? new[] { doorBlocker } : new GameObject[0];
+            gate.doorsToOpen = new GameObject[0];
             return gate;
         }
 
         // ------------------------------------------------------------------
         // 방별 콘텐츠 (원본 [[MultiRoomFloor1Builder]] 방A~D + 신규 E/F를 면 기준으로 포팅)
+        // 2026-09-16 2차 개편 — 전부 `doorBlocker` 매개변수 제거, 전부 RoomClearGate 반환.
         // ------------------------------------------------------------------
 
         /// <summary>방A — 튜토리얼 전투(평×1+1, 2웨이브) + 벽화/숨겨진 구슬 곁가지.</summary>
-        public static void PopulateRoomA(Transform parent, Transform cubePlanet, float cubeHalfExtent, Vector3 normal,
-            GameObject doorBlocker, CubeSurfaceWalker target, GameObject enemyPrefab, float hpMultiplier)
+        public static RoomClearGate PopulateRoomA(Transform parent, Transform cubePlanet, float cubeHalfExtent, Vector3 normal,
+            CubeSurfaceWalker target, GameObject enemyPrefab, float hpMultiplier)
         {
             GetFaceBasis(normal, out Vector3 u, out Vector3 v);
             Vector3 cubeCenter = cubePlanet != null ? cubePlanet.position : Vector3.zero;
@@ -292,12 +289,12 @@ namespace Meokgoeeum
             orbSpawner.trigger = mural;
             orbSpawner.orbColor = OrbColor.Red;
 
-            BuildRoomGate(parent, "RoomClearGate_A", cubeCenter, cubeHalfExtent, normal, doorBlocker);
+            return BuildRoomGate(parent, "RoomClearGate_A", cubeCenter, cubeHalfExtent, normal);
         }
 
-        /// <summary>방B — 평×1+1(2웨이브) + 장식 벽화 3개(게이트 아님, 순수 장식).</summary>
-        public static void PopulateRoomB(Transform parent, Transform cubePlanet, float cubeHalfExtent, Vector3 normal,
-            GameObject doorBlocker, CubeSurfaceWalker target, GameObject enemyPrefab, float hpMultiplier)
+        /// <summary>방B — 평×1+1(2웨이브) + 장식 벽화 3개.</summary>
+        public static RoomClearGate PopulateRoomB(Transform parent, Transform cubePlanet, float cubeHalfExtent, Vector3 normal,
+            CubeSurfaceWalker target, GameObject enemyPrefab, float hpMultiplier)
         {
             GetFaceBasis(normal, out Vector3 u, out Vector3 v);
             Vector3 cubeCenter = cubePlanet != null ? cubePlanet.position : Vector3.zero;
@@ -309,12 +306,12 @@ namespace Meokgoeeum
             BuildMural(parent, "Mural_RoomB_1", cubeCenter, cubeHalfExtent, normal, u, v, 0f, -10f, new Color(0.9f, 0.2f, 0.2f));
             BuildMural(parent, "Mural_RoomB_2", cubeCenter, cubeHalfExtent, normal, u, v, -8f, 8f, new Color(0.9f, 0.7f, 0.2f));
 
-            BuildRoomGate(parent, "RoomClearGate_B", cubeCenter, cubeHalfExtent, normal, doorBlocker);
+            return BuildRoomGate(parent, "RoomClearGate_B", cubeCenter, cubeHalfExtent, normal);
         }
 
         /// <summary>방C — 평×2+1(2웨이브) + 왕복 장애물 2개.</summary>
-        public static void PopulateRoomC(Transform parent, Transform cubePlanet, float cubeHalfExtent, Vector3 normal,
-            GameObject doorBlocker, CubeSurfaceWalker target, GameObject enemyPrefab, float hpMultiplier)
+        public static RoomClearGate PopulateRoomC(Transform parent, Transform cubePlanet, float cubeHalfExtent, Vector3 normal,
+            CubeSurfaceWalker target, GameObject enemyPrefab, float hpMultiplier)
         {
             GetFaceBasis(normal, out Vector3 u, out Vector3 v);
             Vector3 cubeCenter = cubePlanet != null ? cubePlanet.position : Vector3.zero;
@@ -325,12 +322,12 @@ namespace Meokgoeeum
             BuildRoomObstacle(parent, "MovingObstacle_RoomC_0", cubeCenter, cubeHalfExtent, normal, u, v, 4f, -2f);
             BuildRoomObstacle(parent, "MovingObstacle_RoomC_1", cubeCenter, cubeHalfExtent, normal, u, v, -4f, 2f);
 
-            BuildRoomGate(parent, "RoomClearGate_C", cubeCenter, cubeHalfExtent, normal, doorBlocker);
+            return BuildRoomGate(parent, "RoomClearGate_C", cubeCenter, cubeHalfExtent, normal);
         }
 
-        /// <summary>방D — 평×2+1(2웨이브) + 왕복 장애물 1개. 2026-09-16 — 6방 구조에서는 클라이맥스가 아니라 중간 방.</summary>
-        public static void PopulateRoomD(Transform parent, Transform cubePlanet, float cubeHalfExtent, Vector3 normal,
-            GameObject doorBlocker, CubeSurfaceWalker target, GameObject enemyPrefab, float hpMultiplier)
+        /// <summary>방D — 평×2+1(2웨이브) + 왕복 장애물 1개.</summary>
+        public static RoomClearGate PopulateRoomD(Transform parent, Transform cubePlanet, float cubeHalfExtent, Vector3 normal,
+            CubeSurfaceWalker target, GameObject enemyPrefab, float hpMultiplier)
         {
             GetFaceBasis(normal, out Vector3 u, out Vector3 v);
             Vector3 cubeCenter = cubePlanet != null ? cubePlanet.position : Vector3.zero;
@@ -340,12 +337,12 @@ namespace Meokgoeeum
 
             BuildRoomObstacle(parent, "MovingObstacle_RoomD_0", cubeCenter, cubeHalfExtent, normal, u, v, 0f, 3f);
 
-            BuildRoomGate(parent, "RoomClearGate_D", cubeCenter, cubeHalfExtent, normal, doorBlocker);
+            return BuildRoomGate(parent, "RoomClearGate_D", cubeCenter, cubeHalfExtent, normal);
         }
 
-        /// <summary>방E — 평×2(2웨이브) + 장식 벽화 2개. 2026-09-16 신규(+X면, 예전엔 AI 테스트용).</summary>
-        public static void PopulateRoomE(Transform parent, Transform cubePlanet, float cubeHalfExtent, Vector3 normal,
-            GameObject doorBlocker, CubeSurfaceWalker target, GameObject enemyPrefab, float hpMultiplier)
+        /// <summary>방E — 평×1+1(2웨이브) + 장식 벽화 2개.</summary>
+        public static RoomClearGate PopulateRoomE(Transform parent, Transform cubePlanet, float cubeHalfExtent, Vector3 normal,
+            CubeSurfaceWalker target, GameObject enemyPrefab, float hpMultiplier)
         {
             GetFaceBasis(normal, out Vector3 u, out Vector3 v);
             Vector3 cubeCenter = cubePlanet != null ? cubePlanet.position : Vector3.zero;
@@ -356,13 +353,10 @@ namespace Meokgoeeum
             BuildMural(parent, "Mural_RoomE_0", cubeCenter, cubeHalfExtent, normal, u, v, 6f, -6f, new Color(0.9f, 0.7f, 0.2f));
             BuildMural(parent, "Mural_RoomE_1", cubeCenter, cubeHalfExtent, normal, u, v, -6f, 6f, new Color(0.6f, 0.2f, 0.8f));
 
-            BuildRoomGate(parent, "RoomClearGate_E", cubeCenter, cubeHalfExtent, normal, doorBlocker);
+            return BuildRoomGate(parent, "RoomClearGate_E", cubeCenter, cubeHalfExtent, normal);
         }
 
-        /// <summary>
-        /// 방F — 평×2+2(2웨이브, 클라이맥스) + 벽화 2개. 2026-09-16 신규(-X면, 예전엔 AI 테스트용) —
-        /// 6방 구조의 마지막 방. 게이트를 반환 — 다음 층 전환에 구독해서 씁니다.
-        /// </summary>
+        /// <summary>방F — 평×2+2(2웨이브, 가장 큰 규모) + 벽화 2개.</summary>
         public static RoomClearGate PopulateRoomF(Transform parent, Transform cubePlanet, float cubeHalfExtent, Vector3 normal,
             CubeSurfaceWalker target, GameObject enemyPrefab, float hpMultiplier)
         {
@@ -375,9 +369,7 @@ namespace Meokgoeeum
             BuildMural(parent, "Mural_RoomF_Climax_0", cubeCenter, cubeHalfExtent, normal, u, v, 0f, 12f, new Color(0.9f, 0.2f, 0.2f));
             BuildMural(parent, "Mural_RoomF_Climax_1", cubeCenter, cubeHalfExtent, normal, u, v, 0f, -12f, new Color(0.9f, 0.2f, 0.2f));
 
-            // stairs는 안 씀 — [[CubeDungeonProgressionManager]]가 반환된 게이트의 OnCleared를
-            // 구독해서 "다음 층 재생성"을 직접 트리거함(2026-09-15, F로 이관 2026-09-16).
-            return BuildRoomGate(parent, "RoomClearGate_F", cubeCenter, cubeHalfExtent, normal, null);
+            return BuildRoomGate(parent, "RoomClearGate_F", cubeCenter, cubeHalfExtent, normal);
         }
 
         private static void ApplyHpMultiplier(EncounterSpawner spawner, float hpMultiplier)
@@ -393,36 +385,34 @@ namespace Meokgoeeum
         /// 런타임은 Destroy를 써야 해서 여기선 관여하지 않습니다). `hpMultiplier`는 층이
         /// 올라갈수록 적을 강하게 만들 때 씀(1층=1.0 기본).
         ///
-        /// 경로: A(+Z)→B(+Y)→E(+X)→C(-Z)→D(-Y)→F(-X) — 클래스 doc의 "각 방의 문 배선표" 참고.
+        /// 2026-09-16 2차 개편 — 6개 방 전부 4면 상시 개방(어느 순서로든 자유롭게 오갈 수 있음),
+        /// 6개의 [[RoomClearGate]]를 배열로 반환합니다 — [[CubeDungeonProgressionManager]]가
+        /// 전부 구독해서 "6개 방 전부 클리어"를 층 전환 조건으로 판단합니다.
         /// </summary>
-        public static RoomClearGate BuildFullFloor(Transform root, Transform cubePlanet, float cubeHalfExtent,
+        public static RoomClearGate[] BuildFullFloor(Transform root, Transform cubePlanet, float cubeHalfExtent,
             CubeSurfaceWalker player, GameObject enemyPrefab, float hpMultiplier)
         {
             Vector3 cubeCenter = cubePlanet != null ? cubePlanet.position : Vector3.zero;
 
-            var doorsA = BuildRoom(root, "A", cubeCenter, cubeHalfExtent, Vector3.forward,
-                WallMode.Closed, WallMode.Closed, WallMode.Closed, WallMode.GatedExit);
-            PopulateRoomA(root, cubePlanet, cubeHalfExtent, Vector3.forward, doorsA.plusV, player, enemyPrefab, hpMultiplier);
+            BuildOpenRoom(root, "A", cubeCenter, cubeHalfExtent, Vector3.forward);
+            var gateA = PopulateRoomA(root, cubePlanet, cubeHalfExtent, Vector3.forward, player, enemyPrefab, hpMultiplier);
 
-            var doorsB = BuildRoom(root, "B", cubeCenter, cubeHalfExtent, Vector3.up,
-                WallMode.Closed, WallMode.GatedExit, WallMode.Closed, WallMode.Open);
-            PopulateRoomB(root, cubePlanet, cubeHalfExtent, Vector3.up, doorsB.plusU, player, enemyPrefab, hpMultiplier);
+            BuildOpenRoom(root, "B", cubeCenter, cubeHalfExtent, Vector3.up);
+            var gateB = PopulateRoomB(root, cubePlanet, cubeHalfExtent, Vector3.up, player, enemyPrefab, hpMultiplier);
 
-            var doorsE = BuildRoom(root, "E", cubeCenter, cubeHalfExtent, Vector3.right,
-                WallMode.GatedExit, WallMode.Closed, WallMode.Closed, WallMode.Open);
-            PopulateRoomE(root, cubePlanet, cubeHalfExtent, Vector3.right, doorsE.minusU, player, enemyPrefab, hpMultiplier);
+            BuildOpenRoom(root, "E", cubeCenter, cubeHalfExtent, Vector3.right);
+            var gateE = PopulateRoomE(root, cubePlanet, cubeHalfExtent, Vector3.right, player, enemyPrefab, hpMultiplier);
 
-            var doorsC = BuildRoom(root, "C", cubeCenter, cubeHalfExtent, Vector3.back,
-                WallMode.Closed, WallMode.Open, WallMode.GatedExit, WallMode.Closed);
-            PopulateRoomC(root, cubePlanet, cubeHalfExtent, Vector3.back, doorsC.minusV, player, enemyPrefab, hpMultiplier);
+            BuildOpenRoom(root, "C", cubeCenter, cubeHalfExtent, Vector3.back);
+            var gateC = PopulateRoomC(root, cubePlanet, cubeHalfExtent, Vector3.back, player, enemyPrefab, hpMultiplier);
 
-            var doorsD = BuildRoom(root, "D", cubeCenter, cubeHalfExtent, Vector3.down,
-                WallMode.Closed, WallMode.GatedExit, WallMode.Open, WallMode.Closed);
-            PopulateRoomD(root, cubePlanet, cubeHalfExtent, Vector3.down, doorsD.plusU, player, enemyPrefab, hpMultiplier);
+            BuildOpenRoom(root, "D", cubeCenter, cubeHalfExtent, Vector3.down);
+            var gateD = PopulateRoomD(root, cubePlanet, cubeHalfExtent, Vector3.down, player, enemyPrefab, hpMultiplier);
 
-            BuildRoom(root, "F", cubeCenter, cubeHalfExtent, Vector3.left,
-                WallMode.Closed, WallMode.Closed, WallMode.Open, WallMode.Closed);
-            return PopulateRoomF(root, cubePlanet, cubeHalfExtent, Vector3.left, player, enemyPrefab, hpMultiplier);
+            BuildOpenRoom(root, "F", cubeCenter, cubeHalfExtent, Vector3.left);
+            var gateF = PopulateRoomF(root, cubePlanet, cubeHalfExtent, Vector3.left, player, enemyPrefab, hpMultiplier);
+
+            return new[] { gateA, gateB, gateC, gateD, gateE, gateF };
         }
     }
 }

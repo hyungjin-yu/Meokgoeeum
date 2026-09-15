@@ -39,13 +39,15 @@ namespace Meokgoeeum
         public float clearGraceDuration = 3f;
 
         /// <summary>
-        /// 클리어되는 순간 정확히 한 번 호출됩니다. stairs/doorsToOpen과 달리 "무엇을 열지"를
-        /// 미리 정해두지 않아도 되는 범용 훅입니다 — 2026-09-15, [[CubeDungeonProgressionManager]]가
-        /// 방D 클리어를 감지해 다음 층을 재생성할 때 코드로 구독해서 씁니다(런타임에 매번 새로
-        /// 생성되는 게이트라 Inspector로 미리 못 연결해두는 경우에 적합). 평소처럼
-        /// stairs/doorsToOpen만 써도 되고 같이 써도 됩니다.
+        /// 클리어되는 순간 정확히 한 번, 자기 자신(이 게이트)을 인자로 호출됩니다.
+        /// stairs/doorsToOpen과 달리 "무엇을 열지"를 미리 정해두지 않아도 되는 범용 훅입니다 —
+        /// 2026-09-15, [[CubeDungeonProgressionManager]]가 방 클리어를 감지해 다음 층을
+        /// 재생성할 때 코드로 구독해서 씁니다(런타임에 매번 새로 생성되는 게이트라 Inspector로
+        /// 미리 못 연결해두는 경우에 적합). 2026-09-16 — 6개 방 전부를 동시에 구독해서 "몇 개나
+        /// 클리어됐는지" 세어야 해서, 어느 게이트가 호출한 건지 알 수 있게 자기 자신을 인자로
+        /// 넘기도록 바꿨습니다. 평소처럼 stairs/doorsToOpen만 써도 되고 같이 써도 됩니다.
         /// </summary>
-        public event System.Action OnCleared;
+        public event System.Action<RoomClearGate> OnCleared;
 
         private bool cleared;
         private float timer;
@@ -89,7 +91,7 @@ namespace Meokgoeeum
                 foreach (var door in doorsToOpen)
                     if (door != null) door.SetActive(false);
 
-            OnCleared?.Invoke();
+            OnCleared?.Invoke(this);
 
             if (stairs == null && (doorsToOpen == null || doorsToOpen.Length == 0))
                 Debug.LogWarning($"[RoomClearGate] {name}에 Stairs도 doorsToOpen도 연결 안 되어 있습니다.");
