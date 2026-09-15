@@ -34,6 +34,27 @@ namespace Meokgoeeum
 
         private RoomClearGate hookedGate;
 
+        /// <summary>
+        /// ⚠️ 2026-09-15 발견 — C# 이벤트(`+=` 구독)는 Unity가 씬 파일에 저장 안 함(직렬화
+        /// 대상이 아님). 그래서 에디터 스크립트([[CubeFaceRoomBuilder]])가 씬 저장 "전"에
+        /// `HookGate()`를 불러 구독을 걸어놔도, 실제로 Play를 누르는 순간 씬이 저장된 파일
+        /// 기준으로 새로 구성되면서 그 구독은 통째로 사라짐 — 방A~D를 전부 클리어해도 아무
+        /// 반응이 없던 진짜 원인이었음(사용자가 실제 플레이로 재현). 그래서 Start()에서
+        /// 런타임에 직접 "RoomClearGate_D"를 찾아 다시 구독하도록 함 — 이러면 씬이 어떻게
+        /// 저장/로드됐는지와 무관하게 Play를 누를 때마다 항상 스스로 연결됩니다.
+        /// </summary>
+        private void Start()
+        {
+            var gateGo = GameObject.Find("RoomClearGate_D");
+            var gate = gateGo != null ? gateGo.GetComponent<RoomClearGate>() : null;
+            if (gate == null)
+            {
+                Debug.LogWarning("[CubeDungeonProgressionManager] RoomClearGate_D를 못 찾아서 다음 층 전환을 못 겁니다.");
+                return;
+            }
+            HookGate(gate);
+        }
+
         /// <summary>방D 게이트가 클리어되면 다음 층 전환을 시작하도록 구독합니다. 재생성될 때마다 새로 불러야 합니다.</summary>
         public void HookGate(RoomClearGate gate)
         {

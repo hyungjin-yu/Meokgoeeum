@@ -65,7 +65,7 @@ namespace Meokgoeeum
             GameObject playerGo = GameObject.Find("CubeWalker_Player");
             var walker = playerGo != null ? playerGo.GetComponent<CubeSurfaceWalker>() : null;
 
-            var roomDGate = CubeDungeonRoomKit.BuildFullFloor(root.transform, cube.transform, CubeHalfExtent, walker, prefab, 1f);
+            CubeDungeonRoomKit.BuildFullFloor(root.transform, cube.transform, CubeHalfExtent, walker, prefab, 1f);
 
             // 다음 층 전환 매니저를 씬에 세팅 — 처음 만드는 거면 새로 추가, 있으면 참조만 갱신.
             var progression = Object.FindFirstObjectByType<CubeDungeonProgressionManager>();
@@ -81,7 +81,9 @@ namespace Meokgoeeum
             progression.dungeonRootName = RootName;
             progression.cubeHalfExtent = CubeHalfExtent;
             progression.currentFloor = 1;
-            progression.HookGate(roomDGate);
+            // ⚠️ 여기서 HookGate()를 불러도 소용없음 — C# 이벤트 구독은 씬 저장 대상이 아니라서
+            // Play를 누르는 순간 사라짐. 실제 구독은 CubeDungeonProgressionManager.Start()가
+            // 런타임에 스스로 "RoomClearGate_D"를 찾아서 겁니다.
 
             PlacePlayerSpawn(cube.transform, Vector3.forward);
             walker?.SetCurrentFaceNormal(Vector3.forward);
