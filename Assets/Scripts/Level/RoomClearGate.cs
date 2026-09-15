@@ -100,6 +100,13 @@ namespace Meokgoeeum
                 var boss = hit.GetComponent<BossHealth>();
                 if (boss != null && !boss.IsDead)
                     return true;
+
+                // 2026-09-15: 큐브 면 몹(CubeEnemyBase 계열)은 EnemyHealth가 없어서 위 두 체크에
+                // 안 걸림 — ICubeFaceMob으로 살아있는지(CurrentHP > 0) 추가 확인. 평지 던전에는
+                // ICubeFaceMob 구현체가 없어서 이 분기는 그냥 안 타고 지나감 — 기존 동작 영향 없음.
+                var cubeMob = hit.GetComponent<ICubeFaceMob>();
+                if (cubeMob != null && cubeMob.CurrentHP > 0f)
+                    return true;
             }
             return false;
         }
