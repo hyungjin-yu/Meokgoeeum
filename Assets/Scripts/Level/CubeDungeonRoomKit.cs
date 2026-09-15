@@ -178,6 +178,13 @@ namespace Meokgoeeum
             go.transform.rotation = Quaternion.LookRotation(v, normal);
             go.transform.localScale = new Vector3(2.5f, 0.2f, 2.5f);
 
+            // 2026-09-15: [[CubeSurfaceWalker]]가 벽/문 막음을 실제로 막도록 콜라이더 충돌 검사를
+            // 새로 추가하면서, 바닥에 눕혀놓은 이 장식용 벽화까지 덩달아 막혀버리는 부작용이
+            // 생겼음(원래 "바닥 문양"일 뿐 장애물이 아님). Collider.isTrigger를 켜서 플레이어는
+            // 그냥 지나가되, [[ColorWaveEffect]]의 Physics.OverlapSphere 색칠 판정은 트리거도
+            // 잡으므로 그대로 정상 작동함.
+            go.GetComponent<Collider>().isTrigger = true;
+
             var paintable = go.AddComponent<PaintableObject>();
             paintable.trueColor = color;
             paintable.startGray = true;

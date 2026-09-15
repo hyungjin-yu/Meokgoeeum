@@ -63,6 +63,10 @@ namespace Meokgoeeum
         [Tooltip("마우스 입력을 얼마나 부드럽게(저역 통과) 만들지입니다.")]
         public float mouseSmoothing = 15f;
 
+        [Tooltip("벽/문 막음 큐브에 막히는지 검사할 때 쓰는 반경입니다. 2026-09-15 추가 — " +
+            "WouldCollide() 참고.")]
+        public float collisionCheckRadius = 0.5f;
+
         [Tooltip("카메라가 참조할 '지금 이 순간의 표면 법선(up 방향)'입니다. [[CubeFaceZone]] 트리거를 " +
                  "지날 때만 바뀝니다 — 매 프레임 좌표로 재계산하지 않습니다.")]
         public Vector3 CurrentSurfaceNormal { get; private set; } = Vector3.up;
@@ -169,8 +173,20 @@ namespace Meokgoeeum
             Vector3 moveDir = facingForward * moveInput.y + facingRight * moveInput.x;
             if (moveDir.sqrMagnitude > 1f) moveDir.Normalize();
 
-            Vector3 motion = moveDir * moveSpeed + normal * verticalSpeed;
-            transform.position += motion * Time.deltaTime;
+            // ⚠️ 2026-09-15 추가 — 지금까지 이 워커는 벽/문 막음 큐브([[CubeFaceRoomBuilder]]/
+            // [[CubeDungeonRoomKit]]이 짓는 것들)를 전혀 막지 않고 그냥 통과했습니다("방A부터 몹을
+            // 안 잡고 게이트를 뚫고 D까지 갈 수 있어" — 사용자 리포트로 발견). 원인은 바로 위 3번
+            // 주석 그대로 — 이 프로토타입이 콜라이더 충돌 자체를 안 씀. 접지/면 경계는 좌표
+            // 계산으로 흉내냈지만, 벽 차단은 그런 대체 로직이 아예 없었던 것. 완전한 collide-and-
+            // slide 대신, "이번 프레임 접선 이동(WASD) 목적지가 막혀있으면 그 성분만 취소"하는
+            // 단순한 방식으로 막습니다 — 수직(중력/면 고정) 성분은 그대로 둬서 표면에서 안 떨어짐.
+            Vector3 tangentialMotion = moveDir * moveSpeed * Time.deltaTime;
+            Vector3 verticalMotion = normal * verticalSpeed * Time.deltaTime;
+
+            if (tangentialMotion.sqrMagnitude > 0.0001f && WouldCollide(transform.position + tangentialMotion))
+                tangentialMotion = Vector3.zero;
+
+            transform.position += tangentialMotion + verticalMotion;
 
             // 콜라이더가 없으므로, 표면 밑으로 파고들거나 면 경계를 벗어나면 직접 되돌려 고정합니다.
             Vector3 afterLocal = transform.position - CubeCenterPos();
@@ -186,6 +202,23 @@ namespace Meokgoeeum
             // 마우스로 방금 돌렸을 수 있으므로). up 정렬도 이 한 번의 LookRotation에 같이 반영됨.
             Quaternion lookRot = Quaternion.LookRotation(facingForward, normal);
             transform.rotation = Quaternion.Slerp(transform.rotation, lookRot, reorientSpeed * Time.deltaTime);
+        }
+
+        /// <summary>
+        /// candidatePos 지점에 이 캐릭터 말고 트리거가 아닌(=단단한) 콜라이더가 있는지 검사합니다.
+        /// [[CubeFaceZone]] 같은 면 전환 트리거는 isTrigger라서 걸리지 않고 그대로 통과됩니다 —
+        /// 여기서 막는 건 벽/문 막음 큐브처럼 실제로 단단한 지오메트리뿐입니다.
+        /// </summary>
+        private bool WouldCollide(Vector3 candidatePos)
+        {
+            var hits = Physics.OverlapSphere(candidatePos, collisionCheckRadius);
+            foreach (var hit in hits)
+            {
+                if (hit.gameObject == gameObject) continue;
+                if (hit.isTrigger) continue;
+                return true;
+            }
+            return false;
         }
 
         /// <summary>Start()에서 트리거를 지나기 전 초기 면을 추정하는 용도로만 씁니다(1회성).</summary>
