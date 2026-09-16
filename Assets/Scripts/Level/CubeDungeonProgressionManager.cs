@@ -30,6 +30,16 @@ namespace Meokgoeeum
         public Transform cubePlanet;
         public CubeSurfaceWalker player;
         public GameObject enemyPyeongPrefab;
+
+        [Tooltip("2026-09-16 층별 콘텐츠 다양화 추가 — 3층부터 풀림. 비워두면(null) 이 종은 안 나옴.")]
+        public GameObject enemyWonPrefab;
+        [Tooltip("4층부터 풀림. 비워두면(null) 이 종은 안 나옴.")]
+        public GameObject enemyHeupPrefab;
+        [Tooltip("6층부터 풀림. 비워두면(null) 이 종은 안 나옴.")]
+        public GameObject enemyBunPrefab;
+        [Tooltip("7층부터 풀림. 비워두면(null) 이 종은 안 나옴.")]
+        public GameObject enemyGwangPrefab;
+
         public string dungeonRootName = "DungeonRooms_Generated";
         public float cubeHalfExtent = 17f;
 
@@ -121,8 +131,17 @@ namespace Meokgoeeum
             currentFloor++;
             float hpMultiplier = 1f + hpMultiplierPerFloor * (currentFloor - 1);
 
+            var speciesPrefabs = new CubeDungeonRoomKit.EnemySpeciesPrefabs
+            {
+                pyeong = enemyPyeongPrefab,
+                won = enemyWonPrefab,
+                heup = enemyHeupPrefab,
+                bun = enemyBunPrefab,
+                gwang = enemyGwangPrefab,
+            };
+
             var root = new GameObject(dungeonRootName);
-            var newGates = CubeDungeonRoomKit.BuildFullFloor(root.transform, cubePlanet, cubeHalfExtent, player, enemyPyeongPrefab, hpMultiplier);
+            var newGates = CubeDungeonRoomKit.BuildFullFloor(root.transform, cubePlanet, cubeHalfExtent, player, speciesPrefabs, currentFloor, hpMultiplier);
             HookGates(newGates);
 
             // 플레이어를 새로 지어진 방A(+Z)로 되돌립니다 — CubeMapManager.TeleportPlayerToSpawnPoint()와

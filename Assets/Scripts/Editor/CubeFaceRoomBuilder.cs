@@ -64,11 +64,26 @@ namespace Meokgoeeum
             var prefab = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Scenes/EnemyPyeong.prefab");
             if (prefab == null) { Debug.LogError("[CubeFaceRoomBuilder] EnemyPyeong.prefab을 못 찾았습니다."); return; }
 
+            // 2026-09-16 층별 콘텐츠 다양화 — 나머지 4종도 같이 로드해서 층별 언락 풀에 넘김.
+            // 1층은 GetUnlockedPool(1, ...)이 평만 골라내므로 여기선 그냥 전부 넘겨도 안전함.
+            var wonPrefab = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Scenes/EnemyWon.prefab");
+            var heupPrefab = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Scenes/EnemyHeup.prefab");
+            var bunPrefab = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Scenes/EnemyBun.prefab");
+            var gwangPrefab = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Scenes/EnemyGwang.prefab");
+
             GameObject cube = GameObject.Find("CubePlanet");
             GameObject playerGo = GameObject.Find("CubeWalker_Player");
             var walker = playerGo != null ? playerGo.GetComponent<CubeSurfaceWalker>() : null;
 
-            CubeDungeonRoomKit.BuildFullFloor(root.transform, cube.transform, CubeHalfExtent, walker, prefab, 1f);
+            var speciesPrefabs = new CubeDungeonRoomKit.EnemySpeciesPrefabs
+            {
+                pyeong = prefab,
+                won = wonPrefab,
+                heup = heupPrefab,
+                bun = bunPrefab,
+                gwang = gwangPrefab,
+            };
+            CubeDungeonRoomKit.BuildFullFloor(root.transform, cube.transform, CubeHalfExtent, walker, speciesPrefabs, 1, 1f);
 
             // 다음 층 전환 매니저를 씬에 세팅 — 처음 만드는 거면 새로 추가, 있으면 참조만 갱신.
             var progression = Object.FindFirstObjectByType<CubeDungeonProgressionManager>();
@@ -81,6 +96,10 @@ namespace Meokgoeeum
             progression.cubePlanet = cube.transform;
             progression.player = walker;
             progression.enemyPyeongPrefab = prefab;
+            progression.enemyWonPrefab = wonPrefab;
+            progression.enemyHeupPrefab = heupPrefab;
+            progression.enemyBunPrefab = bunPrefab;
+            progression.enemyGwangPrefab = gwangPrefab;
             progression.dungeonRootName = RootName;
             progression.cubeHalfExtent = CubeHalfExtent;
             progression.currentFloor = 1;

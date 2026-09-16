@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace Meokgoeeum
@@ -48,6 +49,73 @@ namespace Meokgoeeum
         public struct RoomDoors
         {
             public GameObject minusU, plusU, minusV, plusV;
+        }
+
+        // ------------------------------------------------------------------
+        // 종 다양화 (2026-09-16 추가)
+        // ------------------------------------------------------------------
+
+        /// <summary>5종 프리팹 참조를 한 데 묶은 것. `CubeDungeonProgressionManager`가 들고 있다가
+        /// `BuildFullFloor()`에 그대로 넘깁니다 — 아직 이식 안 된 종이 있으면 null로 비워두면 됩니다
+        /// (해당 종은 그냥 풀에서 빠짐).</summary>
+        [System.Serializable]
+        public class EnemySpeciesPrefabs
+        {
+            public GameObject pyeong;
+            public GameObject won;
+            public GameObject heup;
+            public GameObject bun;
+            public GameObject gwang;
+        }
+
+        /// <summary>
+        /// 층 번호에 따라 그 시점까지 풀린 종 목록(누적)을 돌려줍니다. [[19 층별 상세 설계]]의
+        /// 원래 순차 등장 의도(1~2층 평만 → 3층 원 → 4층 흡 → 6층 분 → 7층 광)를 그대로 가져오되,
+        /// 그 문서는 "층 하나 = 방 하나" 기준이고 지금은 "층 하나 = 방 6개, 방마다 무작위 조합"
+        /// 구조라 정확한 마릿수까지는 맞추지 않고 "이 시점부터 이 종이 나올 수 있다"는 순서만
+        /// 유지합니다. 실제 방별 조합은 <see cref="BuildWaveSpawner"/>가 이 풀에서 무작위로 뽑습니다.
+        /// </summary>
+        public static GameObject[] GetUnlockedPool(int floorNumber, EnemySpeciesPrefabs species)
+        {
+            var pool = new List<GameObject>();
+            if (species == null) return pool.ToArray();
+
+            if (species.pyeong != null) pool.Add(species.pyeong); // 1층부터
+            if (floorNumber >= 3 && species.won != null) pool.Add(species.won);
+            if (floorNumber >= 4 && species.heup != null) pool.Add(species.heup);
+            if (floorNumber >= 6 && species.bun != null) pool.Add(species.bun);
+            if (floorNumber >= 7 && species.gwang != null) pool.Add(species.gwang);
+            return pool.ToArray();
+        }
+
+        /// <summary>
+        /// 방 하나(웨이브 전체 합산 마릿수)에 뽑을 종을 무작위로 정합니다. [[RandomEncounterSpawner]]와
+        /// 같은 "종류당 최대 N마리" 방식이되, 풀이 작아서 그대로 적용하면 마릿수를 못 채우는 경우
+        /// (예: 1층은 풀이 평 하나뿐인데 방F는 4마리 필요)까지 자동으로 감안 — 필요 마릿수 대비 풀이
+        /// 작으면 한도를 그만큼 늘려서 항상 요청한 마릿수를 채웁니다.
+        /// </summary>
+        private static GameObject[] PickSpeciesForRoom(GameObject[] pool, int totalCount)
+        {
+            var result = new GameObject[totalCount];
+            if (pool == null || pool.Length == 0) return result;
+
+            int maxDuplicates = Mathf.Max(2, Mathf.CeilToInt((float)totalCount / pool.Length));
+            var pickable = new List<GameObject>(pool);
+            var pickedCount = new Dictionary<GameObject, int>();
+
+            for (int i = 0; i < totalCount; i++)
+            {
+                if (pickable.Count == 0) pickable.AddRange(pool); // 이론상 위 한도 계산 덕에 안 일어나야 하는 방어 코드
+
+                GameObject prefab = pickable[Random.Range(0, pickable.Count)];
+                result[i] = prefab;
+
+                pickedCount.TryGetValue(prefab, out int count);
+                count++;
+                pickedCount[prefab] = count;
+                if (count >= maxDuplicates) pickable.Remove(prefab);
+            }
+            return result;
         }
 
         // ------------------------------------------------------------------
@@ -154,14 +222,16 @@ namespace Meokgoeeum
         // ------------------------------------------------------------------
 
         /// <summary>
-        /// 방 중앙에 [[EncounterSpawner]]를 큐브 면 모드로 세웁니다. `enemyPrefab`은 평소처럼
-        /// `EnemyPyeong.prefab`(NavMesh 버전)을 그대로 넘기면 됩니다 — `EncounterSpawner`가
-        /// `cubeCenter`가 설정돼 있으면 스폰 시점에 자동으로 [[CubeEnemyPyeong]]으로 교체합니다.
+        /// 방 중앙에 [[EncounterSpawner]]를 큐브 면 모드로 세웁니다. `enemyPool`에서 방 전체
+        /// (웨이브 합산) 마릿수만큼 무작위로 종을 뽑아 배치합니다(<see cref="PickSpeciesForRoom"/>) —
+        /// 풀에 하나만 있으면(예: 1층) 자동으로 그 하나로만 채워져서 기존 "평만 등장" 동작과
+        /// 동일하게 동작합니다. `EncounterSpawner`가 `cubeCenter`가 설정돼 있으면 스폰 시점에
+        /// 자동으로 프리팹에 맞는 CubeEnemy* 종으로 교체합니다.
         /// </summary>
         public static EncounterSpawner BuildWaveSpawner(Transform parent, string name, Transform cubePlanet, float cubeHalfExtent,
-            Vector3 normal, Vector3 u, Vector3 v, CubeSurfaceWalker target, GameObject enemyPrefab, int[] enemiesPerWave)
+            Vector3 normal, Vector3 u, Vector3 v, CubeSurfaceWalker target, GameObject[] enemyPool, int[] enemiesPerWave)
         {
-            if (enemyPrefab == null) { Debug.LogError("[CubeDungeonRoomKit] enemyPrefab이 비어있습니다."); return null; }
+            if (enemyPool == null || enemyPool.Length == 0) { Debug.LogError("[CubeDungeonRoomKit] enemyPool이 비어있습니다."); return null; }
 
             Vector3 cubeCenter = cubePlanet != null ? cubePlanet.position : Vector3.zero;
             Vector3 spawnerPos = cubeCenter + normal * (cubeHalfExtent + 1f);
@@ -177,6 +247,11 @@ namespace Meokgoeeum
             spawner.cubeHalfExtent = cubeHalfExtent;
             spawner.cubeTarget = target;
 
+            int totalCount = 0;
+            foreach (var c in enemiesPerWave) totalCount += c;
+            GameObject[] chosenSpecies = PickSpeciesForRoom(enemyPool, totalCount);
+            int chosenIndex = 0;
+
             var waves = new EncounterSpawner.Wave[enemiesPerWave.Length];
             for (int w = 0; w < enemiesPerWave.Length; w++)
             {
@@ -185,7 +260,7 @@ namespace Meokgoeeum
                 var points = new Transform[count];
                 for (int i = 0; i < count; i++)
                 {
-                    prefabs[i] = enemyPrefab;
+                    prefabs[i] = chosenSpecies[chosenIndex++];
                     float angleDeg = count > 0 ? (360f / count) * i + w * 45f : 0f;
                     float rad = angleDeg * Mathf.Deg2Rad;
                     Vector3 tangentOffset = (Mathf.Cos(rad) * u + Mathf.Sin(rad) * v) * 6f;
@@ -272,12 +347,12 @@ namespace Meokgoeeum
 
         /// <summary>방A — 튜토리얼 전투(평×1+1, 2웨이브) + 벽화/숨겨진 구슬 곁가지.</summary>
         public static RoomClearGate PopulateRoomA(Transform parent, Transform cubePlanet, float cubeHalfExtent, Vector3 normal,
-            CubeSurfaceWalker target, GameObject enemyPrefab, float hpMultiplier)
+            CubeSurfaceWalker target, GameObject[] enemyPool, float hpMultiplier)
         {
             GetFaceBasis(normal, out Vector3 u, out Vector3 v);
             Vector3 cubeCenter = cubePlanet != null ? cubePlanet.position : Vector3.zero;
 
-            var spawner = BuildWaveSpawner(parent, "EncounterSpawner_RoomA", cubePlanet, cubeHalfExtent, normal, u, v, target, enemyPrefab, new[] { 1, 1 });
+            var spawner = BuildWaveSpawner(parent, "EncounterSpawner_RoomA", cubePlanet, cubeHalfExtent, normal, u, v, target, enemyPool, new[] { 1, 1 });
             spawner.showFirstAttackHint = true;
             ApplyHpMultiplier(spawner, hpMultiplier);
 
@@ -294,12 +369,12 @@ namespace Meokgoeeum
 
         /// <summary>방B — 평×1+1(2웨이브) + 장식 벽화 3개.</summary>
         public static RoomClearGate PopulateRoomB(Transform parent, Transform cubePlanet, float cubeHalfExtent, Vector3 normal,
-            CubeSurfaceWalker target, GameObject enemyPrefab, float hpMultiplier)
+            CubeSurfaceWalker target, GameObject[] enemyPool, float hpMultiplier)
         {
             GetFaceBasis(normal, out Vector3 u, out Vector3 v);
             Vector3 cubeCenter = cubePlanet != null ? cubePlanet.position : Vector3.zero;
 
-            var spawner = BuildWaveSpawner(parent, "EncounterSpawner_RoomB", cubePlanet, cubeHalfExtent, normal, u, v, target, enemyPrefab, new[] { 1, 1 });
+            var spawner = BuildWaveSpawner(parent, "EncounterSpawner_RoomB", cubePlanet, cubeHalfExtent, normal, u, v, target, enemyPool, new[] { 1, 1 });
             ApplyHpMultiplier(spawner, hpMultiplier);
 
             BuildMural(parent, "Mural_RoomB_0", cubeCenter, cubeHalfExtent, normal, u, v, 8f, 8f, new Color(0.6f, 0.2f, 0.8f));
@@ -311,12 +386,12 @@ namespace Meokgoeeum
 
         /// <summary>방C — 평×2+1(2웨이브) + 왕복 장애물 2개.</summary>
         public static RoomClearGate PopulateRoomC(Transform parent, Transform cubePlanet, float cubeHalfExtent, Vector3 normal,
-            CubeSurfaceWalker target, GameObject enemyPrefab, float hpMultiplier)
+            CubeSurfaceWalker target, GameObject[] enemyPool, float hpMultiplier)
         {
             GetFaceBasis(normal, out Vector3 u, out Vector3 v);
             Vector3 cubeCenter = cubePlanet != null ? cubePlanet.position : Vector3.zero;
 
-            var spawner = BuildWaveSpawner(parent, "EncounterSpawner_RoomC", cubePlanet, cubeHalfExtent, normal, u, v, target, enemyPrefab, new[] { 2, 1 });
+            var spawner = BuildWaveSpawner(parent, "EncounterSpawner_RoomC", cubePlanet, cubeHalfExtent, normal, u, v, target, enemyPool, new[] { 2, 1 });
             ApplyHpMultiplier(spawner, hpMultiplier);
 
             BuildRoomObstacle(parent, "MovingObstacle_RoomC_0", cubeCenter, cubeHalfExtent, normal, u, v, 4f, -2f);
@@ -327,12 +402,12 @@ namespace Meokgoeeum
 
         /// <summary>방D — 평×2+1(2웨이브) + 왕복 장애물 1개.</summary>
         public static RoomClearGate PopulateRoomD(Transform parent, Transform cubePlanet, float cubeHalfExtent, Vector3 normal,
-            CubeSurfaceWalker target, GameObject enemyPrefab, float hpMultiplier)
+            CubeSurfaceWalker target, GameObject[] enemyPool, float hpMultiplier)
         {
             GetFaceBasis(normal, out Vector3 u, out Vector3 v);
             Vector3 cubeCenter = cubePlanet != null ? cubePlanet.position : Vector3.zero;
 
-            var spawner = BuildWaveSpawner(parent, "EncounterSpawner_RoomD", cubePlanet, cubeHalfExtent, normal, u, v, target, enemyPrefab, new[] { 2, 1 });
+            var spawner = BuildWaveSpawner(parent, "EncounterSpawner_RoomD", cubePlanet, cubeHalfExtent, normal, u, v, target, enemyPool, new[] { 2, 1 });
             ApplyHpMultiplier(spawner, hpMultiplier);
 
             BuildRoomObstacle(parent, "MovingObstacle_RoomD_0", cubeCenter, cubeHalfExtent, normal, u, v, 0f, 3f);
@@ -342,12 +417,12 @@ namespace Meokgoeeum
 
         /// <summary>방E — 평×1+1(2웨이브) + 장식 벽화 2개.</summary>
         public static RoomClearGate PopulateRoomE(Transform parent, Transform cubePlanet, float cubeHalfExtent, Vector3 normal,
-            CubeSurfaceWalker target, GameObject enemyPrefab, float hpMultiplier)
+            CubeSurfaceWalker target, GameObject[] enemyPool, float hpMultiplier)
         {
             GetFaceBasis(normal, out Vector3 u, out Vector3 v);
             Vector3 cubeCenter = cubePlanet != null ? cubePlanet.position : Vector3.zero;
 
-            var spawner = BuildWaveSpawner(parent, "EncounterSpawner_RoomE", cubePlanet, cubeHalfExtent, normal, u, v, target, enemyPrefab, new[] { 1, 1 });
+            var spawner = BuildWaveSpawner(parent, "EncounterSpawner_RoomE", cubePlanet, cubeHalfExtent, normal, u, v, target, enemyPool, new[] { 1, 1 });
             ApplyHpMultiplier(spawner, hpMultiplier);
 
             BuildMural(parent, "Mural_RoomE_0", cubeCenter, cubeHalfExtent, normal, u, v, 6f, -6f, new Color(0.9f, 0.7f, 0.2f));
@@ -358,12 +433,12 @@ namespace Meokgoeeum
 
         /// <summary>방F — 평×2+2(2웨이브, 가장 큰 규모) + 벽화 2개.</summary>
         public static RoomClearGate PopulateRoomF(Transform parent, Transform cubePlanet, float cubeHalfExtent, Vector3 normal,
-            CubeSurfaceWalker target, GameObject enemyPrefab, float hpMultiplier)
+            CubeSurfaceWalker target, GameObject[] enemyPool, float hpMultiplier)
         {
             GetFaceBasis(normal, out Vector3 u, out Vector3 v);
             Vector3 cubeCenter = cubePlanet != null ? cubePlanet.position : Vector3.zero;
 
-            var spawner = BuildWaveSpawner(parent, "EncounterSpawner_RoomF", cubePlanet, cubeHalfExtent, normal, u, v, target, enemyPrefab, new[] { 2, 2 });
+            var spawner = BuildWaveSpawner(parent, "EncounterSpawner_RoomF", cubePlanet, cubeHalfExtent, normal, u, v, target, enemyPool, new[] { 2, 2 });
             ApplyHpMultiplier(spawner, hpMultiplier);
 
             BuildMural(parent, "Mural_RoomF_Climax_0", cubeCenter, cubeHalfExtent, normal, u, v, 0f, 12f, new Color(0.9f, 0.2f, 0.2f));
@@ -388,29 +463,35 @@ namespace Meokgoeeum
         /// 2026-09-16 2차 개편 — 6개 방 전부 4면 상시 개방(어느 순서로든 자유롭게 오갈 수 있음),
         /// 6개의 [[RoomClearGate]]를 배열로 반환합니다 — [[CubeDungeonProgressionManager]]가
         /// 전부 구독해서 "6개 방 전부 클리어"를 층 전환 조건으로 판단합니다.
+        ///
+        /// 2026-09-16 3차 개편(층별 콘텐츠 다양화) — 프리팹 하나 대신 <see cref="EnemySpeciesPrefabs"/>와
+        /// `floorNumber`를 받아서, <see cref="GetUnlockedPool"/>로 이 층까지 풀린 종 풀을 한 번만
+        /// 계산해 6개 방 전부에 같은 풀을 넘깁니다 — 방마다 그 풀 안에서 무작위로 조합이 갈립니다
+        /// (<see cref="PickSpeciesForRoom"/>).
         /// </summary>
         public static RoomClearGate[] BuildFullFloor(Transform root, Transform cubePlanet, float cubeHalfExtent,
-            CubeSurfaceWalker player, GameObject enemyPrefab, float hpMultiplier)
+            CubeSurfaceWalker player, EnemySpeciesPrefabs speciesPrefabs, int floorNumber, float hpMultiplier)
         {
             Vector3 cubeCenter = cubePlanet != null ? cubePlanet.position : Vector3.zero;
+            GameObject[] pool = GetUnlockedPool(floorNumber, speciesPrefabs);
 
             BuildOpenRoom(root, "A", cubeCenter, cubeHalfExtent, Vector3.forward);
-            var gateA = PopulateRoomA(root, cubePlanet, cubeHalfExtent, Vector3.forward, player, enemyPrefab, hpMultiplier);
+            var gateA = PopulateRoomA(root, cubePlanet, cubeHalfExtent, Vector3.forward, player, pool, hpMultiplier);
 
             BuildOpenRoom(root, "B", cubeCenter, cubeHalfExtent, Vector3.up);
-            var gateB = PopulateRoomB(root, cubePlanet, cubeHalfExtent, Vector3.up, player, enemyPrefab, hpMultiplier);
+            var gateB = PopulateRoomB(root, cubePlanet, cubeHalfExtent, Vector3.up, player, pool, hpMultiplier);
 
             BuildOpenRoom(root, "E", cubeCenter, cubeHalfExtent, Vector3.right);
-            var gateE = PopulateRoomE(root, cubePlanet, cubeHalfExtent, Vector3.right, player, enemyPrefab, hpMultiplier);
+            var gateE = PopulateRoomE(root, cubePlanet, cubeHalfExtent, Vector3.right, player, pool, hpMultiplier);
 
             BuildOpenRoom(root, "C", cubeCenter, cubeHalfExtent, Vector3.back);
-            var gateC = PopulateRoomC(root, cubePlanet, cubeHalfExtent, Vector3.back, player, enemyPrefab, hpMultiplier);
+            var gateC = PopulateRoomC(root, cubePlanet, cubeHalfExtent, Vector3.back, player, pool, hpMultiplier);
 
             BuildOpenRoom(root, "D", cubeCenter, cubeHalfExtent, Vector3.down);
-            var gateD = PopulateRoomD(root, cubePlanet, cubeHalfExtent, Vector3.down, player, enemyPrefab, hpMultiplier);
+            var gateD = PopulateRoomD(root, cubePlanet, cubeHalfExtent, Vector3.down, player, pool, hpMultiplier);
 
             BuildOpenRoom(root, "F", cubeCenter, cubeHalfExtent, Vector3.left);
-            var gateF = PopulateRoomF(root, cubePlanet, cubeHalfExtent, Vector3.left, player, enemyPrefab, hpMultiplier);
+            var gateF = PopulateRoomF(root, cubePlanet, cubeHalfExtent, Vector3.left, player, pool, hpMultiplier);
 
             return new[] { gateA, gateB, gateC, gateD, gateE, gateF };
         }
