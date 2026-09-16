@@ -145,10 +145,29 @@ namespace Meokgoeeum
         /// 오버라이드해서 실제로 사라졌고, 나머지 4종(평/원/흡/광)은 HP가 0이 돼도 안 죽고
         /// 그 자리에 계속 남아 AI를 계속 돌리는 "유령" 상태가 됐음 — 사용자가 "공격하다가
         /// 이동하면 몹 하나가 가만히 서있기만 한다"고 리포트한 원인으로 추정.
+        ///
+        /// ⚠️ 2026-09-16 추가 — 원본 [[EnemyHealth]].Die()는 처치 시 색 구슬을 드랍하는데
+        /// 이쪽(큐브 면 버전)엔 그 호출이 아예 없었음 — [[EnemyHeup]]/[[CubeEnemyHeup]]의
+        /// "플레이어 보유 구슬을 빼앗아 회복" 재설계 작업 중 발견(SC_CubePrototype엔 애초에
+        /// 색 구슬을 얻을 방법 자체가 없었음). `DropColorOrb()`를 여기에도 추가.
         /// </summary>
         protected virtual void OnDeath()
         {
+            DropColorOrb();
             Destroy(gameObject);
+        }
+
+        /// <summary>[[03 먹괴음 - 적 설계]] "처치 시 색 구슬 1개 드랍(랜덤 색)" — [[EnemyHealth]].DropColorOrb()와 동일 로직.</summary>
+        private void DropColorOrb()
+        {
+            if (ColorOrbPool.Instance == null)
+            {
+                Debug.LogWarning("[CubeEnemyBase] ColorOrbPool이 씬에 없어서 구슬을 드랍하지 못했습니다.");
+                return;
+            }
+
+            OrbColor randomColor = (OrbColor)Random.Range(0, 6);
+            ColorOrbPool.Instance.Get(transform.position, randomColor);
         }
 
         // 2026-09-16 — MonsterPaintParts가 있으면 "남은 칠 안 된 부위 수"를 HP처럼 노출합니다.

@@ -93,6 +93,27 @@ namespace Meokgoeeum
         }
 
         /// <summary>
+        /// 2026-09-16 추가 — [[EnemyHeup]]/[[CubeEnemyHeup]]이 플레이어에게 붙어 색을 흡수할 때
+        /// 씁니다. 보유 중인 색 중 무작위로 하나를 골라 빼앗습니다(어떤 색인지는 흡수하는
+        /// 쪽 입장에선 안 가려서 무작위) — 보유 구슬이 하나도 없으면 빼앗을 게 없으니 false.
+        /// </summary>
+        public bool TryDrainRandomOrb(out OrbColor drained)
+        {
+            var candidates = new List<OrbColor>();
+            for (int i = 0; i < heldOrbs.Length; i++)
+                if (heldOrbs[i] > 0) candidates.Add((OrbColor)i);
+
+            if (candidates.Count == 0)
+            {
+                drained = default;
+                return false;
+            }
+
+            drained = candidates[Random.Range(0, candidates.Count)];
+            return TryConsumeOrb(drained);
+        }
+
+        /// <summary>
         /// acquisitionOrder 큐에서 해당 색 1개를 제거합니다(가장 오래된 것부터).
         /// Queue&lt;T&gt;는 임의 위치 삭제를 지원하지 않아서 전부 꺼냈다가 다시 쌓는 방식으로 처리합니다 —
         /// 보유 구슬이 최대 5개뿐이라(maxHeldOrbs) 비용은 신경 쓸 수준이 아닙니다.

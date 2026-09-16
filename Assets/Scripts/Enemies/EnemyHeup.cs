@@ -5,15 +5,19 @@ namespace Meokgoeeum
     /// <summary>
     /// EnemyHeup (먹괴음 - 흡, 흡수형)
     /// **비공격 유닛입니다** — [[27 전투 프레임 데이터]] "텔레그래프 불필요(비공격 유닛)" 명시대로
-    /// 플레이어를 절대 공격하지 않습니다. HP가 절반 밑으로 떨어지면 가장 가까운 색 복원 구역을
-    /// 찾아가 흡수해서 회복하고, 그렇지 않을 때는 플레이어 쪽으로 다가만 옵니다(공격 없이).
+    /// 플레이어를 직접 때리진 않습니다. HP가 절반 밑으로 떨어지면 플레이어에게 달라붙어 보유
+    /// 색 구슬을 빼앗아 회복하고, 그렇지 않을 때는 플레이어 쪽으로 다가만 옵니다.
     ///
-    /// [[13 먹괴음 AI 설계]] BT_Enemy_Heup 그대로: HP&lt;50% → FindNearestColorRestoredArea + Absorb,
-    /// 아니면 MoveToPlayer. "구역 찾기"는 [[RestoredAreaRegistry]] 정적 유틸로 구현.
+    /// ⚠️ 2026-09-16 재설계 — 원래는 "가장 가까운 색 복원 구역([[RestoredAreaRegistry]])을
+    /// 찾아가 흡수"하는 방식이었는데, 사용자 요청으로 "플레이어한테 붙어서 플레이어의 색을
+    /// 흡수하는 느낌"으로 바꿨습니다 — 회복 대상이 고정된 환경 구역이 아니라 플레이어 자신이
+    /// 됨. [[ColorSystemManager.TryDrainRandomOrb]]로 보유 구슬을 하나 빼앗고, 그게 성공했을
+    /// 때만 그만큼 회복합니다(플레이어에게 구슬이 하나도 없으면 빼앗을 것도 회복할 것도 없음 —
+    /// "색을 빼앗아 회복한다"는 새 설정을 기계적으로도 일관되게 유지).
     ///
-    /// 단순화: 원안은 색마다 회복 폭이 다르지만(빨강 크게, 보라 작게 — 가시광선 스펙트럼 기준),
-    /// 구역별 색 정보까지 등록소에 저장하는 건 지금 범위를 넘어서서 **모든 구역 동일 회복량**으로
-    /// 단순화했습니다. 나중에 [[RestoredAreaRegistry]]가 색까지 같이 저장하게 확장하면 됩니다.
+    /// [[13 먹괴음 AI 설계]] BT_Enemy_Heup의 골격(HP&lt;50% → 흡수, 아니면 MoveToPlayer)은 그대로
+    /// 두고 "흡수 대상"만 바꾼 것 — 단순화: 원안은 색마다 회복 폭이 다르지만(빨강 크게, 보라
+    /// 작게), 지금은 어떤 색을 빼앗든 회복량 동일로 단순화했습니다.
     ///
     /// 2026-08-20: HP 50% 이상일 때 공격도 하도록 확장했다가, 실제로 공격이 들어오는지 체감이
     /// 잘 안 된다는 피드백으로 **다시 원래대로 비공격 유닛으로 되돌림**. 회복 히스테리시스(한 번
@@ -28,30 +32,46 @@ namespace Meokgoeeum
         [Header("스탯 (14 밸런스 수치 시트)")]
         public float moveSpeed = 2.5f;
 
-        [Header("흡수 (13 먹괴음 AI 설계)")]
-        [Tooltip("이 비율 밑으로 HP가 떨어지면 색 복원 구역을 찾아 회복하러 갑니다.")]
+        [Header("흡수 (13 먹괴음 AI 설계, 2026-09-16 대상을 플레이어로 재설계)")]
+        [Tooltip("이 비율 밑으로 HP가 떨어지면 플레이어에게 붙어 흡수하러 갑니다.")]
         [Range(0f, 1f)]
         public float lowHpThreshold = 0.5f;
 
-        [Tooltip("구역에 이만큼 가까워지면 흡수(회복)를 시작합니다.")]
+        [Tooltip("플레이어와 이만큼 가까워지면 달라붙어 흡수(회복)를 시작합니다.")]
         public float absorbRadius = 1.5f;
 
-        [Tooltip("초당 회복량입니다. (구역 안에 있는 동안 계속 적용)")]
+        [Tooltip("초당 흡수 시도 횟수입니다. 한 번 흡수에 성공할 때마다(플레이어에게 구슬이 있을 때만) 1만큼 회복합니다.")]
         public float healPerSecond = 5f;
 
         /// <summary>
-        /// 회복 구역에 도달해서 흡수를 막 시작한 순간(딱 한 번) 발동합니다.
-        /// 2026-08-20: 4층 [[WallExplosionHazard]]가 구독해서 "접근 전에 처치" 페널티를 겁니다.
+        /// 플레이어에게 달라붙어 흡수를 막 시작한 순간(딱 한 번) 발동합니다.
+        /// 2026-08-20: 4층 [[WallExplosionHazard]]가 구독해서 "제때 못 끊으면" 페널티를 겁니다 —
+        /// 2026-09-16 재설계로 트리거가 "환경 구역 도달"에서 "플레이어에게 달라붙음"으로 바뀜.
         /// </summary>
         public event System.Action OnAbsorbStart;
 
-        private enum State { Idle, Chase, SeekHealArea, Absorbing }
+        private enum State { Idle, Chase, SeekPlayerToAbsorb, Absorbing }
         private State state = State.Idle;
         private bool isHealingCommitted; // 한 번 회복 시작하면 100% 찰 때까지 true
 
         private EnemyHealth health;
-        private Vector3 healTargetPos;
-        private bool hasHealTarget;
+
+        /// <summary>
+        /// 2026-09-16 추가 — [[MonsterPaintParts]](부위 색칠 처치 시스템)가 붙어있으면 숫자
+        /// 체력 대신 그쪽 기준으로 저체력/회복 판정을 합니다. 없으면(아직 이 시스템을 안 붙인
+        /// 다른 상황) 기존 숫자 체력 그대로 동작.
+        ///
+        /// ⚠️ 2026-09-16 발견 — paintParts가 붙어있는데도 이 판정을 `health.CurrentHP`/
+        /// `health.maxHP`(숫자)로 그대로 했더니, `EnemyHealth.CurrentHP`는 이미 "남은 부위 수"로
+        /// 재해석돼있지만 `maxHP`는 그대로 20 같은 숫자라서 단위가 안 맞아 "저체력" 판정이
+        /// 스폰 직후부터 영원히 참으로 고정되는 버그가 있었음(사용자가 "몹이 다 똑같은데?"로
+        /// 리포트한 것과 별개로 발견 — 흡이 플레이어를 아예 안 쫓아오고 계속 회복 구역만
+        /// 찾아다니는 증상으로 나타남). `MonsterPaintParts.HealthFraction`(0~1, 같은 체계 안에서
+        /// 일관된 비율)을 쓰도록 고침.
+        /// </summary>
+        private MonsterPaintParts paintParts;
+
+        private float healPartTimer; // "다음 흡수 시도까지" 누적 시간
 
         protected override float MoveSpeed => moveSpeed;
 
@@ -59,7 +79,13 @@ namespace Meokgoeeum
         {
             base.Awake();
             health = GetComponent<EnemyHealth>();
+            paintParts = GetComponent<MonsterPaintParts>();
         }
+
+        /// <summary>0(전부 칠해짐/체력없음)~1(멀쩡함) 사이의 정규화된 체력 비율입니다.</summary>
+        private float HealthFraction() => paintParts != null
+            ? paintParts.HealthFraction
+            : (health.maxHP > 0f ? health.CurrentHP / health.maxHP : 1f);
 
         private void Update()
         {
@@ -69,9 +95,39 @@ namespace Meokgoeeum
             // 합니다 (최적화 원칙 — EnemyPyeong/EnemyWon과 동일한 이유).
             TickPerception();
 
-            // 회복은 상태가 유지되는 동안 매 프레임 스무스하게 적용합니다.
-            if (state == State.Absorbing)
-                health.Heal(healPerSecond * Time.deltaTime);
+            if (state != State.Absorbing) return;
+
+            // 플레이어가 흡수 도중 멀어지면 즉시 끊깁니다 — 고정된 환경 구역과 달리 플레이어는
+            // 움직이므로 매 프레임 거리 재확인이 필요합니다.
+            if (player == null || Vector3.Distance(transform.position, player.position) > absorbRadius)
+            {
+                state = State.SeekPlayerToAbsorb;
+                agent.isStopped = false;
+                animator?.SetBool("Special", false);
+                return;
+            }
+
+            healPartTimer += Time.deltaTime;
+            float interval = 1f / Mathf.Max(0.01f, healPerSecond);
+            while (healPartTimer >= interval)
+            {
+                healPartTimer -= interval;
+                TryAbsorbFromPlayer();
+            }
+        }
+
+        /// <summary>
+        /// 플레이어의 보유 색 구슬을 하나 빼앗아 그만큼 회복합니다. 플레이어에게 구슬이 하나도
+        /// 없으면 이번 시도는 그냥 아무 일도 안 합니다(빼앗을 색이 없으니 회복도 없음 — 새
+        /// "색을 빼앗아 회복한다"는 설정을 기계적으로도 일관되게 유지).
+        /// </summary>
+        private void TryAbsorbFromPlayer()
+        {
+            if (ColorSystemManager.Instance == null || !ColorSystemManager.Instance.TryDrainRandomOrb(out _))
+                return;
+
+            if (paintParts != null) paintParts.HealRandomPart();
+            else health.Heal(1f);
         }
 
         protected override void OnPerceptionUpdated()
@@ -80,7 +136,8 @@ namespace Meokgoeeum
         }
 
         /// <summary>
-        /// BT_Enemy_Heup의 Selector: HP 낮으면 회복 구역 탐색/흡수, 아니면 플레이어 쪽으로 이동만.
+        /// BT_Enemy_Heup의 Selector: HP 낮으면 플레이어에게 붙어 흡수, 아니면 플레이어 쪽으로
+        /// 이동만.
         ///
         /// 2026-08-20: [[13 먹괴음 AI 설계]] 원안은 "HP&lt;50%" 조건을 매 틱 재검사하는 순수
         /// Selector라서, 회복 중 HP가 50%를 살짝 넘는 순간 곧바로 멈춰버리는 문제가 있었습니다
@@ -90,45 +147,39 @@ namespace Meokgoeeum
         /// </summary>
         private void UpdateDecision()
         {
-            bool isLowHp = health.CurrentHP < health.maxHP * lowHpThreshold;
+            bool isLowHp = HealthFraction() < lowHpThreshold;
             if (isLowHp) isHealingCommitted = true;
 
             if (isHealingCommitted)
             {
-                if (health.CurrentHP >= health.maxHP)
+                if (HealthFraction() >= 1f)
                 {
                     isHealingCommitted = false; // 완전히 다 찼으면 회복 종료, 정상 행동으로 복귀
                     animator?.SetBool("Special", false); // [[changelog/2026-09-10_먹괴음5종-애니메이터컨트롤러]]
                 }
                 else
                 {
-                    UpdateSeekHealArea();
+                    UpdateSeekPlayerToAbsorb();
                     return;
                 }
             }
 
-            hasHealTarget = false; // 회복 완전히 끝났으면 다음에 다시 낮아졌을 때 새로 탐색
             state = player != null ? State.Chase : State.Idle;
 
             if (state == State.Chase)
                 agent.SetDestination(player.position);
         }
 
-        private void UpdateSeekHealArea()
+        private void UpdateSeekPlayerToAbsorb()
         {
-            if (!hasHealTarget)
+            if (player == null)
             {
-                hasHealTarget = RestoredAreaRegistry.TryFindNearest(transform.position, out healTargetPos);
-                if (!hasHealTarget)
-                {
-                    // 등록된 색 복원 구역이 하나도 없으면 할 수 있는 게 없어서 그냥 대기
-                    state = State.Idle;
-                    return;
-                }
+                state = State.Idle;
+                return;
             }
 
-            float distToHealArea = Vector3.Distance(transform.position, healTargetPos);
-            if (distToHealArea <= absorbRadius)
+            float distToPlayer = Vector3.Distance(transform.position, player.position);
+            if (distToPlayer <= absorbRadius)
             {
                 if (state != State.Absorbing) // 상태 전이 시점에만 1회 발동 (매 퍼셉션 틱마다 X)
                 {
@@ -140,9 +191,9 @@ namespace Meokgoeeum
             }
             else
             {
-                state = State.SeekHealArea;
+                state = State.SeekPlayerToAbsorb;
                 agent.isStopped = false;
-                agent.SetDestination(healTargetPos);
+                agent.SetDestination(player.position);
             }
         }
 

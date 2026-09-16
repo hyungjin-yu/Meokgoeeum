@@ -42,6 +42,14 @@ namespace Meokgoeeum
         public int PaintedCount => paintedRegions.Count;
         public bool AllPainted => TotalParts > 0 && PaintedCount >= TotalParts;
 
+        /// <summary>
+        /// 2026-09-16 추가 — "남은 부위 비율"(1=아무 데도 안 칠해짐, 0=전부 칠해짐). [[EnemyHeup]]처럼
+        /// 숫자 체력 비율(예: "50% 밑으로 떨어지면")로 행동을 바꾸던 종이 이 값을 쓰면, 부위 색칠
+        /// 체계에서도 같은 "저체력 판정" 의미를 유지할 수 있습니다 — currentHP/maxHP를 직접 읽으면
+        /// (TakeDamage가 그 필드들을 더는 안 건드리므로) 절대 안 맞는 판정이 되는 버그를 여기서 막음.
+        /// </summary>
+        public float HealthFraction => TotalParts > 0 ? (float)(TotalParts - PaintedCount) / TotalParts : 1f;
+
         private readonly Dictionary<Region, List<Renderer>> regionRenderers = new Dictionary<Region, List<Renderer>>();
         private readonly Dictionary<Region, List<Color>> regionOriginalColors = new Dictionary<Region, List<Color>>();
         private readonly HashSet<Region> paintedRegions = new HashSet<Region>();
@@ -110,6 +118,53 @@ namespace Meokgoeeum
 
             if (AllPainted)
                 OnAllPainted?.Invoke();
+        }
+
+        /// <summary>
+        /// 2026-09-16 추가 — 이미 칠해진 부위 중 하나를 무작위로 골라 원래(칠해지기 전) 색으로
+        /// 되돌립니다. [[EnemyHeup]]/[[CubeEnemyHeup]]의 "회복"이 이 체계에서 뜻하는 바 —
+        /// `PaintRandomPart()`의 정반대 동작. 이미 하나도 안 칠해진 상태면 아무 일도 안 합니다
+        /// (호출하는 쪽이 매번 확인할 필요 없이 안전하게 반복 호출 가능, PaintRandomPart와 동일한 관례).
+        /// </summary>
+        public void HealRandomPart()
+        {
+            EnsureBuilt();
+            if (paintedRegions.Count == 0) return;
+
+            var candidates = new List<Region>(paintedRegions);
+            Region chosen = candidates[Random.Range(0, candidates.Count)];
+            paintedRegions.Remove(chosen);
+
+            StartCoroutine(FadeRegionToOriginal(chosen));
+        }
+
+        private IEnumerator FadeRegionToOriginal(Region region)
+        {
+            var renderers = regionRenderers[region];
+            var originals = regionOriginalColors[region];
+
+            // 지금 실제로 보이는 색(대략 마지막으로 칠해진 색)에서 시작 — PaintRandomPart()가
+            // 매번 새 무작위 색으로 칠하므로 "현재 색"을 미리 캡처해둔 값으로 가정할 수 없습니다.
+            var startColors = new Color[renderers.Count];
+            for (int i = 0; i < renderers.Count; i++)
+                startColors[i] = renderers[i] != null ? renderers[i].material.color : originals[i];
+
+            float elapsed = 0f;
+            while (elapsed < fadeDuration)
+            {
+                elapsed += Time.deltaTime;
+                float t = elapsed / fadeDuration;
+                for (int i = 0; i < renderers.Count; i++)
+                {
+                    if (renderers[i] == null) continue;
+                    renderers[i].material.color = Color.Lerp(startColors[i], originals[i], t);
+                }
+                yield return null;
+            }
+
+            for (int i = 0; i < renderers.Count; i++)
+                if (renderers[i] != null)
+                    renderers[i].material.color = originals[i];
         }
 
         private IEnumerator FadeRegionToColor(Region region, Color target)

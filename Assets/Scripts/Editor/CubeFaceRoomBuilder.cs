@@ -119,6 +119,27 @@ namespace Meokgoeeum
                 fadeGo.AddComponent<FadeManager>();
             }
 
+            // 2026-09-16 추가 — [[EnemyHeup]]/[[CubeEnemyHeup]]을 "플레이어에게 붙어 색 구슬을
+            // 빼앗아 회복"으로 재설계하다가, 이 프로토타입 씬엔 애초에 색 구슬 시스템 자체가
+            // 하나도 없다는 걸 발견함(ColorSystemManager/ColorOrbPool 전부 없음 — 이동/AI 검증용
+            // 씬이라 처음부터 연결 안 돼있었던 것으로 보임). 평지 던전(SC_Game)의 GameSystems와
+            // 같은 구성으로 최소한만 연결 — 둘 다 프리팹/외부 참조 없이 그냥 컴포넌트만 있으면
+            // 됨. ColorSkillController(강타/흐름/번쩍)는 PlayerController를 강제로 요구해서
+            // CubeSurfaceWalker 기반인 이 플레이어에는 그대로 못 붙임 — 별도 작업 필요, 지금은
+            // 스킵(구슬 드랍/보유/흡수만 연결).
+            if (Object.FindFirstObjectByType<ColorSystemManager>() == null)
+            {
+                var colorSystemGo = new GameObject("ColorSystemManager");
+                SceneManager.MoveGameObjectToScene(colorSystemGo, scene);
+                colorSystemGo.AddComponent<ColorSystemManager>();
+            }
+            if (Object.FindFirstObjectByType<ColorOrbPool>() == null)
+            {
+                var orbPoolGo = new GameObject("ColorOrbPool");
+                SceneManager.MoveGameObjectToScene(orbPoolGo, scene);
+                orbPoolGo.AddComponent<ColorOrbPool>();
+            }
+
             PlacePlayerSpawn(cube.transform, Vector3.forward);
             walker?.SetCurrentFaceNormal(Vector3.forward);
 
