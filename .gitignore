@@ -113,3 +113,8 @@ InitTestScene*.unity*
 # 서드파티 에셋스토어 패키지 (에디터에서 언제든 재다운로드 가능, 저장소에 안 넣음)
 /Assets/Kevin Iglesias/
 /Assets/Kevin Iglesias.meta
+
+# 2026-09-16 — 유니티짱(unity-chan!) 에셋, 218MB. 사용자 확인: 최종적으로는 다른 플레이어
+# 모델을 쓸 예정이라 지금은 테스트용으로만 받아둔 것 — 저장소에 영구히 안 넣음.
+/Assets/unity-chan!/
+/Assets/unity-chan!.meta

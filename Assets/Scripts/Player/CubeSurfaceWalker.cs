@@ -84,6 +84,16 @@ namespace Meokgoeeum
             facingForward = Vector3.ProjectOnPlane(transform.forward, CurrentSurfaceNormal).normalized;
             if (facingForward.sqrMagnitude < 0.0001f)
                 facingForward = AnyTangentTo(CurrentSurfaceNormal);
+
+            // ⚠️ 2026-09-16 발견 — 여기서 facingForward/CurrentSurfaceNormal 같은 "내부 추적용"
+            // 상태만 계산하고 실제 transform.rotation은 안 건드리고 있었음. 캡슐(대칭 메쉬)일 땐
+            // 안 움직인 채로 스폰돼도 회전이 잘못돼있는 게 안 보였는데, 유니티짱(비대칭 캐릭터
+            // 모델)을 자식으로 붙이고 나서야 스폰 직후(첫 이동 전) 캐릭터가 면 기준으로 옆으로
+            // 누운 것처럼 서있는 게 실제로 드러남 — Update()의 Slerp 보정은 "이동을 시작해야"
+            // 걸리므로 가만히 서있는 스폰 순간엔 적용 전 상태(에디터에 저장된 회전값, 보통
+            // identity)가 그대로 노출됨. 스폰 즉시 올바른 회전으로 맞춰서 첫 이동 전에도 정상적으로
+            // 면 위에 서있는 것처럼 보이게 함.
+            transform.rotation = Quaternion.LookRotation(facingForward, CurrentSurfaceNormal);
         }
 
         /// <summary>
