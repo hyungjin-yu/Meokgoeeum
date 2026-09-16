@@ -110,6 +110,18 @@ namespace Meokgoeeum
         private float smoothedMouseX;
 
         /// <summary>
+        /// 2026-09-16 발견 — 마우스를 전혀 안 건드렸는데도 Play 진입 직후 캐릭터가 곡선으로
+        /// 움직이는 버그. 원인: Play 버튼을 누르려고 마우스를 움직인 잔여 입력(또는 커서 잠금
+        /// 시점의 워프)이 첫 프레임에 큰 델타 값으로 한 번 잡히고, `mouseSmoothing` 저역 통과
+        /// 필터 때문에 그 값이 실측상 1초 이상에 걸쳐 서서히 0으로 줄어들면서 그동안 계속
+        /// 카메라 기준 방향을 돌려버림 — 콘솔 로그로 rawMouseX=0인데 smoothedMouseX만 한참
+        /// 감쇠하는 걸 직접 확인해서 찾음. ⚠️ 처음엔 "첫 5프레임만 무시"로 고쳤는데, 실측 로그를
+        /// 보니 감쇠가 다 끝나는 데 1초 넘게 걸려서 5프레임(0.08초)으론 어림도 없었음 — 프레임 수
+        /// 대신 실제 경과 시간 기준으로 늘림.
+        /// </summary>
+        private float mouseIgnoreTimeRemaining = 1f;
+
+        /// <summary>
         /// 2026-09-16 추가 — 모델 자식 오브젝트에 붙어있는 Animator입니다(원본 [[EnemyBase]]와
         /// 동일한 "루트=로직, 자식=시각 모델" 관례). 실제 캐릭터 모델(테스트용 유니티짱)이 없는
         /// 동안은 null이라 이동 애니메이션 갱신이 전부 조용히 no-op됩니다.
@@ -229,7 +241,25 @@ namespace Meokgoeeum
             // WASD 입력을 해석하는 기준일 뿐입니다(아래 4번에서 characterForward가 실제 캐릭터
             // 회전을 결정). [[CubeSurfaceCamera]]가 이 방향(CameraForward)을 기준으로 캐릭터
             // 뒤를 따라갑니다 — 가만히 서서 마우스만 돌려도 카메라가 자유롭게 둘러볼 수 있음.
-            float rawMouseX = Mouse.current != null ? Mouse.current.delta.x.ReadValue() : 0f;
+            // ⚠️ 2026-09-16 발견 ② — 위 "1초 무시" 수정만으론 부족했음. 실측 영상에 마우스
+            // 커서(흰 화살표)가 화면에 떠 있는 게 보여서 확인해보니 Cursor.lockState가 None으로
+            // 풀려있었음(Esc를 눌렀거나 Game 뷰 포커스를 잃으면 풀림) — 잠금이 풀린 채로는 녹화
+            // 중 손이 마우스에 살짝만 스쳐도 그 움직임이 그대로 카메라 회전에 들어가서 곡선으로
+            // 이동하는 것처럼 보였음. 커서가 실제로 잠겨있을 때만 마우스 입력을 반영하도록 함.
+            float rawMouseX;
+            if (mouseIgnoreTimeRemaining > 0f)
+            {
+                mouseIgnoreTimeRemaining -= Time.deltaTime;
+                rawMouseX = 0f;
+            }
+            else if (Cursor.lockState != CursorLockMode.Locked)
+            {
+                rawMouseX = 0f;
+            }
+            else
+            {
+                rawMouseX = Mouse.current != null ? Mouse.current.delta.x.ReadValue() : 0f;
+            }
             smoothedMouseX = Mathf.Lerp(smoothedMouseX, rawMouseX, mouseSmoothing * Time.deltaTime);
             cameraForward = Quaternion.AngleAxis(smoothedMouseX * mouseSensitivity, normal) * cameraForward;
 
