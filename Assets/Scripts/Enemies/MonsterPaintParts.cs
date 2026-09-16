@@ -194,8 +194,12 @@ namespace Meokgoeeum
         /// 렌더러 오브젝트 이름으로 7부위 중 하나를 판정합니다. 종 접두사(예: "Pyeong")와
         /// 무관하게 접미사 패턴만 봅니다 — 눈/턱드립처럼 부위라기보단 장식인 것들은 가장 가까운
         /// 구조적 부위(머리)로 편입시킵니다.
+        ///
+        /// 2026-09-16 — `internal`로 노출해서 [[PlayerPaintParts]](플레이어 피격 시 흑백화)가
+        /// 같은 분류 규칙을 재사용할 수 있게 함 — 몹처럼 부위별로 렌더러가 쪼개진 모델이면
+        /// 코드 중복 없이 그대로 맞물립니다.
         /// </summary>
-        private static Region? ClassifyByName(string name)
+        internal static Region? ClassifyByName(string name)
         {
             if (name.Contains("Chest")) return Region.Chest;
             if (name.Contains("Waist") || name.Contains("Pelvis")) return Region.Waist;

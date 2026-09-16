@@ -33,10 +33,20 @@ namespace Meokgoeeum
         /// </summary>
         private Animator animator;
 
+        /// <summary>
+        /// 2026-09-16 추가 — [[PlayerPaintParts]](부위 흑백화 — [[MonsterPaintParts]]의 거울상)가
+        /// 붙어있으면 숫자 체력 대신 그쪽으로 위임합니다. "맞을 때마다 무작위 부위가 흑백이 되고,
+        /// 몹과 똑같이 7부위가 전부 흑백이 되면 사망"이라는 사용자 요청 그대로 — 없으면(아직
+        /// 이 시스템을 안 붙인 경우) 기존 숫자 체력 그대로 동작.
+        /// </summary>
+        private PlayerPaintParts paintParts;
+
         /// <summary>HP가 0이 됐을 때 딱 한 번 발동합니다. [[GameOverManager]]가 구독합니다.</summary>
         public event System.Action OnDeath;
 
-        public float CurrentHP => currentHP;
+        // 2026-09-16 — MonsterPaintParts 계열과 동일하게, paintParts가 있으면 "남은 안 칠해진
+        // 부위 수"를 HP처럼 노출합니다.
+        public float CurrentHP => paintParts != null ? paintParts.TotalParts - paintParts.DrainedCount : currentHP;
 
         private void Awake()
         {
@@ -52,6 +62,7 @@ namespace Meokgoeeum
             }
 
             animator = GetComponentInChildren<Animator>();
+            paintParts = GetComponent<PlayerPaintParts>();
             currentHP = maxHP;
         }
 
@@ -100,9 +111,22 @@ namespace Meokgoeeum
                 return;
             }
 
+            animator?.SetTrigger("Damaged"); // 2026-09-16 추가 — 맞을 때마다(죽는 순간 포함) 재생
+
+            if (paintParts != null)
+            {
+                paintParts.DrainRandomPart();
+                if (paintParts.AllDrained)
+                {
+                    isDead = true;
+                    Debug.Log("[PlayerHealth] 플레이어 사망! (전신 흑백화)");
+                    OnDeath?.Invoke();
+                }
+                return;
+            }
+
             currentHP = Mathf.Max(0f, currentHP - amount);
             // 2026-08-19: 피격마다 찍히는 로그가 다른 디버깅(EncounterSpawner 등) 콘솔을 뒤덮어서 제거.
-            animator?.SetTrigger("Damaged"); // 2026-09-16 추가 — 맞을 때마다(죽는 순간 포함) 재생
 
             if (currentHP <= 0f)
             {
