@@ -58,14 +58,24 @@ namespace Meokgoeeum
                  "프레임 파묻히는 클램프 버그였음).")]
         public float surfaceOffset = 1f;
 
-        [Tooltip("이동 속도입니다.")]
+        [Tooltip("최대 이동 속도입니다.")]
         public float moveSpeed = 6f;
+
+        [Tooltip("2026-09-16 추가 — 이동 속도가 목표 속도(moveSpeed)에 도달/이탈하는 데 걸리는 " +
+                 "가속도입니다(초당 유닛). 방향을 급하게 바꿔도 순간 반대 방향으로 순간이동하듯 " +
+                 "꺾이지 않고, 감속→가속 과정을 거쳐 자연스럽게 방향을 바꿉니다.")]
+        public float acceleration = 30f;
 
         [Tooltip("중력 가속도입니다. (표면을 향하는 방향으로 작용)")]
         public float gravity = 20f;
 
-        [Tooltip("모서리를 넘을 때 자세(up 벡터)가 새 면 방향으로 돌아가는 속도입니다.")]
-        public float reorientSpeed = 4f;
+        [Tooltip("캐릭터 몸이 이동 방향을 따라 도는 속도입니다(초당 각도). " +
+                 "⚠️ 2026-09-16 — 원래는 Slerp 블렌드 비율(프레임마다 남은 각도의 일정 비율만 " +
+                 "따라잡는 방식)이었는데, 방향을 급히 바꾸면 몸이 옛 방향을 본 채로 최대 0.5~0.7초간 " +
+                 "새 방향으로 미끄러지듯 이동하는 것처럼 보이는 문제가 있었음(\"몬스터헌터 같은 " +
+                 "느낌을 원한다\"는 사용자 피드백으로 발견) — 초당 각도로 상한을 두는 방식(RotateTowards)으로 " +
+                 "바꾸고 기본값도 대폭 올려서, 이 미끄러짐 없이 빠르고 일정하게 도는 것을 우선함.")]
+        public float reorientSpeed = 720f;
 
         [Tooltip("마우스 좌우로 캐릭터를 돌리는 감도입니다. 마우스 델타(픽셀)에 직접 곱해지므로 값이 작아야 정상입니다.")]
         public float mouseSensitivity = 0.15f;
@@ -90,6 +100,13 @@ namespace Meokgoeeum
 
         private Vector2 moveInput;
         private float verticalSpeed; // 표면 법선 방향 기준 속도(음수=표면 쪽으로 떨어지는 중)
+
+        /// <summary>
+        /// 2026-09-16 추가 — 실제 접선 이동 속도(가속도로 서서히 목표 속도를 따라감). 캐릭터의
+        /// 실제 바라보는 방향(characterForward)도 입력 방향이 아니라 이 벡터를 기준으로 정합니다 —
+        /// 그래야 방향을 급히 바꿔도 몸이 "지금 실제로 가고 있는 방향"만 보게 됩니다.
+        /// </summary>
+        private Vector3 currentVelocity;
 
         /// <summary>
         /// 마우스로 돌아가는 "카메라 기준 방향" — WASD 입력(moveDir)을 이 방향 기준으로 해석합니다.
@@ -282,19 +299,32 @@ namespace Meokgoeeum
             Vector3 moveDir = cameraForward * moveInput.y + cameraRight * moveInput.x;
             if (moveDir.sqrMagnitude > 1f) moveDir.Normalize();
 
+            // ⚠️ 2026-09-16 발견 — "몬스터헌터 같은 느낌을 원한다"는 피드백으로, 입력 방향이
+            // 바뀌는 즉시 실제 이동 방향도 순간적으로 뒤집히던 것(감속 없이 반대 방향으로 순간
+            // 전환)이 "미끄러짐"의 진짜 원인 중 하나였음을 확인 — 목표 속도(targetVelocity)로
+            // 즉시 점프하지 않고 `acceleration`으로 서서히 따라가게 해서, 방향을 급히 바꾸면
+            // 먼저 감속했다가 새 방향으로 다시 가속하는 자연스러운 궤적이 나오게 함.
+            Vector3 targetVelocity = moveDir * moveSpeed;
+            currentVelocity = Vector3.MoveTowards(currentVelocity, targetVelocity, acceleration * Time.deltaTime);
+
             // 2026-09-16 재설계 — 사용자 요청: "마우스를 회전하든 좌우로 움직이든 한 방향만
             // 보고 있어" → "이동하는 방향을 자동으로 바라보게 해줘". 캐릭터가 실제로 보는 방향은
             // 더 이상 마우스가 아니라 지금 움직이는 방향이 결정합니다 — 움직이는 순간 그 방향으로
             // 스냅되고, 입력이 없으면(제자리 정지) 마지막으로 보던 방향을 그대로 유지합니다.
-            if (moveDir.sqrMagnitude > 0.0001f)
-                characterForward = moveDir.normalized;
+            // ⚠️ 2026-09-16 — 기준을 moveDir(입력 방향, 순간적으로 뒤집힘)에서 currentVelocity
+            // (실제로 가속/감속을 거친 속도)로 바꿈 — 그래야 방향을 급히 바꿔도 몸이 "지금 실제로
+            // 가고 있는 방향"만 보고, 감속 중(속도가 거의 0)에는 마지막으로 걷던 방향을 유지하다가
+            // 새 방향으로 속도가 붙기 시작해야 비로소 돎.
+            if (currentVelocity.sqrMagnitude > 0.01f)
+                characterForward = currentVelocity.normalized;
 
-            // 2026-09-16 추가 — 걷기 애니메이션. moveInput.magnitude(항상 0 이상)를 그대로 씀 —
+            // 2026-09-16 추가 — 걷기 애니메이션. 실제 속도(currentVelocity)를 moveSpeed로 나눠
+            // 0~1 범위로 정규화해서 넘김(가속/감속 램프가 그대로 애니메이션 블렌드에도 반영됨) —
             // 유니티짱 로코모션 컨트롤러의 Speed 파라미터는 전진/후진 부호(±)로 다른 애니메이션을
             // 트는데, 이 프로토타입은 순수 스트레이프 입력도 "그냥 걷는 중"으로 보여주는 쪽이
             // 자연스럽다고 판단해 부호 없는 크기를 그대로 넘김(뒤로 가도 앞으로 걷는 모션 재생 —
             // 사소한 부정확함이지만 "스트레이프만 하면 가만히 서있는 것처럼 보이는" 쪽보다 나음).
-            animator?.SetFloat("Speed", moveInput.magnitude);
+            animator?.SetFloat("Speed", currentVelocity.magnitude / Mathf.Max(moveSpeed, 0.0001f));
 
             // ⚠️ 2026-09-15 추가 — 지금까지 이 워커는 벽/문 막음 큐브([[CubeFaceRoomBuilder]]/
             // [[CubeDungeonRoomKit]]이 짓는 것들)를 전혀 막지 않고 그냥 통과했습니다("방A부터 몹을
@@ -303,7 +333,7 @@ namespace Meokgoeeum
             // 계산으로 흉내냈지만, 벽 차단은 그런 대체 로직이 아예 없었던 것. 완전한 collide-and-
             // slide 대신, "이번 프레임 접선 이동(WASD) 목적지가 막혀있으면 그 성분만 취소"하는
             // 단순한 방식으로 막습니다 — 수직(중력/면 고정) 성분은 그대로 둬서 표면에서 안 떨어짐.
-            Vector3 tangentialMotion = moveDir * moveSpeed * Time.deltaTime;
+            Vector3 tangentialMotion = currentVelocity * Time.deltaTime;
             Vector3 verticalMotion = normal * verticalSpeed * Time.deltaTime;
 
             if (tangentialMotion.sqrMagnitude > 0.0001f && WouldCollide(transform.position + tangentialMotion))
@@ -321,10 +351,15 @@ namespace Meokgoeeum
             afterLocal[axis] = (cubeHalfExtent + surfaceOffset) * Mathf.Sign(normal[axis]);
             transform.position = CubeCenterPos() + afterLocal;
 
-            // 5. 캐릭터의 실제 시각적 회전 — characterForward(이동 방향 기준)를 향해 부드럽게.
+            // 5. 캐릭터의 실제 시각적 회전 — characterForward(이동 방향 기준)를 향해 회전.
             // up 정렬도 이 한 번의 LookRotation에 같이 반영됨.
+            // ⚠️ 2026-09-16 — Slerp(비율 기반)에서 RotateTowards(초당 각도 상한 기반)로 변경.
+            // Slerp는 남은 각도의 일정 비율만 매 프레임 따라잡는 방식이라 큰 각도(예: 180도 반전)를
+            // 다 도는 데 실측상 0.5~0.7초씩 걸렸음 — 그동안 몸은 옛 방향을 본 채로 새 방향으로
+            // 미끄러지듯 이동해서 "몬스터헌터 같은 느낌"과 거리가 멀었음. RotateTowards는 각도
+            // 크기와 무관하게 항상 초당 reorientSpeed도만큼만 도니, 큰 회전도 빠르고 일정하게 끝남.
             Quaternion lookRot = Quaternion.LookRotation(characterForward, normal);
-            transform.rotation = Quaternion.Slerp(transform.rotation, lookRot, reorientSpeed * Time.deltaTime);
+            transform.rotation = Quaternion.RotateTowards(transform.rotation, lookRot, reorientSpeed * Time.deltaTime);
         }
 
         /// <summary>
