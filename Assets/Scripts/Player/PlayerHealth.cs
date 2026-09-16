@@ -26,6 +26,13 @@ namespace Meokgoeeum
         private bool isInvulnerable; // [[PlayerDodge]]의 구르기 무적 프레임(i-frame) 동안 true
         private bool isDead;
 
+        /// <summary>
+        /// 2026-09-16 추가 — 모델 자식 오브젝트에 붙어있는 Animator입니다(원본 [[EnemyBase]]와
+        /// 동일한 관례). 실제 캐릭터 모델(테스트용 유니티짱)이 없는 동안은 null이라 피격
+        /// 애니메이션 트리거가 조용히 no-op됩니다.
+        /// </summary>
+        private Animator animator;
+
         /// <summary>HP가 0이 됐을 때 딱 한 번 발동합니다. [[GameOverManager]]가 구독합니다.</summary>
         public event System.Action OnDeath;
 
@@ -44,6 +51,7 @@ namespace Meokgoeeum
                 return;
             }
 
+            animator = GetComponentInChildren<Animator>();
             currentHP = maxHP;
         }
 
@@ -94,6 +102,7 @@ namespace Meokgoeeum
 
             currentHP = Mathf.Max(0f, currentHP - amount);
             // 2026-08-19: 피격마다 찍히는 로그가 다른 디버깅(EncounterSpawner 등) 콘솔을 뒤덮어서 제거.
+            animator?.SetTrigger("Damaged"); // 2026-09-16 추가 — 맞을 때마다(죽는 순간 포함) 재생
 
             if (currentHP <= 0f)
             {

@@ -77,8 +77,16 @@ namespace Meokgoeeum
         private Vector3 lastNormal; // 면이 바뀌었는지 감지하기 위한 직전 프레임 법선
         private float smoothedMouseX;
 
+        /// <summary>
+        /// 2026-09-16 추가 — 모델 자식 오브젝트에 붙어있는 Animator입니다(원본 [[EnemyBase]]와
+        /// 동일한 "루트=로직, 자식=시각 모델" 관례). 실제 캐릭터 모델(테스트용 유니티짱)이 없는
+        /// 동안은 null이라 이동 애니메이션 갱신이 전부 조용히 no-op됩니다.
+        /// </summary>
+        private Animator animator;
+
         private void Start()
         {
+            animator = GetComponentInChildren<Animator>();
             CurrentSurfaceNormal = EstimateSurfaceNormalFromPosition();
             lastNormal = CurrentSurfaceNormal;
             facingForward = Vector3.ProjectOnPlane(transform.forward, CurrentSurfaceNormal).normalized;
@@ -199,6 +207,13 @@ namespace Meokgoeeum
             // 4. 이동 = 캐릭터가 보는 방향(facingForward/facingRight) 기준 — 카메라 방향과 무관.
             Vector3 moveDir = facingForward * moveInput.y + facingRight * moveInput.x;
             if (moveDir.sqrMagnitude > 1f) moveDir.Normalize();
+
+            // 2026-09-16 추가 — 걷기 애니메이션. moveInput.magnitude(항상 0 이상)를 그대로 씀 —
+            // 유니티짱 로코모션 컨트롤러의 Speed 파라미터는 전진/후진 부호(±)로 다른 애니메이션을
+            // 트는데, 이 프로토타입은 순수 스트레이프 입력도 "그냥 걷는 중"으로 보여주는 쪽이
+            // 자연스럽다고 판단해 부호 없는 크기를 그대로 넘김(뒤로 가도 앞으로 걷는 모션 재생 —
+            // 사소한 부정확함이지만 "스트레이프만 하면 가만히 서있는 것처럼 보이는" 쪽보다 나음).
+            animator?.SetFloat("Speed", moveInput.magnitude);
 
             // ⚠️ 2026-09-15 추가 — 지금까지 이 워커는 벽/문 막음 큐브([[CubeFaceRoomBuilder]]/
             // [[CubeDungeonRoomKit]]이 짓는 것들)를 전혀 막지 않고 그냥 통과했습니다("방A부터 몹을
