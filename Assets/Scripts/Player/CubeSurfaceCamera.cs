@@ -14,6 +14,14 @@ namespace Meokgoeeum
     /// "어느 면으로 이동하든 W를 누르면 캐릭터 기준으로 앞으로, 카메라랑 같이 움직였으면 좋겠다").
     /// 마우스 좌우 회전을 [[CubeSurfaceWalker]](캐릭터 자체)로 옮기고, 이 카메라는 이제 순수하게
     /// "캐릭터 뒤를 따라가기만" 합니다 — 독자적인 방향을 전혀 안 가짐.
+    ///
+    /// ⚠️ 2026-09-16 재설계 ② — [[CubeSurfaceWalker]]가 "마우스 기준 방향(CameraForward)"과
+    /// "캐릭터가 실제로 보는 방향(이동 방향이 결정)"을 분리하면서, 이 카메라는 `transform.forward`
+    /// (=캐릭터 실제 회전, 이제 이동 방향을 따름) 대신 `CameraForward`를 기준으로 뒤를 따라갑니다 —
+    /// 그래야 가만히 서서 마우스만 돌려도 카메라가 자유롭게 둘러볼 수 있습니다(캐릭터가 안
+    /// 움직이면 `transform.forward`는 그대로라 카메라도 안 움직이게 됨). `CameraForward`도
+    /// `characterForward`와 동일한 parallel-transport 처리를 받으므로, 면이 바뀔 때마다 카메라를
+    /// 다시 돌려줘야 했던 예전 문제는 재발하지 않습니다.
     /// </summary>
     public class CubeSurfaceCamera : MonoBehaviour
     {
@@ -84,8 +92,10 @@ namespace Meokgoeeum
             if (Mathf.Abs(scroll) > 0.01f)
                 zoom = Mathf.Clamp(zoom - Mathf.Sign(scroll) * zoomSpeed, minZoom, maxZoom);
 
-            // 캐릭터 forward를 그대로 따라감 — 카메라는 독자적인 방향이 없음.
-            Vector3 desiredPos = target.transform.position + smoothedUp * (height * zoom) - target.transform.forward * (distance * zoom);
+            // 2026-09-16 — 캐릭터의 실제 회전(transform.forward, 이제 이동 방향을 따름)이 아니라
+            // 마우스로 돌아가는 CameraForward를 기준으로 뒤를 따라감 — 그래야 가만히 서서
+            // 마우스만 돌려도 카메라가 둘러볼 수 있음.
+            Vector3 desiredPos = target.transform.position + smoothedUp * (height * zoom) - target.CameraForward * (distance * zoom);
             transform.position = Vector3.Lerp(transform.position, desiredPos, followSpeed * Time.deltaTime);
 
             Quaternion desiredRot = Quaternion.LookRotation(target.transform.position - transform.position, smoothedUp);

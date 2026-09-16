@@ -16,6 +16,16 @@ namespace Meokgoeeum
     /// 그래서 마우스 좌우 회전을 카메라([[CubeSurfaceCamera]])가 아니라 여기(캐릭터 자체의
     /// facingForward)로 옮겼다 — 이제 카메라는 순수하게 캐릭터를 뒤따라가기만 한다.
     ///
+    /// ⚠️ 2026-09-16 재설계 ② — 실제 캐릭터 모델(유니티짱)을 붙이고 나서 사용자가 "마우스를
+    /// 회전하든 좌우로 움직이든 한 방향만 보고 있어"로 리포트 → 원하는 건 "이동하는 방향을
+    /// 자동으로 바라보는" 방식이었다. `facingForward` 하나였던 걸 `cameraForward`(마우스로
+    /// 돌아가는 카메라 기준 방향 — WASD 입력 해석 기준)와 `characterForward`(실제 캐릭터가
+    /// 보는 방향 — 이동 방향이 결정, 안 움직이면 마지막 방향 유지)로 분리했다. [[CubeSurfaceCamera]]는
+    /// 이제 `transform.forward` 대신 `CameraForward`를 기준으로 캐릭터 뒤를 따라가서, 가만히
+    /// 서서 마우스만 돌려도 자유롭게 둘러볼 수 있다 — ①에서 있었던 "면이 바뀔 때마다 카메라를
+    /// 다시 돌려줘야 하는" 문제는 `cameraForward`도 `characterForward`와 동일한 parallel-transport
+    /// 처리를 받아서 재발하지 않는다.
+    ///
     /// ⚠️ 2026-09-12 발견 ① — 처음엔 CharacterController.Move()를 썼는데, 면을 넘어가는 순간
     /// (transform.up이 (0,1,0)→(0,0,1)로 바뀌는 순간) 플레이어가 의도와 다른 축(월드 Y)으로
     /// 계속 미끄러지는 버그를 리플렉션 스텝 테스트로 실측 확인했다. CharacterController는
@@ -71,9 +81,31 @@ namespace Meokgoeeum
                  "지날 때만 바뀝니다 — 매 프레임 좌표로 재계산하지 않습니다.")]
         public Vector3 CurrentSurfaceNormal { get; private set; } = Vector3.up;
 
+        /// <summary>
+        /// 2026-09-16 재설계 — [[CubeSurfaceCamera]]가 참조하는 "카메라 기준 방향"입니다.
+        /// 마우스로 돌아가며, WASD 입력을 해석하는 기준이 됩니다(예전엔 이게 곧 캐릭터가
+        /// 보는 방향이기도 했는데, 이제 분리됨 — 아래 `characterForward` 참고).
+        /// </summary>
+        public Vector3 CameraForward => cameraForward;
+
         private Vector2 moveInput;
         private float verticalSpeed; // 표면 법선 방향 기준 속도(음수=표면 쪽으로 떨어지는 중)
-        private Vector3 facingForward; // 캐릭터가 실제로 바라보는 접선 방향 — 마우스로 회전시킴
+
+        /// <summary>
+        /// 마우스로 돌아가는 "카메라 기준 방향" — WASD 입력(moveDir)을 이 방향 기준으로 해석합니다.
+        /// 예전엔 이 벡터가 곧 캐릭터의 실제 시각적 회전(facingForward)이기도 했는데, 2026-09-16
+        /// 사용자 요청("마우스를 회전하든 좌우로 움직이든 한 방향만 보고 있어" → "이동하는 방향을
+        /// 자동으로 바라보게 해줘")으로 분리했습니다.
+        /// </summary>
+        private Vector3 cameraForward;
+
+        /// <summary>
+        /// 캐릭터가 실제로 바라보는(=transform.rotation이 향하는) 접선 방향입니다. 마우스가 아니라
+        /// **이동 방향**이 이걸 결정합니다 — 움직이는 순간 그 방향으로 스냅되고, 안 움직이면
+        /// 마지막으로 보던 방향을 그대로 유지합니다(카메라 방향으로 되돌아가지 않음).
+        /// </summary>
+        private Vector3 characterForward;
+
         private Vector3 lastNormal; // 면이 바뀌었는지 감지하기 위한 직전 프레임 법선
         private float smoothedMouseX;
 
@@ -89,11 +121,12 @@ namespace Meokgoeeum
             animator = GetComponentInChildren<Animator>();
             CurrentSurfaceNormal = EstimateSurfaceNormalFromPosition();
             lastNormal = CurrentSurfaceNormal;
-            facingForward = Vector3.ProjectOnPlane(transform.forward, CurrentSurfaceNormal).normalized;
-            if (facingForward.sqrMagnitude < 0.0001f)
-                facingForward = AnyTangentTo(CurrentSurfaceNormal);
+            cameraForward = Vector3.ProjectOnPlane(transform.forward, CurrentSurfaceNormal).normalized;
+            if (cameraForward.sqrMagnitude < 0.0001f)
+                cameraForward = AnyTangentTo(CurrentSurfaceNormal);
+            characterForward = cameraForward;
 
-            // ⚠️ 2026-09-16 발견 — 여기서 facingForward/CurrentSurfaceNormal 같은 "내부 추적용"
+            // ⚠️ 2026-09-16 발견 — 여기서 cameraForward/CurrentSurfaceNormal 같은 "내부 추적용"
             // 상태만 계산하고 실제 transform.rotation은 안 건드리고 있었음. 캡슐(대칭 메쉬)일 땐
             // 안 움직인 채로 스폰돼도 회전이 잘못돼있는 게 안 보였는데, 유니티짱(비대칭 캐릭터
             // 모델)을 자식으로 붙이고 나서야 스폰 직후(첫 이동 전) 캐릭터가 면 기준으로 옆으로
@@ -101,7 +134,7 @@ namespace Meokgoeeum
             // 걸리므로 가만히 서있는 스폰 순간엔 적용 전 상태(에디터에 저장된 회전값, 보통
             // identity)가 그대로 노출됨. 스폰 즉시 올바른 회전으로 맞춰서 첫 이동 전에도 정상적으로
             // 면 위에 서있는 것처럼 보이게 함.
-            transform.rotation = Quaternion.LookRotation(facingForward, CurrentSurfaceNormal);
+            transform.rotation = Quaternion.LookRotation(characterForward, CurrentSurfaceNormal);
         }
 
         /// <summary>
@@ -139,7 +172,8 @@ namespace Meokgoeeum
         {
             CurrentSurfaceNormal = normal;
             lastNormal = normal;
-            facingForward = AnyTangentTo(normal);
+            cameraForward = AnyTangentTo(normal);
+            characterForward = cameraForward;
         }
 
         /// <summary>리플렉션 스텝 테스트에서 값을 직접 주입할 때 씁니다.</summary>
@@ -164,8 +198,8 @@ namespace Meokgoeeum
 
             Vector3 normal = CurrentSurfaceNormal; // 트리거로만 바뀜 — 여기서 재계산하지 않음
 
-            // 1. 면이 바뀐 순간엔 facingForward를 "평면에 납작하게 투영"하지 않고, 옛 법선에서
-            // 새 법선으로 가는 회전을 facingForward에도 똑같이 적용해서 옮깁니다(parallel
+            // 1. 면이 바뀐 순간엔 cameraForward/characterForward 둘 다 "평면에 납작하게 투영"하지
+            // 않고, 옛 법선에서 새 법선으로 가는 회전을 그대로 적용해서 옮깁니다(parallel
             // transport) — 이렇게 해야 모서리를 곧장 가로질러 걸을 때 방향이 왜곡되지 않고
             // "쭉 걸어온 방향 그대로" 이어집니다.
             // ⚠️ 2026-09-12 발견 — 처음엔 매 프레임 ProjectOnPlane으로 재투영했는데, 이건 벡터를
@@ -175,22 +209,31 @@ namespace Meokgoeeum
             if (Vector3.Dot(normal, lastNormal) < 0.999f)
             {
                 Quaternion transport = Quaternion.FromToRotation(lastNormal, normal);
-                facingForward = transport * facingForward;
+                cameraForward = transport * cameraForward;
+                characterForward = transport * characterForward;
                 lastNormal = normal;
             }
-            facingForward = Vector3.ProjectOnPlane(facingForward, normal); // 부동소수점 오차만 가볍게 보정
-            if (facingForward.sqrMagnitude < 0.0001f)
-                facingForward = AnyTangentTo(normal);
+            cameraForward = Vector3.ProjectOnPlane(cameraForward, normal); // 부동소수점 오차만 가볍게 보정
+            if (cameraForward.sqrMagnitude < 0.0001f)
+                cameraForward = AnyTangentTo(normal);
             else
-                facingForward.Normalize();
+                cameraForward.Normalize();
 
-            // 2. 마우스 좌우로 캐릭터 자체를 돌림 — 카메라가 아니라 캐릭터가 도는 거라서,
-            // W를 누르면 항상 "지금 보고 있는 방향"으로 전진하고, 카메라는 그냥 뒤따라오기만 하면 됨.
+            characterForward = Vector3.ProjectOnPlane(characterForward, normal);
+            if (characterForward.sqrMagnitude < 0.0001f)
+                characterForward = AnyTangentTo(normal);
+            else
+                characterForward.Normalize();
+
+            // 2. 마우스 좌우로 "카메라 기준 방향"을 돌림 — 이제 이건 캐릭터 자체의 회전이 아니라
+            // WASD 입력을 해석하는 기준일 뿐입니다(아래 4번에서 characterForward가 실제 캐릭터
+            // 회전을 결정). [[CubeSurfaceCamera]]가 이 방향(CameraForward)을 기준으로 캐릭터
+            // 뒤를 따라갑니다 — 가만히 서서 마우스만 돌려도 카메라가 자유롭게 둘러볼 수 있음.
             float rawMouseX = Mouse.current != null ? Mouse.current.delta.x.ReadValue() : 0f;
             smoothedMouseX = Mathf.Lerp(smoothedMouseX, rawMouseX, mouseSmoothing * Time.deltaTime);
-            facingForward = Quaternion.AngleAxis(smoothedMouseX * mouseSensitivity, normal) * facingForward;
+            cameraForward = Quaternion.AngleAxis(smoothedMouseX * mouseSensitivity, normal) * cameraForward;
 
-            Vector3 facingRight = Vector3.Cross(normal, facingForward);
+            Vector3 cameraRight = Vector3.Cross(normal, cameraForward);
 
             // 3. 접지 판정 — 콜라이더 충돌 없이(이 프로토타입은 CharacterController를 안 씀)
             // "표면까지 남은 거리"를 직접 계산해서 판정합니다.
@@ -204,9 +247,17 @@ namespace Meokgoeeum
             else
                 verticalSpeed -= gravity * Time.deltaTime;
 
-            // 4. 이동 = 캐릭터가 보는 방향(facingForward/facingRight) 기준 — 카메라 방향과 무관.
-            Vector3 moveDir = facingForward * moveInput.y + facingRight * moveInput.x;
+            // 4. 이동 = 카메라 기준 방향(cameraForward/cameraRight) 기준 — 3인칭 액션 게임에서
+            // 흔한 방식(W = 카메라가 보는 쪽으로 전진).
+            Vector3 moveDir = cameraForward * moveInput.y + cameraRight * moveInput.x;
             if (moveDir.sqrMagnitude > 1f) moveDir.Normalize();
+
+            // 2026-09-16 재설계 — 사용자 요청: "마우스를 회전하든 좌우로 움직이든 한 방향만
+            // 보고 있어" → "이동하는 방향을 자동으로 바라보게 해줘". 캐릭터가 실제로 보는 방향은
+            // 더 이상 마우스가 아니라 지금 움직이는 방향이 결정합니다 — 움직이는 순간 그 방향으로
+            // 스냅되고, 입력이 없으면(제자리 정지) 마지막으로 보던 방향을 그대로 유지합니다.
+            if (moveDir.sqrMagnitude > 0.0001f)
+                characterForward = moveDir.normalized;
 
             // 2026-09-16 추가 — 걷기 애니메이션. moveInput.magnitude(항상 0 이상)를 그대로 씀 —
             // 유니티짱 로코모션 컨트롤러의 Speed 파라미터는 전진/후진 부호(±)로 다른 애니메이션을
@@ -240,9 +291,9 @@ namespace Meokgoeeum
             afterLocal[axis] = (cubeHalfExtent + surfaceOffset) * Mathf.Sign(normal[axis]);
             transform.position = CubeCenterPos() + afterLocal;
 
-            // 5. 캐릭터의 실제 시각적 회전 — 항상 facingForward를 보도록(입력 여부와 무관하게,
-            // 마우스로 방금 돌렸을 수 있으므로). up 정렬도 이 한 번의 LookRotation에 같이 반영됨.
-            Quaternion lookRot = Quaternion.LookRotation(facingForward, normal);
+            // 5. 캐릭터의 실제 시각적 회전 — characterForward(이동 방향 기준)를 향해 부드럽게.
+            // up 정렬도 이 한 번의 LookRotation에 같이 반영됨.
+            Quaternion lookRot = Quaternion.LookRotation(characterForward, normal);
             transform.rotation = Quaternion.Slerp(transform.rotation, lookRot, reorientSpeed * Time.deltaTime);
         }
 
