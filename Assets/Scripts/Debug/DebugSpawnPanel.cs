@@ -183,6 +183,13 @@ namespace Meokgoeeum
                 : $"[DebugSpawnPanel] {prefab.name} 소환 실패 — 콘솔의 CubeEnemyConverter 경고 참고");
         }
 
+        // ⚠️ 2026-09-17 발견 — 개수 입력창에 "901" 같은 큰 값을 넣으면 AddOrb()를 한 프레임에
+        // 900번 넘게 동기 호출해서 그 프레임이 심하게 버벅였고(콘솔 로그 900줄), 그 큰
+        // Time.deltaTime 때문에 근처 몹(흡)이 플레이어 코앞까지 순간 이동하듯 파고드는 버그로
+        // 이어짐([[CubeEnemyBase.MoveToward]] 쪽도 클램프로 같이 수정). 여기서도 애초에 비정상
+        // 개수를 못 넣게 막아서 원천 차단.
+        private const int MaxOrbGiveCount = 20;
+
         private void GiveOrbs(OrbColor color, string countText)
         {
             if (ColorSystemManager.Instance == null) return;
@@ -190,6 +197,12 @@ namespace Meokgoeeum
             {
                 Debug.LogWarning($"[DebugSpawnPanel] \"{countText}\"은(는) 유효한 개수가 아닙니다 — 1 이상의 정수를 입력하세요.");
                 return;
+            }
+
+            if (count > MaxOrbGiveCount)
+            {
+                Debug.LogWarning($"[DebugSpawnPanel] {count}개는 너무 많습니다(최대 {MaxOrbGiveCount}) — 한 프레임에 너무 많이 호출되면 버벅임/버그로 이어질 수 있어 막습니다.");
+                count = MaxOrbGiveCount;
             }
 
             for (int i = 0; i < count; i++)

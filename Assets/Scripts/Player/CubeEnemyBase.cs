@@ -289,7 +289,19 @@ namespace Meokgoeeum
             {
                 Vector3 moveDir = toTarget.normalized;
                 float speed = speedOverride ?? MoveSpeed;
-                myLocal += moveDir * speed * Time.deltaTime;
+
+                // ⚠️ 2026-09-17 발견 — 이 스텝을 arriveThreshold 이상으로 못 좁히게 clamp하지
+                // 않고 있었음. 평소 프레임에서는 걸음 크기(speed*deltaTime)가 워낙 작아서 문제가
+                // 안 보였는데, 디버그 패널에 구슬 개수를 큰 값(예: "901")으로 넣어 AddOrb()를
+                // 한 프레임에 900번 넘게 동기 호출하면 그 프레임의 Time.deltaTime이 크게
+                // 튀면서(로그 900줄 처리 지연) 이 몹이 minApproachToPlayer/absorbRadius를
+                // 훌쩍 넘어 플레이어 코앞까지 순간적으로 파고드는 걸 실측 영상(HUD의 "흡 거리"가
+                // 1.20→1.00으로 계속 줄어듦)으로 확인함 — "흡한테 꼈다"는 리포트의 진짜 원인.
+                // 한 번의 큰 deltaTime 프레임에도 arriveThreshold보다 더 가까이 못 가도록 클램프.
+                float remaining = toTarget.magnitude - arriveThreshold;
+                float step = Mathf.Min(speed * Time.deltaTime, Mathf.Max(remaining, 0f));
+
+                myLocal += moveDir * step;
                 transform.rotation = Quaternion.LookRotation(moveDir, faceNormal);
                 movedThisFrame = true;
             }
