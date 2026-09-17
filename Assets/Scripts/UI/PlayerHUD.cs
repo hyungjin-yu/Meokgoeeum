@@ -56,6 +56,7 @@ namespace Meokgoeeum
         private readonly Dictionary<OrbColor, Image> skillBaseImages = new Dictionary<OrbColor, Image>();
         private readonly Dictionary<OrbColor, Image> skillWedgeImages = new Dictionary<OrbColor, Image>();
         private readonly Dictionary<OrbColor, GameObject> skillGlowObjects = new Dictionary<OrbColor, GameObject>();
+        private readonly Dictionary<OrbColor, GameObject> skillUnimplementedMarks = new Dictionary<OrbColor, GameObject>();
 
         private Sprite roundedSprite; // 몸통/팔다리(둥근 사각형)
         private Sprite circleSprite;  // 머리/구슬(원형)
@@ -274,6 +275,23 @@ namespace Meokgoeeum
             keyText.fontSize = 14;
             keyText.alignment = TextAnchor.UpperCenter;
             keyText.color = new Color(0.667f, 0.667f, 0.667f);
+
+            // 구슬은 있는데 스킬 자체가 미구현인 경우("구슬 없음"과 구분되도록) 표시하는 물음표.
+            // 구슬이 없어서 잠긴 건 아이콘 없이 그냥 회색만.
+            var qmObj = new GameObject("UnimplementedMark", typeof(RectTransform), typeof(Text));
+            var qmRect = (RectTransform)qmObj.transform;
+            qmRect.SetParent(slot, false);
+            qmRect.anchorMin = Vector2.zero; qmRect.anchorMax = Vector2.one;
+            qmRect.offsetMin = Vector2.zero; qmRect.offsetMax = Vector2.zero;
+            var qmText = qmObj.GetComponent<Text>();
+            qmText.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+            qmText.text = "?";
+            qmText.fontSize = Mathf.RoundToInt(size * 0.55f);
+            qmText.fontStyle = FontStyle.Bold;
+            qmText.alignment = TextAnchor.MiddleCenter;
+            qmText.color = new Color(0.85f, 0.85f, 0.85f, 0.9f);
+            qmText.raycastTarget = false;
+            skillUnimplementedMarks[color] = qmObj;
         }
 
         // ================= 매 프레임 갱신 =================
@@ -301,6 +319,7 @@ namespace Meokgoeeum
                 bool ready = implemented && hasOrb && !onCooldown;
 
                 skillBaseImages[color].color = (implemented && hasOrb) ? OrbUIColors[color] : LockedTint;
+                skillUnimplementedMarks[color].SetActive(!implemented);
 
                 var wedge = skillWedgeImages[color];
                 wedge.fillAmount = onCooldown ? Mathf.Clamp01(cooldownRemaining / cooldownDuration) : 0f;
