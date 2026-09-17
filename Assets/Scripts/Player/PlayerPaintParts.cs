@@ -36,6 +36,16 @@ namespace Meokgoeeum
         /// <summary>남은(아직 흑백 안 된) 부위 비율 — [[MonsterPaintParts.HealthFraction]]과 같은 역할.</summary>
         public float HealthFraction => TotalParts > 0 ? (float)(TotalParts - DrainedCount) / TotalParts : 1f;
 
+        /// <summary>
+        /// 2026-09-17 추가 — 인게임 HUD(캐릭터 전신 일러스트, 부위별로 검게 물듦)가 "이 부위가
+        /// 이미 흑백됐는지"를 3D 모델 렌더러 색을 안 거치고 직접 물어볼 때 씁니다.
+        /// </summary>
+        public bool IsRegionDrained(MonsterPaintParts.Region region)
+        {
+            EnsureBuilt();
+            return drainedRegions.Contains(region);
+        }
+
         private readonly Dictionary<MonsterPaintParts.Region, List<Renderer>> regionRenderers = new Dictionary<MonsterPaintParts.Region, List<Renderer>>();
         private readonly Dictionary<MonsterPaintParts.Region, List<Color>> regionOriginalColors = new Dictionary<MonsterPaintParts.Region, List<Color>>();
         private readonly HashSet<MonsterPaintParts.Region> drainedRegions = new HashSet<MonsterPaintParts.Region>();

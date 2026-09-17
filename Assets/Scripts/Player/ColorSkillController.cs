@@ -166,7 +166,10 @@ namespace Meokgoeeum
             }
         }
 
-        private float GetCooldownTimer(OrbColor color) => color switch
+        // 2026-09-17 추가 — private → public. 스킬 HUD(구슬 슬롯 쿨타임 웨지)가 이 값들을
+        // 그대로 읽어서 진행률(GetCooldownTimer/GetCooldownDuration)을 표시함. 순수 조회
+        // 메서드라 외부 공개해도 안전(부작용 없음).
+        public float GetCooldownTimer(OrbColor color) => color switch
         {
             OrbColor.Red => strikeCooldownTimer,
             OrbColor.Blue => flowCooldownTimer,
@@ -174,7 +177,7 @@ namespace Meokgoeeum
             _ => 0f,
         };
 
-        private float GetCooldownDuration(OrbColor color) => color switch
+        public float GetCooldownDuration(OrbColor color) => color switch
         {
             OrbColor.Red => strikeCooldown,
             OrbColor.Blue => flowCooldown,
