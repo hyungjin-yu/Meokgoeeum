@@ -42,6 +42,15 @@ namespace Meokgoeeum
         private bool visible;
         private readonly Dictionary<OrbColor, string> orbCountInputs = new Dictionary<OrbColor, string>();
 
+        // ⚠️ 2026-09-17 발견 — 유니티 기본 GUI 스킨 폰트(Arial 계열)는 한글 글리프가 없어서,
+        // OnGUI로 그린 한글 라벨/버튼 텍스트가 전부 빈 상자로 보였습니다("패널이 아예 안 보이는데"
+        // 리포트 — 실제로는 패널 자체는 그려졌는데 글자만 안 보였던 것). OS에 이미 설치돼있는
+        // 한글 폰트(맑은 고딕)를 동적으로 불러와 커스텀 스타일에 적용해서 해결.
+        private GUIStyle labelStyle;
+        private GUIStyle buttonStyle;
+        private GUIStyle textFieldStyle;
+        private GUIStyle boxStyle;
+
         private void Awake()
         {
             if (target == null)
@@ -49,6 +58,18 @@ namespace Meokgoeeum
 
             foreach (OrbColor color in Enum.GetValues(typeof(OrbColor)))
                 orbCountInputs[color] = "1";
+        }
+
+        private void EnsureStyles()
+        {
+            if (labelStyle != null) return;
+
+            Font koreanFont = Font.CreateDynamicFontFromOSFont(new[] { "Malgun Gothic", "Arial" }, 14);
+
+            labelStyle = new GUIStyle(GUI.skin.label) { font = koreanFont };
+            buttonStyle = new GUIStyle(GUI.skin.button) { font = koreanFont };
+            textFieldStyle = new GUIStyle(GUI.skin.textField) { font = koreanFont };
+            boxStyle = new GUIStyle(GUI.skin.box) { font = koreanFont };
         }
 
         private void Update()
@@ -60,33 +81,39 @@ namespace Meokgoeeum
         private void OnGUI()
         {
             if (!visible) return;
+            EnsureStyles();
 
-            GUILayout.BeginArea(new Rect(10, 10, 260, 420), GUI.skin.box);
-            GUILayout.Label($"디버그 스폰 패널 ({toggleKey}로 닫기)");
+            GUILayout.BeginArea(new Rect(10, 10, 260, 420), boxStyle);
+            GUILayout.Label($"디버그 스폰 패널 ({toggleKey}로 닫기)", labelStyle);
 
             GUILayout.Space(8);
-            GUILayout.Label("몹 소환");
+            GUILayout.Label("몹 소환", labelStyle);
             SpawnButton("평", pyeongPrefab);
             SpawnButton("원", wonPrefab);
             SpawnButton("흡", heupPrefab);
             SpawnButton("분", bunPrefab);
             SpawnButton("광", gwangPrefab);
             if (target == null)
-                GUILayout.Label("⚠ CubeSurfaceWalker를 못 찾음 — 소환 불가");
+                GUILayout.Label("⚠ CubeSurfaceWalker를 못 찾음 — 소환 불가", labelStyle);
 
             GUILayout.Space(8);
-            GUILayout.Label("색 구슬 지급");
+            GUILayout.Label("색 구슬 지급", labelStyle);
             foreach (OrbColor color in Enum.GetValues(typeof(OrbColor)))
             {
+                // ⚠️ 2026-09-17 — Dictionary는 유니티가 직렬화 못 하는 타입이라, Play 모드 중
+                // 스크립트를 재컴파일하면(도메인 리로드) Awake()가 다시 안 불려서 내용이
+                // 비어버릴 수 있음(KeyNotFoundException으로 실제 재현함) — 없으면 즉석에서 채움.
+                if (!orbCountInputs.ContainsKey(color)) orbCountInputs[color] = "1";
+
                 GUILayout.BeginHorizontal();
-                GUILayout.Label(color.ToString(), GUILayout.Width(60));
-                orbCountInputs[color] = GUILayout.TextField(orbCountInputs[color], GUILayout.Width(40));
-                if (GUILayout.Button("지급", GUILayout.Width(50)))
+                GUILayout.Label(color.ToString(), labelStyle, GUILayout.Width(60));
+                orbCountInputs[color] = GUILayout.TextField(orbCountInputs[color], textFieldStyle, GUILayout.Width(40));
+                if (GUILayout.Button("지급", buttonStyle, GUILayout.Width(50)))
                     GiveOrbs(color, orbCountInputs[color]);
                 GUILayout.EndHorizontal();
             }
             if (ColorSystemManager.Instance == null)
-                GUILayout.Label("⚠ ColorSystemManager를 못 찾음 — 지급 불가");
+                GUILayout.Label("⚠ ColorSystemManager를 못 찾음 — 지급 불가", labelStyle);
 
             GUILayout.EndArea();
         }
@@ -94,7 +121,7 @@ namespace Meokgoeeum
         private void SpawnButton(string label, GameObject prefab)
         {
             GUI.enabled = prefab != null && target != null;
-            if (GUILayout.Button($"{label} 소환"))
+            if (GUILayout.Button($"{label} 소환", buttonStyle))
                 SpawnMob(prefab);
             GUI.enabled = true;
         }
