@@ -74,8 +74,23 @@ namespace Meokgoeeum
 
         private void Update()
         {
-            if (Keyboard.current != null && Keyboard.current[toggleKey].wasPressedThisFrame)
-                visible = !visible;
+            if (Keyboard.current == null || !Keyboard.current[toggleKey].wasPressedThisFrame) return;
+
+            visible = !visible;
+
+            // 2026-09-17 발견 — 평소엔 [[CubeSurfaceCamera]]가 마우스 룩 조작을 위해 커서를
+            // 잠그고 숨겨둡니다("커서가 안 보이고 클릭이 안 된다" 리포트로 발견) — 패널을 열 때는
+            // 풀어서 보이게/클릭 가능하게 하고, 닫을 때 다시 잠가서 원래 조작으로 복귀시킵니다.
+            if (visible)
+            {
+                Cursor.lockState = CursorLockMode.None;
+                Cursor.visible = true;
+            }
+            else
+            {
+                Cursor.lockState = CursorLockMode.Locked;
+                Cursor.visible = false;
+            }
         }
 
         private void OnGUI()
