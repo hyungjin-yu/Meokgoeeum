@@ -17,9 +17,16 @@ namespace Meokgoeeum
     /// 대미지 배율/쿨타임은 [[14 밸런스 수치 시트]] "플레이어 스킬 대미지", 공통 캐스팅 Startup은
     /// [[27 전투 프레임 데이터]] "색 스킬(1~6) 캐스팅" 기준(10f)입니다. 콤보 중 스킬 캔슬은 아직
     /// 구현 안 함 — v0.2 후속으로 미룸 (지금은 BrushWeapon 상태와 무관하게 독립적으로 동작).
+    ///
+    /// ⚠️ 2026-09-17 추가 — 큐브 면 프로토타입([[CubeSurfaceWalker]])에도 붙일 수 있도록
+    /// `[RequireComponent(typeof(CharacterController))]`/`[RequireComponent(typeof(PlayerController))]`를
+    /// 뗐습니다. [[BrushWeapon]]에서 이미 검증된 것과 동일한 패턴 — PlayerController가 있으면
+    /// 그 InputActions를 공유(기존과 동일), 없으면 자체 인스턴스를 만들어 씀. 강타(빨강)의 대시는
+    /// CharacterController가 있으면 `cc.Move()`(기존과 동일), 없고 CubeSurfaceWalker가 있으면
+    /// `CubeSurfaceWalker.ExternalStep()`(면 접선에 투영 + 표면 재클램프)으로 대신 이동시킵니다.
+    /// 대미지 판정도 BrushWeapon과 동일하게 [[ICubeFaceMob]] 대상에 한해 같은 면인지 검사합니다 —
+    /// 평지 던전(둘 다 없음)에서는 이 모든 분기가 기존 경로 그대로라 동작 변화 없습니다.
     /// </summary>
-    [RequireComponent(typeof(CharacterController))]
-    [RequireComponent(typeof(PlayerController))] // Start()에서 PlayerController.InputActions를 공유해서 씀
     public class ColorSkillController : MonoBehaviour
     {
         [Header("빨강 — 강타 (전방 대시 + 강타, 14 밸런스 수치 시트: ×2.0 / 8초)")]
@@ -46,10 +53,12 @@ namespace Meokgoeeum
 
         public bool IsDashing { get; private set; } // 강타의 대시 구간 동안 true (PlayerController가 이동을 양보하도록)
 
-        private CharacterController cc;
+        private CharacterController cc; // 평지 던전 — 있으면 강타 대시를 cc.Move()로 처리
+        private CubeSurfaceWalker cubeWalker; // 큐브 면 프로토타입 — 있으면 강타 대시를 ExternalStep()으로 처리
         private BrushWeapon brushWeapon; // 스킬 대미지의 기준이 되는 "붓 공격력"을 여기서 읽어옴 (단일 출처 유지)
         private LockOnController lockOn; // 락온 중이면 스킬 조준을 여기 맞춤 (2026-09-02, 아래 GetAimDirection 참고)
-        private PlayerInputActions inputActions; // PlayerController가 소유 — 여기선 구독만 함
+        private PlayerInputActions inputActions; // PlayerController가 있으면 그걸 공유, 없으면 자체 소유
+        private bool ownsInputActions; // 자체 소유일 때만 true — OnDestroy에서 직접 정리해야 함
 
         private float strikeCooldownTimer;
         private float flowCooldownTimer;
@@ -58,6 +67,7 @@ namespace Meokgoeeum
         private void Awake()
         {
             cc = GetComponent<CharacterController>();
+            cubeWalker = GetComponent<CubeSurfaceWalker>();
             brushWeapon = GetComponent<BrushWeapon>();
             lockOn = GetComponent<LockOnController>();
         }
@@ -83,11 +93,34 @@ namespace Meokgoeeum
 
         private void Start()
         {
-            // PlayerController가 Awake()에서 만들어 Enable()까지 해둔 인스턴스를 공유해서 씁니다.
-            inputActions = GetComponent<PlayerController>().InputActions;
+            var playerController = GetComponent<PlayerController>();
+            if (playerController != null)
+            {
+                // PlayerController가 Awake()에서 만들어 Enable()까지 해둔 인스턴스를 공유해서 씁니다.
+                inputActions = playerController.InputActions;
+            }
+            else
+            {
+                // 큐브 면 프로토타입처럼 PlayerController가 없는 경우 — 자체 인스턴스를 만들어 씁니다.
+                inputActions = new PlayerInputActions();
+                inputActions.Enable();
+                ownsInputActions = true;
+            }
+
             inputActions.Player.Skill1.performed += _ => TryCast(OrbColor.Red);
             inputActions.Player.Skill2.performed += _ => TryCast(OrbColor.Blue);
             inputActions.Player.Skill3.performed += _ => TryCast(OrbColor.Yellow);
+        }
+
+        private void OnDestroy()
+        {
+            // PlayerController.OnDestroy()/BrushWeapon.OnDestroy()와 동일하게, Enable()과 반드시
+            // 짝을 맞춰 Disable()을 먼저 호출해야 "leak and performance issues" 경고가 안 뜹니다.
+            if (ownsInputActions)
+            {
+                inputActions?.Disable();
+                inputActions?.Dispose();
+            }
         }
 
         private void Update()
@@ -176,7 +209,13 @@ namespace Meokgoeeum
             {
                 float dt = Time.deltaTime;
                 elapsed += dt;
-                cc.Move(direction * speed * dt);
+                Vector3 step = direction * speed * dt;
+                // 2026-09-17 — 평지 던전은 기존대로 cc.Move(), 큐브 면 프로토타입은 CharacterController가
+                // 없으므로 CubeSurfaceWalker.ExternalStep()으로 대신 이동(면 접선 투영 + 표면 재클램프).
+                if (cc != null)
+                    cc.Move(step);
+                else if (cubeWalker != null)
+                    cubeWalker.ExternalStep(step);
                 yield return null;
             }
             IsDashing = false;
@@ -197,7 +236,11 @@ namespace Meokgoeeum
 
             float damage = BaseAttackPower * flowDamageMultiplier;
             Vector3 aimDir = GetAimDirection();
-            Quaternion aimRot = Quaternion.LookRotation(aimDir);
+            // 2026-09-17 — 큐브 면 위에서는 "위"가 항상 월드 Vector3.up이 아니라 그 면의 법선입니다.
+            // 기본값(Vector3.up)으로 LookRotation하면 옆면/윗면 등에서 박스가 비뚤어져서 판정이
+            // 어긋날 수 있어 cubeWalker가 있으면 실제 표면 법선을 up으로 씀 — 평지 던전은 그대로.
+            Vector3 up = cubeWalker != null ? cubeWalker.CurrentSurfaceNormal : Vector3.up;
+            Quaternion aimRot = Quaternion.LookRotation(aimDir, up);
             Vector3 center = transform.position + aimDir * (flowLength / 2f);
             Vector3 halfExtents = new Vector3(flowWidth / 2f, 1f, flowLength / 2f);
 
@@ -230,6 +273,11 @@ namespace Meokgoeeum
                 if (damageable == null) continue;
 
                 if (!alreadyHit.Add(hit.gameObject)) continue;
+
+                // 2026-09-17 — [[BrushWeapon]]과 동일한 이유로, 큐브 면 위(cubeWalker != null)에서만
+                // 같은 면인지 검사합니다. 평지 던전/면 개념 없는 대상은 그대로 통과.
+                if (cubeWalker != null && damageable is ICubeFaceMob mob && !mob.IsSameFaceAs(cubeWalker.CurrentSurfaceNormal))
+                    continue;
 
                 damageable.TakeDamage(damage);
                 hitCount++;
@@ -264,6 +312,10 @@ namespace Meokgoeeum
                 if (damageable == null) continue;
 
                 if (!alreadyHit.Add(hit.gameObject)) continue;
+
+                // 2026-09-17 — 위 CastFlash와 동일한 같은 면 검사(강타/흐름 공용 경로).
+                if (cubeWalker != null && damageable is ICubeFaceMob mob && !mob.IsSameFaceAs(cubeWalker.CurrentSurfaceNormal))
+                    continue;
 
                 damageable.TakeDamage(damage);
                 count++;

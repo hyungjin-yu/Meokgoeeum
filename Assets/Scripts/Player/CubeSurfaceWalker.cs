@@ -145,9 +145,17 @@ namespace Meokgoeeum
         /// </summary>
         private Animator animator;
 
+        /// <summary>
+        /// 2026-09-17 추가 — [[ColorSkillController]]의 강타(빨강) 대시 구간 중엔 [[PlayerController]]가
+        /// 그러듯 일반 이동 입력을 무시해서 두 이동 로직이 서로 다투지 않게 합니다. 없으면(색
+        /// 스킬 미부착) null이라 항상 평소대로 동작합니다.
+        /// </summary>
+        private ColorSkillController skills;
+
         private void Start()
         {
             animator = GetComponentInChildren<Animator>();
+            skills = GetComponent<ColorSkillController>();
             CurrentSurfaceNormal = EstimateSurfaceNormalFromPosition();
             lastNormal = CurrentSurfaceNormal;
             cameraForward = Vector3.ProjectOnPlane(transform.forward, CurrentSurfaceNormal).normalized;
@@ -224,6 +232,13 @@ namespace Meokgoeeum
         private void Update()
         {
             ReadKeyboardInput();
+
+            // 2026-09-17 추가 — 강타(빨강) 대시 구간 중엔 WASD 이동을 무시합니다. [[PlayerController]]의
+            // Move()가 skills.IsDashing일 때 자기 이동을 넘기는 것과 동일한 목적 — 대시는
+            // ColorSkillController가 ExternalStep()으로 직접 이동시키므로, 여기서 또 WASD 기준
+            // 이동을 더하면 대시 방향이 흐트러집니다.
+            if (skills != null && skills.IsDashing)
+                moveInput = Vector2.zero;
 
             Vector3 normal = CurrentSurfaceNormal; // 트리거로만 바뀜 — 여기서 재계산하지 않음
 
@@ -342,14 +357,7 @@ namespace Meokgoeeum
             transform.position += tangentialMotion + verticalMotion;
 
             // 콜라이더가 없으므로, 표면 밑으로 파고들거나 면 경계를 벗어나면 직접 되돌려 고정합니다.
-            Vector3 afterLocal = transform.position - CubeCenterPos();
-            for (int a = 0; a < 3; a++)
-            {
-                if (a == axis) continue;
-                afterLocal[a] = Mathf.Clamp(afterLocal[a], -cubeHalfExtent, cubeHalfExtent);
-            }
-            afterLocal[axis] = (cubeHalfExtent + surfaceOffset) * Mathf.Sign(normal[axis]);
-            transform.position = CubeCenterPos() + afterLocal;
+            ClampToSurface();
 
             // 5. 캐릭터의 실제 시각적 회전 — characterForward(이동 방향 기준)를 향해 회전.
             // up 정렬도 이 한 번의 LookRotation에 같이 반영됨.
@@ -360,6 +368,37 @@ namespace Meokgoeeum
             // 크기와 무관하게 항상 초당 reorientSpeed도만큼만 도니, 큰 회전도 빠르고 일정하게 끝남.
             Quaternion lookRot = Quaternion.LookRotation(characterForward, normal);
             transform.rotation = Quaternion.RotateTowards(transform.rotation, lookRot, reorientSpeed * Time.deltaTime);
+        }
+
+        /// <summary>
+        /// 콜라이더가 없으므로, 표면 밑으로 파고들거나 면 경계를 벗어나면 직접 되돌려 고정합니다.
+        /// Update()의 매 프레임 이동 후 보정과, 아래 <see cref="ExternalStep"/> 양쪽에서 공용으로 씁니다.
+        /// </summary>
+        private void ClampToSurface()
+        {
+            Vector3 normal = CurrentSurfaceNormal;
+            int axis = Mathf.Abs(normal.x) > 0.5f ? 0 : (Mathf.Abs(normal.y) > 0.5f ? 1 : 2);
+            Vector3 afterLocal = transform.position - CubeCenterPos();
+            for (int a = 0; a < 3; a++)
+            {
+                if (a == axis) continue;
+                afterLocal[a] = Mathf.Clamp(afterLocal[a], -cubeHalfExtent, cubeHalfExtent);
+            }
+            afterLocal[axis] = (cubeHalfExtent + surfaceOffset) * Mathf.Sign(normal[axis]);
+            transform.position = CubeCenterPos() + afterLocal;
+        }
+
+        /// <summary>
+        /// 2026-09-17 추가 — [[ColorSkillController]]의 강타(빨강) 대시처럼, 이 워커의 일반 이동
+        /// 로직을 거치지 않고 외부에서 직접 위치를 옮겨야 할 때 씁니다. CharacterController가
+        /// 없는 이 워커에서 cc.Move()를 대신하는 역할 — 옮길 방향을 현재 면의 접선 평면에
+        /// 투영(면 밖으로 뜨지 않게)한 뒤, 옮기고 나서 바로 표면에 재보정합니다.
+        /// </summary>
+        public void ExternalStep(Vector3 worldDelta)
+        {
+            Vector3 tangentialDelta = Vector3.ProjectOnPlane(worldDelta, CurrentSurfaceNormal);
+            transform.position += tangentialDelta;
+            ClampToSurface();
         }
 
         /// <summary>
