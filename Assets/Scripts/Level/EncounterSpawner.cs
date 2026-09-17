@@ -56,25 +56,6 @@ namespace Meokgoeeum
         // 세션 전체에서 한 번만 뜨면 되는 힌트라 static — 여러 층을 오가도 두 번 안 뜸.
         private static bool hasShownFirstAttackHint;
 
-        // 2026-09-16 — 큐브 모드 변환용 flat 종 스크립트 → CubeEnemy* 매핑. 새 종이 추가되면
-        // 여기에 한 줄만 추가하면 됨(다른 데는 안 건드림).
-        private static readonly Dictionary<System.Type, System.Type> SpeciesMap = new Dictionary<System.Type, System.Type>
-        {
-            { typeof(EnemyPyeong), typeof(CubeEnemyPyeong) },
-            { typeof(EnemyWon), typeof(CubeEnemyWon) },
-            { typeof(EnemyHeup), typeof(CubeEnemyHeup) },
-            { typeof(EnemyBun), typeof(CubeEnemyBun) },
-            { typeof(EnemyGwang), typeof(CubeEnemyGwang) },
-        };
-
-        private static System.Type GetFlatSpeciesType(GameObject instance)
-        {
-            foreach (var flatType in SpeciesMap.Keys)
-                if (instance.GetComponent(flatType) != null)
-                    return flatType;
-            return null;
-        }
-
         // ⚠️ 2026-09-15: 원래 List<EnemyHealth>였는데, 큐브 면 모드에서는 EnemyHealth가 없는
         // CubeEnemyPyeong을 스폰하므로 GameObject로 일반화 — "Destroy()되면 null"이라는 판정
         // 자체는 평지/큐브 둘 다 똑같이 성립합니다.
@@ -171,38 +152,10 @@ namespace Meokgoeeum
                     // 큐브 면 모드 — NavMesh 기반 컴포넌트를 떼고 같은 종의 큐브 면 버전으로 교체.
                     // Instantiate() 이 프레임 안에서 곧바로 처리하므로 아직 Start()가 한 번도
                     // 안 돌았음 — 원본 스크립트/NavMeshAgent가 실제로 동작을 시작하기 전에 안전하게 제거됨.
-                    //
-                    // ⚠️ 2026-09-16 — 원래 여기가 EnemyPyeong/CubeEnemyPyeong으로만 하드코딩돼
-                    // 있어서, 다른 종 프리팹을 넘겨도 전부 평(Pyeong)으로 변환되던 버그가 있었음
-                    // (층별 콘텐츠 다양화를 시도하기 전까진 평만 써서 안 드러남). 어떤 flat-던전
-                    // 종 스크립트가 붙어있는지 보고 대응하는 CubeEnemy* 타입을 고르도록 일반화.
-                    var flatSpeciesType = GetFlatSpeciesType(instance);
-                    if (flatSpeciesType == null || !SpeciesMap.TryGetValue(flatSpeciesType, out var cubeType))
-                    {
-                        Debug.LogWarning($"[EncounterSpawner] {name}: {instance.name}에서 알려진 먹괴음 종 스크립트를 못 찾아 큐브 모드로 변환하지 못했습니다 — 그대로 파괴합니다.");
-                        Destroy(instance);
-                        continue;
-                    }
-
-                    // ⚠️ 순서 중요 — flat 종 스크립트(EnemyPyeong 등)가 EnemyHealth/NavMeshAgent를
-                    // [RequireComponent]로 요구하므로, 그 스크립트부터 먼저 지워야 나머지 둘을 지울
-                    // 수 있습니다. 반대로 하면 Unity가 "OO가 의존하니 못 지운다" 에러를 내고 조용히
-                    // 지우기를 실패시켜서, NavMeshAgent/EnemyHealth/원본 스크립트가 CubeEnemy*와
-                    // 같이 남아있는 상태가 됨(2026-09-16, 종 다양화 작업 중 리팩터하다 실수로 순서를
-                    // 바꿔서 재현 — Play 테스트로 콘솔 에러 보고 잡음).
-                    Destroy(instance.GetComponent(flatSpeciesType));
-                    var oldHealth = instance.GetComponent<EnemyHealth>();
-                    if (oldHealth != null) Destroy(oldHealth);
-                    var oldAgent = instance.GetComponent<UnityEngine.AI.NavMeshAgent>();
-                    if (oldAgent != null) Destroy(oldAgent);
-
-                    var cubeEnemy = (CubeEnemyBase)instance.AddComponent(cubeType);
-                    cubeEnemy.cubeCenter = cubeCenter;
-                    cubeEnemy.faceNormal = cubeFaceNormal;
-                    cubeEnemy.cubeHalfExtent = cubeHalfExtent;
-                    cubeEnemy.target = cubeTarget;
-                    if (!Mathf.Approximately(wave.hpMultiplier, 1f))
-                        cubeEnemy.maxHP *= wave.hpMultiplier;
+                    // 2026-09-17 — 변환 로직 자체는 [[CubeEnemyConverter]]로 뽑아내서
+                    // [[DebugSpawnPanel]]도 같이 재사용합니다(동작은 이전과 100% 동일).
+                    var cubeEnemy = CubeEnemyConverter.ConvertToCubeMode(instance, cubeCenter, cubeFaceNormal, cubeHalfExtent, cubeTarget, wave.hpMultiplier);
+                    if (cubeEnemy == null) continue; // 변환 실패 시 이미 파괴/로그됨(CubeEnemyConverter 참고)
 
                     aliveInCurrentWave.Add(instance);
                 }
