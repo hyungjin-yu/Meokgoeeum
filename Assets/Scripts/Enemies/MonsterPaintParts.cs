@@ -95,6 +95,29 @@ namespace Meokgoeeum
         }
 
         /// <summary>
+        /// 2026-09-17 추가 — [[EnemyBun]]/[[CubeEnemyBun]]처럼 죽으면서 `Instantiate(gameObject, ...)`로
+        /// 자기 자신을 복제해 미니언을 만드는 종에서, 죽기 직전 부위가 이미 칠해져 있었으면
+        /// 그 색이 그대로 복제돼서 미니언이 "이미 칠해진 채로" 태어나는 버그가 있었음(사용자
+        /// 리포트: "분열체가 나올 때 왜 색이 부여되어있어? 검은색이어야하는데"). 원인: 복제된
+        /// GameObject의 렌더러 머티리얼 색은 복제 시점 그대로 상속되는데, 새 인스턴스의
+        /// `MonsterPaintParts.Awake()`(EnsureBuilt)가 그 상속된 색을 "원본(칠해지기 전) 색"으로
+        /// 잘못 캡처해버림. 복제하기 직전에 죽는 부모의 렌더러 색을 진짜 원본으로 되돌려두면,
+        /// 복제된 미니언이 올바른 원본 색을 물려받아 정상적으로 시작합니다.
+        /// </summary>
+        public void ResetVisualsToOriginal()
+        {
+            EnsureBuilt();
+            foreach (var region in regionRenderers.Keys)
+            {
+                var renderers = regionRenderers[region];
+                var originals = regionOriginalColors[region];
+                for (int i = 0; i < renderers.Count; i++)
+                    if (renderers[i] != null)
+                        renderers[i].material.color = originals[i];
+            }
+        }
+
+        /// <summary>
         /// 아직 안 칠해진 부위 중 하나를 무작위로 골라 칠합니다. 이미 전부 칠해졌으면 아무 일도
         /// 안 합니다(호출하는 쪽이 `AllPainted`를 매번 확인할 필요 없이 안전하게 반복 호출 가능).
         /// </summary>

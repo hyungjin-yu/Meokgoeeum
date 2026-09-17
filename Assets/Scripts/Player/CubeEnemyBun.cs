@@ -119,6 +119,10 @@ namespace Meokgoeeum
             // 이제 분열 여부만 조건으로 걸고, 파괴는 항상 마지막에 실행되도록 함.
             if (!isMinor) // 미니언은 또 분열하지 않음 (무한 분열 방지)
             {
+                // 2026-09-17 — 복제 전에 부위 색을 원본으로 되돌려서, 죽기 직전 이미 칠해져있던
+                // 색이 미니언에게 그대로 복제되지 않게 함([[MonsterPaintParts.ResetVisualsToOriginal]] 참고).
+                GetComponent<MonsterPaintParts>()?.ResetVisualsToOriginal();
+
                 for (int i = 0; i < 2; i++)
                 {
                     Vector3 offset = Random.insideUnitSphere * 1f;
