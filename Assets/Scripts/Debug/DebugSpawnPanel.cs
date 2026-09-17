@@ -123,7 +123,7 @@ namespace Meokgoeeum
                 GUILayout.BeginHorizontal();
                 GUILayout.Label(color.ToString(), labelStyle, GUILayout.Width(60));
                 orbCountInputs[color] = GUILayout.TextField(orbCountInputs[color], textFieldStyle, GUILayout.Width(40));
-                if (GUILayout.Button("지급", buttonStyle, GUILayout.Width(50)))
+                if (ManualButton("지급", buttonStyle, GUILayout.Width(50)))
                     GiveOrbs(color, orbCountInputs[color]);
                 GUILayout.EndHorizontal();
             }
@@ -136,9 +136,33 @@ namespace Meokgoeeum
         private void SpawnButton(string label, GameObject prefab)
         {
             GUI.enabled = prefab != null && target != null;
-            if (GUILayout.Button($"{label} 소환", buttonStyle))
+            if (ManualButton($"{label} 소환", buttonStyle))
                 SpawnMob(prefab);
             GUI.enabled = true;
+        }
+
+        /// <summary>
+        /// ⚠️ 2026-09-17 발견 — 이 프로젝트는 Active Input Handling이 "Input System Package
+        /// (New)" 전용(activeInputHandler=1)인데, 이 모드에서는 레거시 OnGUI의 클릭 판정
+        /// (Event 기반 MouseDown/Up)이 제대로 안 먹는 알려진 유니티 문제가 있습니다 — 마우스
+        /// 위치 추적(호버 하이라이트)은 정상 작동해서 "버튼은 보이는데 눌러도 반응이 없다"는
+        /// 형태로 나타남(실측 영상으로 확인: 호버는 되는데 클릭 로그가 한 번도 안 찍힘).
+        /// 프로젝트 전역 설정(Both로 변경)을 건드리는 대신, 이 패널 안에서만 New Input System의
+        /// Mouse로 직접 클릭을 판정합니다 — GUILayout.Button은 그리기/호버용으로만 쓰고, 실제
+        /// 클릭 여부는 방금 그려진 영역(GetLastRect)에 마우스가 있는 상태에서 이번 프레임에
+        /// 눌렸는지로 직접 계산합니다.
+        /// </summary>
+        private bool ManualButton(string label, GUIStyle style, params GUILayoutOption[] options)
+        {
+            GUILayout.Button(label, style, options);
+            if (Event.current.type != EventType.Repaint) return false;
+
+            Rect rect = GUILayoutUtility.GetLastRect();
+            if (Mouse.current == null || !Mouse.current.leftButton.wasPressedThisFrame) return false;
+
+            Vector2 mousePos = Mouse.current.position.ReadValue();
+            Vector2 guiMousePos = new Vector2(mousePos.x, Screen.height - mousePos.y); // Input System은 아래가 0, GUI는 위가 0
+            return GUI.enabled && rect.Contains(guiMousePos);
         }
 
         private void SpawnMob(GameObject prefab)
