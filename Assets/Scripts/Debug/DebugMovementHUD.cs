@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.InputSystem;
 
 namespace Meokgoeeum
 {
@@ -10,8 +11,9 @@ namespace Meokgoeeum
     /// 정말로 그만큼 벌어졌는지는 서로 말로만 우겨서는 확인이 안 됨 — 화면에 실시간 숫자로
     /// 띄워서 눈으로 직접 보고 판단하기 위해 추가.
     ///
-    /// F5 패널과 별개로 **항상 화면에 떠 있습니다**(토글 없음) — 플레이 중 실시간으로 계속
-    /// 봐야 하는 값이라 껐다 켰다 할 필요가 없다고 판단.
+    /// 그 버그([[changelog/2026-09-17_큐브몹-이동오버슈트버그]])는 이미 찾아서 고쳤고, 이제
+    /// 실제 게임 HUD([[PlayerHUD]])가 화면 우측 상단을 가리므로 기본은 꺼둠 — [[DebugSpawnPanel]]과
+    /// 동일하게 토글 키(F6)로 필요할 때만 켬.
     ///
     /// 릴리즈 빌드엔 안 들어가도록 UNITY_EDITOR/DEVELOPMENT_BUILD로 감쌌습니다 —
     /// [[DebugOrbCheat]]/[[DebugSpawnPanel]]과 동일한 관례.
@@ -22,6 +24,9 @@ namespace Meokgoeeum
         [Tooltip("비워두면 Awake()에서 씬의 CubeSurfaceWalker를 자동으로 찾습니다.")]
         public CubeSurfaceWalker target;
 
+        public Key toggleKey = Key.F6;
+
+        private bool visible;
         private Vector3 lastPosition;
         private float totalDistance;
         private GUIStyle labelStyle;
@@ -37,6 +42,9 @@ namespace Meokgoeeum
 
         private void Update()
         {
+            if (Keyboard.current != null && Keyboard.current[toggleKey].wasPressedThisFrame)
+                visible = !visible;
+
             if (target == null) return;
 
             // 면이 바뀌는 순간(모서리를 넘을 때)은 좌표계가 재정렬되면서 실제로 안 움직였는데도
@@ -57,7 +65,7 @@ namespace Meokgoeeum
 
         private void OnGUI()
         {
-            if (target == null) return;
+            if (!visible || target == null) return;
             EnsureStyle();
 
             GUILayout.BeginArea(new Rect(Screen.width - 280, 10, 270, 200), GUI.skin.box);
